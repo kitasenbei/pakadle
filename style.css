@@ -444,6 +444,7 @@ header .actions {
   transition: transform 0.08s ease, box-shadow 0.08s ease;
 }
 .card button:active { transform: translateY(3px); box-shadow: 0 0 0 #c94a74; }
+.card .share-btn { margin-bottom: 10px; }
 
 /* "next puzzle" countdown shown once today's game is finished */
 .card .countdown {

@@ -30,6 +30,8 @@
 
   let answerEntry = null; // { word, name, quote, img } — only known once finished
   let wordLen = 0;
+  let puzzleNumber = 0;
+  let playedStates = []; // per-row tile states, for the shareable grid
   let currentRow = 0;
   let guess = "";
   let isRevealing = false;
@@ -81,6 +83,8 @@
     }
 
     wordLen = data.length;
+    puzzleNumber = data.number;
+    playedStates = [];
     currentRow = 0;
     guess = "";
     isRevealing = false;
@@ -96,7 +100,10 @@
 
     // restore the player's own previous guesses (with their server-given colors)
     if (Array.isArray(data.rows) && data.rows.length) {
-      data.rows.forEach((r, i) => paintRow(i, r.guess, r.states));
+      data.rows.forEach((r, i) => {
+        paintRow(i, r.guess, r.states);
+        playedStates.push(r.states);
+      });
       currentRow = data.rows.length;
     }
 
@@ -208,6 +215,7 @@
     }
 
     const states = data.states;
+    playedStates.push(states);
     const rowEl = boardEl.children[currentRow];
     const tiles = rowEl.children;
 
@@ -362,6 +370,34 @@
     setTimeout(() => t.remove(), 2000);
   }
 
+  // ===== share (spoiler-free emoji grid) =====
+  const SHARE_EMOJI = { correct: "🟪", present: "🟨", absent: "⬜" };
+
+  function shareText() {
+    const score = lastWon ? playedStates.length : "X";
+    const grid = playedStates.map((row) => row.map((s) => SHARE_EMOJI[s]).join("")).join("\n");
+    return `Pakadle #${puzzleNumber}  ${score}/6\n${grid}\nhttps://pakadle.fun`;
+  }
+
+  async function doShare() {
+    const text = shareText();
+    if (navigator.share) {
+      try {
+        await navigator.share({ title: "Pakadle", text });
+        return;
+      } catch (e) {
+        if (e && e.name === "AbortError") return; // user dismissed the share sheet
+        // otherwise fall through to clipboard
+      }
+    }
+    try {
+      await navigator.clipboard.writeText(text);
+      toast("Copied to clipboard!");
+    } catch (e) {
+      toast("Couldn't copy");
+    }
+  }
+
   // ===== modal =====
   function showModal(opts) {
     const { reveal, won, finished } = opts;
@@ -387,7 +423,8 @@
            </div>`;
 
     const footer = finished
-      ? `<div class="countdown" id="countdown">Next Pakadle in …</div>`
+      ? `<button id="share-btn" class="share-btn">Share 🔗</button>
+         <div class="countdown" id="countdown">Next Pakadle in …</div>`
       : `<button id="modal-close">Got it</button>`;
 
     modalEl.innerHTML = `
@@ -405,8 +442,13 @@
       </div>`;
     modalEl.classList.add("open");
 
-    if (finished) startCountdown();
-    else document.getElementById("modal-close").addEventListener("click", closeModal);
+    if (finished) {
+      startCountdown();
+      const sb = document.getElementById("share-btn");
+      if (sb) sb.addEventListener("click", doShare);
+    } else {
+      document.getElementById("modal-close").addEventListener("click", closeModal);
+    }
   }
 
   function startCountdown() {
