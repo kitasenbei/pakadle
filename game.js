@@ -1,4 +1,4 @@
-// Pakadle — daily Umamusume word game (front-end).
+// Pakadle: daily Umamusume word game (front-end).
 // Server-driven: the answer never reaches the browser until you finish.
 //   GET  /api/daily   -> today's puzzle meta + YOUR saved board + stats
 //   POST /api/guess   -> server validates + returns tile colors
@@ -28,7 +28,7 @@
   // ----- state -----
   const keyEls = {};
 
-  let answerEntry = null; // { word, name, quote, img } — only known once finished
+  let answerEntry = null; // { word, name, quote, img }; only known once finished
   let wordLen = 0;
   let puzzleNumber = 0;
   let playedStates = []; // per-row tile states, for the shareable grid
@@ -78,7 +78,7 @@
     } catch (e) {
       boardEl.innerHTML = "";
       subtitleEl.innerHTML =
-        '⚠️ Backend not reachable — run <b>node server.js</b> and open <b>http://localhost:3000</b>';
+        '⚠️ Backend not reachable. Run <b>node server.js</b> and open <b>http://localhost:3000</b>';
       return;
     }
 
@@ -93,7 +93,7 @@
     rolloverTarget = Date.now() + (data.secondsUntilRollover || 0) * 1000;
     answerEntry = data.reveal || null;
 
-    subtitleEl.innerHTML = `Pakadle <b>#${data.number}</b> — guess the <b>${wordLen}</b>-letter Umamusume`;
+    subtitleEl.innerHTML = `Pakadle <b>#${data.number}</b> · guess the <b>${wordLen}</b>-letter Umamusume`;
     buildBoard();
     resetKeyboard();
     closeModal();
@@ -515,12 +515,12 @@
      <p class="cap"><b class="slate">O</b> is not in the word.</p>`,
 
     `<h2>Answers hide in names</h2>
-     <p>The catch: the answer is a <b>word taken from a character's full name</b> — not always a name on its own.</p>
+     <p>The catch: the answer is a <b>word taken from a character's full name</b>, not always a name on its own.</p>
      <div class="namecard"><span class="hl">Special</span> <span class="dim">Week</span></div>
      <div class="ex-row">
        <div class="ex-tile correct">S</div><div class="ex-tile correct">P</div><div class="ex-tile correct">E</div><div class="ex-tile correct">C</div><div class="ex-tile correct">I</div><div class="ex-tile correct">A</div><div class="ex-tile correct">L</div>
      </div>
-     <p class="cap">A 7-letter answer might be <b>SPECIAL</b> — from <b>Special Week</b>. There's no uma simply named "Special"!</p>
+     <p class="cap">A 7-letter answer might be <b>SPECIAL</b>, from <b>Special Week</b>. There's no uma simply named "Special"!</p>
      <p class="sub">Same goes for <b>GOLD</b> (Gold Ship), <b>SUZUKA</b> (Silence Suzuka)… any word inside an uma's name counts.</p>`,
 
     `<h2>One puzzle a day</h2>
