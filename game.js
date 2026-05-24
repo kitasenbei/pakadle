@@ -409,8 +409,7 @@
       reveal && answerEntry
         ? `<div class="hero">
              <div class="char">
-               <img class="portrait" src="${answerEntry.img}" alt="${answerEntry.name}"
-                    onerror="this.style.display='none'; this.closest('.char').classList.add('noimg');" />
+               <img class="portrait" src="${answerEntry.img}" alt="${answerEntry.name}" />
              </div>
              <div class="info">
                <div class="answer">${answerEntry.word}</div>
@@ -441,6 +440,18 @@
         <div class="shine" aria-hidden="true"></div>
       </div>`;
     modalEl.classList.add("open");
+
+    // hide a portrait that fails to load (CSP-safe: no inline handler)
+    const portrait = modalEl.querySelector(".portrait");
+    if (portrait) {
+      const hidePortrait = () => {
+        portrait.style.display = "none";
+        const c = portrait.closest(".char");
+        if (c) c.classList.add("noimg");
+      };
+      portrait.addEventListener("error", hidePortrait);
+      if (portrait.complete && portrait.naturalWidth === 0) hidePortrait();
+    }
 
     if (finished) {
       startCountdown();

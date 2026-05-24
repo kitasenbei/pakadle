@@ -113,8 +113,9 @@ server {
     }
 }
 EOF
-# per-IP rate / connection limits (separate file, http context)
+# per-IP rate / connection limits + security headers (separate files, http context)
 cp "$APP_DIR/deploy/nginx-ratelimit.conf" /etc/nginx/conf.d/pakadle-ratelimit.conf 2>/dev/null || true
+cp "$APP_DIR/deploy/nginx-security-headers.conf" /etc/nginx/conf.d/pakadle-security-headers.conf 2>/dev/null || true
 nginx -t
 systemctl enable nginx >/dev/null 2>&1 || true
 systemctl restart nginx
