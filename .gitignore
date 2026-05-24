@@ -1,0 +1,12 @@
+# runtime SQLite database (created on first server start)
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
+
+# dependencies (none yet, but just in case)
+node_modules/
+
+# OS / editor cruft
+.DS_Store
+Thumbs.db

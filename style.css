@@ -1,0 +1,557 @@
+/* ===== Umamusume palette (flat, no gradients) ===== */
+:root {
+  --bg:        #FBF5EA;  /* warm cream */
+  --panel:     #FFFFFF;
+  --ink:       #3A2E39;  /* dark plum ink */
+  --ink-soft:  #6E6470;
+  --turf:      #4CA62E;  /* grass / turf green — branding */
+  --turf-dark: #3C8523;
+  --sakura:    #E85D8B;  /* signature pink — "correct" */
+  --gold:      #F2A93B;  /* amber — "present" */
+  --slate:     #7C748F;  /* muted plum-grey — "absent" */
+  --tile-line: #DAD0C2;  /* empty tile border */
+  --tile-edge: #B9AE9E;  /* filled tile border */
+  --key-bg:    #EAE0D2;  /* keyboard key */
+  --key-text:  #3A2E39;
+  --shadow:    rgba(58, 46, 57, 0.18);
+  --divider:   #EFE8DC;  /* soft rounded separators */
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body {
+  height: 100%;
+}
+
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: "Baloo 2", "Quicksand", "Segoe UI", system-ui, -apple-system, sans-serif;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-height: 100%;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+}
+
+/* ===== Header ===== */
+header {
+  width: 100%;
+  max-width: 560px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 16px 10px;
+  position: relative;
+  z-index: 1;
+  animation: drop-in 0.5s cubic-bezier(.2, .9, .3, 1.25) both;
+}
+
+h1 {
+  font-size: clamp(1.4rem, 5vw, 2rem);
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+h1 .jp   { color: var(--sakura); }
+h1 .en   { color: var(--turf); }
+
+#new-game {
+  font-family: inherit;
+  font-weight: 700;
+  font-size: 0.95rem;
+  color: #fff;
+  background: var(--turf);
+  border: none;
+  border-radius: 999px;
+  padding: 8px 16px;
+  cursor: pointer;
+  box-shadow: 0 3px 0 var(--turf-dark);
+  transition: transform 0.08s ease, box-shadow 0.08s ease;
+}
+#new-game:hover { animation: wiggle 0.4s ease; }
+#new-game:active {
+  transform: translateY(3px);
+  box-shadow: 0 0 0 var(--turf-dark);
+}
+
+/* center the board in the space between header and keyboard */
+.game {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  position: relative;
+  z-index: 1;
+}
+
+#subtitle {
+  margin: 0 0 14px;
+  color: var(--ink-soft);
+  font-weight: 600;
+  font-size: 0.95rem;
+  animation: fade-up 0.5s ease 0.15s both;
+}
+#subtitle b { color: var(--sakura); }
+
+/* ===== Board ===== */
+#board {
+  display: grid;
+  grid-template-rows: repeat(6, 1fr);
+  gap: 6px;
+  width: 90vw;
+  margin: 0 auto;
+  padding: 0 4px;
+}
+
+.row {
+  display: grid;
+  grid-template-columns: repeat(var(--cols), 1fr);
+  gap: 6px;
+}
+
+.tile {
+  aspect-ratio: 1 / 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: clamp(1.1rem, 6vw, 2rem);
+  font-weight: 800;
+  text-transform: uppercase;
+  color: var(--ink);
+  background: var(--panel);
+  border: 2px solid var(--tile-line);
+  border-radius: 10px;
+}
+
+.tile.filled {
+  border-color: var(--tile-edge);
+}
+
+/* letter states */
+.tile.correct,
+.tile.present,
+.tile.absent {
+  color: #fff;
+  border-color: transparent;
+}
+.tile.correct { background: var(--sakura); }
+.tile.present { background: var(--gold); }
+.tile.absent  { background: var(--slate); }
+
+/* ===== Keyboard ===== */
+#keyboard {
+  width: 100%;
+  max-width: 520px;
+  padding: 6px 6px 18px;
+  position: relative;
+  z-index: 1;
+  animation: fade-up 0.5s ease 0.25s both;
+}
+.krow {
+  display: flex;
+  justify-content: center;
+  gap: 6px;
+  margin-bottom: 6px;
+}
+.key {
+  font-family: inherit;
+  font-weight: 700;
+  font-size: clamp(0.8rem, 3.4vw, 1.05rem);
+  color: var(--key-text);
+  background: var(--key-bg);
+  border: none;
+  border-radius: 8px;
+  height: 52px;
+  flex: 1;
+  cursor: pointer;
+  text-transform: uppercase;
+  transition: transform 0.06s ease, background 0.15s ease, color 0.15s ease;
+}
+.key.wide { flex: 1.6; font-size: 0.78rem; }
+.key:active { transform: scale(0.92); }
+.key.correct { background: var(--sakura); color: #fff; }
+.key.present { background: var(--gold);   color: #fff; }
+.key.absent  { background: var(--slate);  color: #fff; }
+
+/* ===== Toast ===== */
+#toast-wrap {
+  position: fixed;
+  top: 70px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: center;
+  z-index: 30;
+  pointer-events: none;
+}
+.toast {
+  background: var(--ink);
+  color: #fff;
+  font-weight: 600;
+  padding: 10px 18px;
+  border-radius: 999px;
+  box-shadow: 0 4px 14px var(--shadow);
+  animation: toast-in 0.18s ease, toast-out 0.3s ease 1.6s forwards;
+}
+
+/* ===== Modal ===== */
+#modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(58, 46, 57, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.2s ease, visibility 0.2s ease;
+  z-index: 40;
+  padding: 20px;
+  perspective: 1400px;            /* gives the card real depth when it spins */
+}
+#modal.open { opacity: 1; visibility: visible; }
+
+.card {
+  background: var(--panel);
+  border-radius: 18px;
+  padding: 18px 22px 20px;
+  width: 100%;
+  max-width: 384px;
+  overflow: visible;
+  text-align: left;
+  position: relative;
+  box-shadow: 0 12px 30px var(--shadow);
+  transform-style: preserve-3d;
+  animation: card-fly-in 0.85s cubic-bezier(.2, .75, .25, 1) both;
+}
+
+/* glassy highlight that sweeps across the card once it has settled */
+.card .shine {
+  position: absolute;
+  inset: 0;
+  border-radius: 16px;
+  overflow: hidden;        /* clip the sweep to the card surface */
+  pointer-events: none;
+  z-index: 6;
+}
+.card .shine::before {
+  content: "";
+  position: absolute;
+  top: -75%;
+  left: -30%;
+  width: 55%;
+  height: 250%;
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0) 0%,
+    rgba(255, 255, 255, 0.55) 50%,
+    rgba(255, 255, 255, 0) 100%
+  );
+  transform: rotate(20deg) translateX(-220%);
+  animation: shine-sweep 0.9s ease-in-out 0.6s both;
+}
+@keyframes shine-sweep {
+  from { transform: rotate(20deg) translateX(-220%); }
+  to   { transform: rotate(20deg) translateX(360%); }
+}
+
+/* fly up from the bottom while spinning one full turn on the Y axis */
+@keyframes card-fly-in {
+  0% {
+    opacity: 0;
+    transform: translateY(95vh) scale(0.78) rotateY(-360deg);
+  }
+  55% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1) rotateY(0deg);
+  }
+}
+
+/* rotated stamp, top-right */
+.card .badge {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  z-index: 3;
+  font-size: 1.05rem;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  color: #fff;
+  background: var(--sakura);
+  padding: 6px 14px;
+  border-radius: 999px;
+  transform: rotate(4deg);
+  box-shadow: 0 3px 0 #c94a74;
+  animation: badge-pop 0.45s cubic-bezier(.2, .9, .3, 1.6) both;
+}
+.card .badge.lose {
+  background: var(--slate);
+  box-shadow: 0 3px 0 #5f5872;
+  font-size: 0.85rem;
+}
+@keyframes badge-pop {
+  0%   { opacity: 0; transform: rotate(4deg) scale(0.4); }
+  60%  { opacity: 1; transform: rotate(4deg) scale(1.18); }
+  100% { transform: rotate(4deg) scale(1); }
+}
+
+/* two-column hero: character left (bleeds off), info right */
+.card .hero {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+  margin-top: 26px;
+  min-height: 178px;
+}
+.card .char {
+  position: relative;
+  flex: 0 0 43%;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  align-self: stretch;
+}
+.card .char.noimg { display: none; }
+.card .portrait {
+  position: relative;
+  z-index: 1;
+  height: 218px;                 /* taller than hero → head pops above the top */
+  width: auto;
+  max-width: 160px;
+  object-fit: contain;
+  margin-left: -12px;            /* kiss the left edge */
+  filter: drop-shadow(0 6px 5px rgba(58, 46, 57, 0.22));
+}
+.card.lose .portrait {
+  filter: grayscale(0.85) drop-shadow(0 6px 5px rgba(58, 46, 57, 0.2));
+  opacity: 0.9;
+}
+.card .info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding-bottom: 4px;
+}
+
+.card .answer {
+  font-size: 1.6rem;
+  line-height: 1.05;
+  font-weight: 800;
+  color: var(--turf-dark);
+  word-break: break-word;
+  margin-bottom: 2px;
+}
+.card .full {
+  font-size: 0.92rem;
+  color: var(--ink);
+  font-weight: 600;
+  margin-bottom: 10px;
+}
+.card .full::after {
+  content: "";
+  display: block;
+  width: 100%;
+  height: 4px;
+  margin-top: 9px;
+  border-radius: 999px;
+  background: var(--divider);
+}
+.card .quote {
+  font-size: 0.86rem;
+  color: var(--ink-soft);
+  font-style: italic;
+  line-height: 1.35;
+}
+.card .quote::before { content: "\201C"; }
+.card .quote::after  { content: "\201D"; }
+.card .quote::before,
+.card .quote::after {
+  color: var(--sakura);
+  font-weight: 800;
+  font-size: 1.15em;
+}
+
+.stats {
+  position: relative;
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  margin: 16px 4px 16px;
+  padding-top: 18px;
+}
+.stats::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  border-radius: 999px;
+  background: var(--divider);
+}
+.stat { display: flex; flex-direction: column; align-items: center; flex: 1; }
+.stat .num { font-size: 1.4rem; font-weight: 800; color: var(--ink); }
+.stat .lbl { font-size: 0.68rem; color: var(--ink-soft); text-transform: uppercase; letter-spacing: 0.5px; }
+
+.card button {
+  font-family: inherit;
+  font-weight: 700;
+  font-size: 1rem;
+  color: #fff;
+  background: var(--sakura);
+  border: none;
+  border-radius: 999px;
+  padding: 12px 28px;
+  width: 100%;
+  cursor: pointer;
+  box-shadow: 0 3px 0 #c94a74;
+  transition: transform 0.08s ease, box-shadow 0.08s ease;
+}
+.card button:active { transform: translateY(3px); box-shadow: 0 0 0 #c94a74; }
+
+/* "next puzzle" countdown shown once today's game is finished */
+.card .countdown {
+  text-align: center;
+  font-weight: 700;
+  font-size: 0.92rem;
+  color: var(--ink-soft);
+  background: var(--bg);
+  border: 2px dashed var(--tile-line);
+  border-radius: 999px;
+  padding: 11px 18px;
+}
+
+/* ===== Drifting petals (background flair) ===== */
+#petals {
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 0;
+}
+.petal {
+  position: absolute;
+  top: -6vh;
+  animation-name: fall;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+}
+.petal i {
+  display: block;
+  border-radius: 0 100% 0 100%; /* leaf / petal silhouette */
+  animation-name: sway;
+  animation-timing-function: ease-in-out;
+  animation-iteration-count: infinite;
+  animation-direction: alternate;
+}
+@keyframes fall {
+  to { transform: translateY(116vh); }
+}
+@keyframes sway {
+  from { transform: translateX(-14px) rotate(0deg); }
+  to   { transform: translateX(14px) rotate(220deg); }
+}
+
+/* ===== Confetti cannons (win) ===== */
+#confetti {
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 70; /* above the modal/card */
+}
+.confetti {
+  position: fixed;
+  will-change: transform, opacity;
+}
+
+/* ===== Load-in / idle flair ===== */
+@keyframes drop-in {
+  from { opacity: 0; transform: translateY(-18px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes fade-up {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes wiggle {
+  0%, 100% { transform: rotate(0deg); }
+  30%      { transform: rotate(-4deg); }
+  70%      { transform: rotate(4deg); }
+}
+
+/* tiles cascade in when the board is (re)built */
+@keyframes tile-in {
+  from { opacity: 0; transform: scale(0.4) translateY(10px); }
+  to   { opacity: 1; transform: scale(1) translateY(0); }
+}
+.tile.enter { animation: tile-in 0.34s cubic-bezier(.2, .9, .3, 1.3) both; }
+
+/* ===== Animations ===== */
+@keyframes pop {
+  0%   { transform: scale(1); }
+  50%  { transform: scale(1.10); }
+  100% { transform: scale(1); }
+}
+.tile.pop { animation: pop 0.12s ease; }
+
+@keyframes flip {
+  0%   { transform: rotateX(0deg); }
+  50%  { transform: rotateX(-90deg); }
+  100% { transform: rotateX(0deg); }
+}
+.tile.flip { animation: flip 0.5s ease forwards; }
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  20%, 60% { transform: translateX(-6px); }
+  40%, 80% { transform: translateX(6px); }
+}
+.row.shake { animation: shake 0.4s ease; }
+
+@keyframes bounce {
+  0%   { transform: translateY(0); }
+  30%  { transform: translateY(-20px); }
+  50%  { transform: translateY(0); }
+  70%  { transform: translateY(-8px); }
+  85%  { transform: translateY(0); }
+  100% { transform: translateY(0); }
+}
+.tile.bounce { animation: bounce 0.55s ease; }
+
+@keyframes toast-in {
+  from { opacity: 0; transform: translateY(-8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes toast-out {
+  to { opacity: 0; transform: translateY(-8px); }
+}
+
+@media (max-width: 420px) {
+  .key { height: 46px; }
+}
+
+/* respect users who prefer less motion: kill the looping/idle flair */
+@media (prefers-reduced-motion: reduce) {
+  #petals { display: none; }
+  header, #subtitle, #keyboard, .tile.enter { animation: none; }
+  .card { animation: card-fade 0.2s ease both; }
+  .card .shine { display: none; }
+}
+@keyframes card-fade {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
