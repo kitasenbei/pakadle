@@ -19,6 +19,8 @@
   const toastWrap = document.getElementById("toast-wrap");
   const modalEl = document.getElementById("modal");
   const statsBtn = document.getElementById("new-game");
+  const howtoEl = document.getElementById("howto");
+  const howToBtn = document.getElementById("how-to");
 
   const KEY_ROWS = ["QWERTYUIOP", "ASDFGHJKL", "↵ZXCVBNM⌫"];
 
@@ -101,6 +103,11 @@
       lastWon = data.result.won;
       setTimeout(() => showModal({ reveal: true, won: lastWon, finished: true }), 350);
     }
+
+    // first-ever visit → show the onboarding (on top of everything)
+    let seen = false;
+    try { seen = !!localStorage.getItem("pakadle_howto_seen"); } catch (e) {}
+    if (!seen) openHowto();
   }
 
   function buildBoard() {
@@ -454,8 +461,89 @@
     showModal({ reveal: gameOver, won: lastWon, finished: gameOver });
   }
 
+  // ===== how-to-play onboarding (multi-step) =====
+  const HOWTO_STEPS = [
+    // 1 — welcome
+    `<h2>How to Play</h2>
+     <p>Guess the daily <b>Umamusume</b> in <b>6 tries</b>.</p>
+     <div class="ex-row">
+       <div class="ex-tile">U</div><div class="ex-tile">M</div><div class="ex-tile">A</div>
+     </div>
+     <p class="sub">Type letters, then press <b>Enter</b> to submit. Each guess has to fill the whole row.</p>`,
+
+    // 2 — colors (uses the real board palette)
+    `<h2>Read the colors</h2>
+     <p>After each guess, every tile changes color:</p>
+     <div class="ex-row">
+       <div class="ex-tile correct">V</div><div class="ex-tile">O</div><div class="ex-tile">D</div><div class="ex-tile">K</div><div class="ex-tile">A</div>
+     </div>
+     <p class="cap"><b class="pink">V</b> is in the word and in the right spot.</p>
+     <div class="ex-row">
+       <div class="ex-tile">O</div><div class="ex-tile present">G</div><div class="ex-tile">U</div><div class="ex-tile">R</div><div class="ex-tile">I</div>
+     </div>
+     <p class="cap"><b class="gold">G</b> is in the word, but in the wrong spot.</p>
+     <div class="ex-row">
+       <div class="ex-tile">H</div><div class="ex-tile">A</div><div class="ex-tile">L</div><div class="ex-tile absent">O</div>
+     </div>
+     <p class="cap"><b class="slate">O</b> is not in the word.</p>`,
+
+    // 3 — the twist: answers are words taken from a character's full name
+    `<h2>Answers hide in names</h2>
+     <p>The catch: the answer is a <b>word taken from a character's full name</b> — not always a name on its own.</p>
+     <div class="namecard"><span class="hl">Special</span> <span class="dim">Week</span></div>
+     <div class="ex-row">
+       <div class="ex-tile correct">S</div><div class="ex-tile correct">P</div><div class="ex-tile correct">E</div><div class="ex-tile correct">C</div><div class="ex-tile correct">I</div><div class="ex-tile correct">A</div><div class="ex-tile correct">L</div>
+     </div>
+     <p class="cap">A 7-letter answer might be <b>SPECIAL</b> — from <b>Special Week</b>. There's no uma simply named "Special"!</p>
+     <p class="sub">Same goes for <b>GOLD</b> (Gold Ship), <b>SUZUKA</b> (Silence Suzuka)… any word inside an uma's name counts.</p>`,
+
+    // 4 — daily
+    `<h2>One puzzle a day</h2>
+     <p>A brand-new Umamusume every day, and <b>everyone gets the same one</b>.</p>
+     <p>Win in fewer guesses to grow your <b>streak</b>. Tap <b>Stats</b> anytime to see how you're doing.</p>
+     <p class="sub">🥕 Come back after midnight for the next Pakadle!</p>`,
+  ];
+  let howtoStep = 0;
+
+  function openHowto() {
+    howtoStep = 0;
+    renderHowto();
+    howtoEl.classList.add("open");
+  }
+  function closeHowto() {
+    howtoEl.classList.remove("open");
+    try { localStorage.setItem("pakadle_howto_seen", "1"); } catch (e) {}
+  }
+  function renderHowto() {
+    const last = howtoStep === HOWTO_STEPS.length - 1;
+    const dots = HOWTO_STEPS.map((_, i) => `<span class="dot${i === howtoStep ? " on" : ""}"></span>`).join("");
+    howtoEl.innerHTML = `
+      <div class="howto-card">
+        <button class="howto-x" id="howto-x" aria-label="Close">×</button>
+        <div class="howto-body">${HOWTO_STEPS[howtoStep]}</div>
+        <div class="howto-nav">
+          <button class="howto-back" id="howto-back"${howtoStep === 0 ? " disabled" : ""}>Back</button>
+          <div class="dots">${dots}</div>
+          <button class="howto-next" id="howto-next">${last ? "Play! 🥕" : "Next"}</button>
+        </div>
+      </div>`;
+    document.getElementById("howto-x").addEventListener("click", closeHowto);
+    document.getElementById("howto-back").addEventListener("click", () => {
+      if (howtoStep > 0) { howtoStep--; renderHowto(); }
+    });
+    document.getElementById("howto-next").addEventListener("click", () => {
+      if (last) closeHowto();
+      else { howtoStep++; renderHowto(); }
+    });
+  }
+
   // ===== physical keyboard =====
   document.addEventListener("keydown", (e) => {
+    if (howtoEl.classList.contains("open")) {
+      if (e.key === "Escape") closeHowto();
+      else if (e.key === "Enter") document.getElementById("howto-next").click();
+      return;
+    }
     if (modalEl.classList.contains("open")) {
       if (e.key === "Enter" || e.key === "Escape") closeModal();
       return;
@@ -466,6 +554,10 @@
   });
 
   statsBtn.addEventListener("click", openStats);
+  howToBtn.addEventListener("click", openHowto);
+  howtoEl.addEventListener("click", (e) => {
+    if (e.target === howtoEl) closeHowto();
+  });
 
   // ===== boot =====
   buildKeyboard();

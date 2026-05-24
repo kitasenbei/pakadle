@@ -25,7 +25,8 @@ function loadWords() {
 const WORDS = loadWords();
 
 // ---- database ----
-const db = new DatabaseSync(path.join(ROOT, "pakadle.db"));
+const DB_FILE = process.env.PAKADLE_DB || path.join(ROOT, "pakadle.db");
+const db = new DatabaseSync(DB_FILE);
 db.exec(`
   CREATE TABLE IF NOT EXISTS puzzles (
     date   TEXT PRIMARY KEY,

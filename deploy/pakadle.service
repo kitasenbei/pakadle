@@ -1,0 +1,27 @@
+[Unit]
+Description=Pakadle daily Umamusume word game
+After=network.target
+
+[Service]
+Type=simple
+User=pakadle
+WorkingDirectory=/srv/pakadle/app
+Environment=PORT=3000
+Environment=PAKADLE_DB=/srv/pakadle/data/pakadle.db
+Environment=NODE_NO_WARNINGS=1
+ExecStart=/usr/bin/node server.js
+Restart=always
+RestartSec=2
+
+# resource fencing: Pakadle can never starve the rest of the box
+CPUQuota=60%
+MemoryMax=256M
+TasksMax=256
+
+# hardening
+NoNewPrivileges=true
+ProtectSystem=full
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target
