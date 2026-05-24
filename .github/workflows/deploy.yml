@@ -19,6 +19,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Minify client JS
+        run: |
+          npx --yes esbuild game.js --minify --outfile=game.min.tmp.js
+          mv game.min.tmp.js game.js
+          echo "minified game.js -> $(wc -c < game.js) bytes"
+
       - name: Set up SSH
         env:
           DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
