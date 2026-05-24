@@ -1,5 +1,6 @@
 // Pakadle backend — zero-dependency: Node's built-in HTTP server + node:sqlite.
-// Serves the static front-end and a small daily-puzzle API.
+// Per-user daily play with server-side guess validation (the answer never ships
+// to the browser until the player finishes).
 //
 //   run:  node server.js     (then open http://localhost:3000)
 //
@@ -8,18 +9,19 @@
 const http = require("node:http");
 const fs = require("node:fs");
 const path = require("node:path");
+const crypto = require("node:crypto");
 const { DatabaseSync } = require("node:sqlite");
 
 const ROOT = __dirname;
 const PORT = process.env.PORT || 3000;
+const MAX_GUESSES = 6;
 
-// Puzzle #0 lands on this date; each later day advances one puzzle.
+// Puzzle #0 lands on this date (UTC). Each later UTC day advances one puzzle.
 const DAILY_EPOCH = "2026-01-01";
 
 // ---- word data: single source of truth lives in words.js (server-side only) ----
 function loadWords() {
   const src = fs.readFileSync(path.join(ROOT, "words.js"), "utf8");
-  // words.js declares `const UMA_WORDS = [...]`; evaluate it and hand the array back.
   return new Function(src + "\nreturn UMA_WORDS;")();
 }
 const WORDS = loadWords();
@@ -33,29 +35,31 @@ db.exec(`
     number INTEGER NOT NULL,
     idx    INTEGER NOT NULL
   );
-  CREATE TABLE IF NOT EXISTS results (
-    date      TEXT PRIMARY KEY,
-    won       INTEGER NOT NULL,
-    guesses   INTEGER NOT NULL,
-    grid      TEXT NOT NULL,
-    played_at TEXT NOT NULL
+  CREATE TABLE IF NOT EXISTS plays (
+    pid        TEXT NOT NULL,
+    date       TEXT NOT NULL,
+    grid       TEXT NOT NULL DEFAULT '[]',
+    finished   INTEGER NOT NULL DEFAULT 0,
+    won        INTEGER NOT NULL DEFAULT 0,
+    updated_at TEXT NOT NULL,
+    PRIMARY KEY (pid, date)
   );
 `);
 
-// ---- date helpers (server-local day) ----
-function todayStr(d = new Date()) {
-  const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, "0");
-  const day = String(d.getDate()).padStart(2, "0");
-  return `${y}-${m}-${day}`;
+// ---- UTC day helpers (server and client agree on a single rollover) ----
+function todayStr() {
+  return new Date().toISOString().slice(0, 10); // UTC YYYY-MM-DD
 }
 function dayNumber(dateStr) {
-  const epoch = Date.parse(DAILY_EPOCH + "T00:00:00");
-  const day = Date.parse(dateStr + "T00:00:00");
-  return Math.floor((day - epoch) / 86400000);
+  const epoch = Date.parse(DAILY_EPOCH + "T00:00:00Z");
+  return Math.floor((Date.parse(dateStr + "T00:00:00Z") - epoch) / 86400000);
+}
+function secondsUntilRollover() {
+  const now = new Date();
+  const next = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + 1, 0, 0, 0);
+  return Math.max(0, Math.floor((next - now.getTime()) / 1000));
 }
 
-// today's puzzle, locked in the DB the first time it's requested
 function puzzleForDate(dateStr) {
   let row = db.prepare("SELECT date, number, idx FROM puzzles WHERE date = ?").get(dateStr);
   if (!row) {
@@ -67,16 +71,47 @@ function puzzleForDate(dateStr) {
   return row;
 }
 
-function computeStats() {
-  const rows = db.prepare("SELECT date, won, guesses FROM results ORDER BY date").all();
+// two-pass evaluation (handles duplicate letters), server-side now
+function evaluate(guess, answer) {
+  const n = answer.length;
+  const states = new Array(n).fill("absent");
+  const counts = {};
+  for (const c of answer) counts[c] = (counts[c] || 0) + 1;
+  for (let i = 0; i < n; i++) {
+    if (guess[i] === answer[i]) {
+      states[i] = "correct";
+      counts[guess[i]]--;
+    }
+  }
+  for (let i = 0; i < n; i++) {
+    if (states[i] === "correct") continue;
+    const c = guess[i];
+    if (counts[c] > 0) {
+      states[i] = "present";
+      counts[c]--;
+    }
+  }
+  return states;
+}
+
+function rowsWithStates(grid, answer) {
+  return grid.map((g) => ({ guess: g, states: evaluate(g, answer) }));
+}
+
+function computeStats(pid) {
+  const rows = db
+    .prepare("SELECT date, won, grid FROM plays WHERE pid = ? AND finished = 1 ORDER BY date")
+    .all(pid);
   const played = rows.length;
   const wins = rows.filter((r) => r.won).length;
   const dist = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0 };
   rows.forEach((r) => {
-    if (r.won && dist[r.guesses] !== undefined) dist[r.guesses]++;
+    if (r.won) {
+      const n = JSON.parse(r.grid).length;
+      if (dist[n] !== undefined) dist[n]++;
+    }
   });
 
-  // longest run of consecutive calendar-day wins
   let maxStreak = 0;
   let run = 0;
   let prev = null;
@@ -90,7 +125,6 @@ function computeStats() {
     prev = r.date;
   }
 
-  // current streak: consecutive-day wins ending at the most recently played day
   let streak = 0;
   for (let i = rows.length - 1; i >= 0; i--) {
     if (!rows[i].won) break;
@@ -102,17 +136,43 @@ function computeStats() {
   return { played, wins, winRate: played ? Math.round((wins / played) * 100) : 0, streak, maxStreak, dist };
 }
 
+function getPlay(pid, date) {
+  const row = db.prepare("SELECT grid, finished, won FROM plays WHERE pid = ? AND date = ?").get(pid, date);
+  return {
+    grid: row ? JSON.parse(row.grid) : [],
+    finished: row ? !!row.finished : false,
+    won: row ? !!row.won : false,
+  };
+}
+
+// ---- cookies / anonymous identity ----
+function getPid(req) {
+  const m = (req.headers.cookie || "").match(/(?:^|;\s*)pid=([A-Za-z0-9-]+)/);
+  return m ? m[1] : null;
+}
+function ensurePid(req, res) {
+  let pid = getPid(req);
+  if (!pid) {
+    pid = crypto.randomUUID();
+    const secure = req.headers["x-forwarded-proto"] === "https" ? "; Secure" : "";
+    res.setHeader(
+      "Set-Cookie",
+      `pid=${pid}; Path=/; HttpOnly; SameSite=Lax; Max-Age=31536000${secure}`
+    );
+  }
+  return pid;
+}
+
 // ---- tiny http helpers ----
 function sendJson(res, obj, code = 200) {
-  const body = JSON.stringify(obj);
   res.writeHead(code, { "Content-Type": "application/json", "Cache-Control": "no-store" });
-  res.end(body);
+  res.end(JSON.stringify(obj));
 }
 function readBody(req, cb) {
   let data = "";
   req.on("data", (c) => {
     data += c;
-    if (data.length > 1e6) req.destroy(); // basic guard
+    if (data.length > 1e6) req.destroy();
   });
   req.on("end", () => cb(data));
 }
@@ -126,7 +186,6 @@ const MIME = {
   ".svg": "image/svg+xml",
   ".ico": "image/x-icon",
 };
-// never expose these over static serving (answers / db / source)
 const BLOCKED = new Set(["words.js", "server.js", "pakadle.db", "package.json"]);
 
 const server = http.createServer((req, res) => {
@@ -134,24 +193,29 @@ const server = http.createServer((req, res) => {
 
   // ---- API ----
   if (url.pathname === "/api/daily" && req.method === "GET") {
+    const pid = ensurePid(req, res);
     const date = todayStr();
     const p = puzzleForDate(date);
     const e = WORDS[p.idx];
-    const r = db.prepare("SELECT won, guesses, grid FROM results WHERE date = ?").get(date);
-    return sendJson(res, {
+    const answer = e.word.toUpperCase();
+    const play = getPlay(pid, date);
+    const out = {
       date,
       number: p.number,
-      length: e.word.length,
-      word: e.word,
-      name: e.name,
-      quote: e.quote,
-      img: e.img,
-      result: r ? { won: !!r.won, guesses: r.guesses, grid: JSON.parse(r.grid) } : null,
-      stats: computeStats(),
-    });
+      length: answer.length,
+      secondsUntilRollover: secondsUntilRollover(),
+      rows: rowsWithStates(play.grid, answer),
+      finished: play.finished,
+      won: play.won,
+      stats: computeStats(pid),
+    };
+    // only reveal the character once the player is done
+    if (play.finished) out.reveal = { word: e.word, name: e.name, quote: e.quote, img: e.img };
+    return sendJson(res, out);
   }
 
-  if (url.pathname === "/api/result" && req.method === "POST") {
+  if (url.pathname === "/api/guess" && req.method === "POST") {
+    const pid = ensurePid(req, res);
     return readBody(req, (body) => {
       let data;
       try {
@@ -160,17 +224,44 @@ const server = http.createServer((req, res) => {
         return sendJson(res, { error: "bad json" }, 400);
       }
       const date = todayStr();
-      const grid = Array.isArray(data.grid) ? data.grid.map(String) : [];
-      // INSERT OR IGNORE → one result per day; first submission wins.
+      const p = puzzleForDate(date);
+      const e = WORDS[p.idx];
+      const answer = e.word.toUpperCase();
+      const play = getPlay(pid, date);
+
+      if (play.finished) return sendJson(res, { error: "already finished" }, 409);
+      if (play.grid.length >= MAX_GUESSES) return sendJson(res, { error: "no guesses left" }, 409);
+
+      const guess = String(data.guess || "").toUpperCase();
+      if (!/^[A-Z]+$/.test(guess) || guess.length !== answer.length) {
+        return sendJson(res, { error: "invalid guess" }, 400);
+      }
+
+      const states = evaluate(guess, answer);
+      const grid = play.grid.concat(guess);
+      const won = guess === answer;
+      const finished = won || grid.length >= MAX_GUESSES;
+
       db.prepare(
-        "INSERT OR IGNORE INTO results (date, won, guesses, grid, played_at) VALUES (?, ?, ?, ?, ?)"
-      ).run(date, data.won ? 1 : 0, grid.length, JSON.stringify(grid), new Date().toISOString());
-      return sendJson(res, computeStats());
+        `INSERT INTO plays (pid, date, grid, finished, won, updated_at)
+         VALUES (?, ?, ?, ?, ?, ?)
+         ON CONFLICT(pid, date) DO UPDATE SET
+           grid = excluded.grid, finished = excluded.finished,
+           won = excluded.won, updated_at = excluded.updated_at`
+      ).run(pid, date, JSON.stringify(grid), finished ? 1 : 0, won ? 1 : 0, new Date().toISOString());
+
+      const out = { states, row: grid.length - 1, finished, won };
+      if (finished) {
+        out.reveal = { word: e.word, name: e.name, quote: e.quote, img: e.img };
+        out.stats = computeStats(pid);
+      }
+      return sendJson(res, out);
     });
   }
 
   if (url.pathname === "/api/stats" && req.method === "GET") {
-    return sendJson(res, computeStats());
+    const pid = ensurePid(req, res);
+    return sendJson(res, computeStats(pid));
   }
 
   // ---- static files ----

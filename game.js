@@ -1,15 +1,16 @@
-// Pakadle — daily Umamusume word game. Talks to the SQLite backend (server.js):
-//   GET  /api/daily   → today's puzzle + your saved progress + stats
-//   POST /api/result  → persist today's outcome (once per day)
+// Pakadle — daily Umamusume word game (front-end).
+// Server-driven: the answer never reaches the browser until you finish.
+//   GET  /api/daily   -> today's puzzle meta + YOUR saved board + stats
+//   POST /api/guess   -> server validates + returns tile colors
+// Identity is an anonymous httpOnly cookie set by the server.
 (function () {
   "use strict";
 
   const ROWS = 6;
-  const FLIP_STAGGER = 250; // ms between each tile starting its flip
-  const FLIP_HALF = 250;    // ms to mid-flip, when the color is swapped in
-  const FLIP_DUR = 500;     // total flip duration (matches CSS)
+  const FLIP_STAGGER = 250;
+  const FLIP_HALF = 250;
+  const FLIP_DUR = 500;
 
-  // priority so a key keeps its best-known state
   const RANK = { absent: 1, present: 2, correct: 3 };
 
   // ----- DOM refs -----
@@ -25,21 +26,20 @@
   const KEY_ROWS = ["QWERTYUIOP", "ASDFGHJKL", "↵ZXCVBNM⌫"];
 
   // ----- state -----
-  const keyEls = {}; // letter -> button element
+  const keyEls = {};
 
-  let answer = "";
-  let answerEntry = null;   // { word, name, quote, img }
+  let answerEntry = null; // { word, name, quote, img } — only known once finished
   let wordLen = 0;
   let currentRow = 0;
   let guess = "";
-  let submitted = [];       // the words guessed so far (persisted to the server)
   let isRevealing = false;
   let gameOver = false;
   let lastWon = false;
   let serverStats = null;
+  let rolloverTarget = 0; // epoch ms of the next daily rollover
   let countdownTimer = null;
 
-  // ===== build the on-screen keyboard once =====
+  // ===== keyboard (built once) =====
   function buildKeyboard() {
     KEY_ROWS.forEach((rowStr) => {
       const rowEl = document.createElement("div");
@@ -66,11 +66,11 @@
     });
   }
 
-  // ===== load today's puzzle from the backend =====
+  // ===== load today's puzzle (+ your saved progress) =====
   async function loadDaily() {
     let data;
     try {
-      const res = await fetch("/api/daily");
+      const res = await fetch("/api/daily", { credentials: "same-origin" });
       if (!res.ok) throw new Error("bad response");
       data = await res.json();
     } catch (e) {
@@ -80,31 +80,33 @@
       return;
     }
 
-    answerEntry = { word: data.word, name: data.name, quote: data.quote, img: data.img };
-    answer = data.word.toUpperCase();
     wordLen = data.length;
     currentRow = 0;
     guess = "";
-    submitted = [];
     isRevealing = false;
     gameOver = false;
     serverStats = data.stats || null;
+    rolloverTarget = Date.now() + (data.secondsUntilRollover || 0) * 1000;
+    answerEntry = data.reveal || null;
 
-    new Image().src = answerEntry.img; // warm the portrait cache
     subtitleEl.innerHTML = `Pakadle <b>#${data.number}</b> — guess the <b>${wordLen}</b>-letter Umamusume`;
     buildBoard();
     resetKeyboard();
     closeModal();
 
-    if (data.result) {
-      // already played today → restore the finished board and lock input
-      restoreFinished(data.result.grid);
+    // restore the player's own previous guesses (with their server-given colors)
+    if (Array.isArray(data.rows) && data.rows.length) {
+      data.rows.forEach((r, i) => paintRow(i, r.guess, r.states));
+      currentRow = data.rows.length;
+    }
+
+    if (data.finished) {
       gameOver = true;
-      lastWon = data.result.won;
+      lastWon = data.won;
+      if (answerEntry) new Image().src = answerEntry.img;
       setTimeout(() => showModal({ reveal: true, won: lastWon, finished: true }), 350);
     }
 
-    // first-ever visit → show the onboarding (on top of everything)
     let seen = false;
     try { seen = !!localStorage.getItem("pakadle_howto_seen"); } catch (e) {}
     if (!seen) openHowto();
@@ -125,7 +127,6 @@
       }
       boardEl.appendChild(rowEl);
     }
-    // drop the entrance class once it has played so it can't clash with pop/flip
     setTimeout(() => {
       boardEl.querySelectorAll(".tile.enter").forEach((t) => {
         t.classList.remove("enter");
@@ -134,21 +135,16 @@
     }, 1400);
   }
 
-  // paint a previously-played board instantly (no animation)
-  function restoreFinished(grid) {
-    grid.forEach((word, r) => {
-      const up = String(word).toUpperCase();
-      const states = evaluate(up);
-      const tiles = boardEl.children[r].children;
-      for (let i = 0; i < wordLen; i++) {
-        tiles[i].textContent = up[i];
-        tiles[i].classList.remove("enter");
-        tiles[i].classList.add("filled", states[i]);
-      }
-      updateKeyboard(up, states);
-    });
-    currentRow = grid.length;
-    submitted = grid.map(String);
+  // paint a row instantly from server-provided states (no animation)
+  function paintRow(r, word, states) {
+    const tiles = boardEl.children[r].children;
+    const up = String(word).toUpperCase();
+    for (let i = 0; i < wordLen; i++) {
+      tiles[i].textContent = up[i];
+      tiles[i].classList.remove("enter");
+      tiles[i].classList.add("filled", states[i]);
+    }
+    updateKeyboard(up, states);
   }
 
   function resetKeyboard() {
@@ -177,31 +173,8 @@
     tile.classList.remove("filled");
   }
 
-  // ===== evaluation (two-pass, handles duplicate letters) =====
-  function evaluate(g) {
-    const states = new Array(wordLen).fill("absent");
-    const counts = {};
-    for (const ch of answer) counts[ch] = (counts[ch] || 0) + 1;
-
-    for (let i = 0; i < wordLen; i++) {
-      if (g[i] === answer[i]) {
-        states[i] = "correct";
-        counts[g[i]]--;
-      }
-    }
-    for (let i = 0; i < wordLen; i++) {
-      if (states[i] === "correct") continue;
-      const ch = g[i];
-      if (counts[ch] > 0) {
-        states[i] = "present";
-        counts[ch]--;
-      }
-    }
-    return states;
-  }
-
-  // ===== submit a guess =====
-  function submitGuess() {
+  // ===== submit a guess (validated + scored by the server) =====
+  async function submitGuess() {
     if (isRevealing || gameOver) return;
     if (guess.length < wordLen) {
       shakeRow();
@@ -209,10 +182,34 @@
       return;
     }
 
-    const states = evaluate(guess);
+    const sending = guess;
+    isRevealing = true;
+
+    let data;
+    try {
+      const res = await fetch("/api/guess", {
+        method: "POST",
+        credentials: "same-origin",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ guess: sending }),
+      });
+      data = await res.json();
+      if (!res.ok) {
+        isRevealing = false;
+        shakeRow();
+        toast(data && data.error === "invalid guess" ? "Not a valid guess" : "Something went wrong");
+        return;
+      }
+    } catch (e) {
+      isRevealing = false;
+      shakeRow();
+      toast("Connection lost");
+      return;
+    }
+
+    const states = data.states;
     const rowEl = boardEl.children[currentRow];
     const tiles = rowEl.children;
-    isRevealing = true;
 
     for (let i = 0; i < wordLen; i++) {
       setTimeout(() => {
@@ -222,19 +219,21 @@
     }
 
     const total = (wordLen - 1) * FLIP_STAGGER + FLIP_DUR;
-    const finishedGuess = guess;
     setTimeout(() => {
-      updateKeyboard(finishedGuess, states);
+      updateKeyboard(sending, states);
       isRevealing = false;
-      submitted.push(finishedGuess);
-      const won = finishedGuess === answer;
-      if (won) {
-        winBounce(rowEl);
-        finishRound(true);
+      guess = "";
+
+      if (data.finished) {
+        gameOver = true;
+        lastWon = data.won;
+        if (data.stats) serverStats = data.stats;
+        answerEntry = data.reveal || null;
+        if (answerEntry) new Image().src = answerEntry.img;
+        if (data.won) winBounce(rowEl);
+        setTimeout(() => showModal({ reveal: true, won: data.won, finished: true }), data.won ? 700 : 400);
       } else {
         currentRow++;
-        guess = "";
-        if (currentRow >= ROWS) finishRound(false);
       }
     }, total);
   }
@@ -254,6 +253,7 @@
 
   function shakeRow() {
     const rowEl = boardEl.children[currentRow];
+    if (!rowEl) return;
     rowEl.classList.add("shake");
     rowEl.addEventListener("animationend", () => rowEl.classList.remove("shake"), { once: true });
   }
@@ -288,7 +288,6 @@
     return p;
   }
 
-  // gentle, infinite background drift
   function spawnAmbientPetals(n) {
     const layer = document.getElementById("petals");
     for (let i = 0; i < n; i++) {
@@ -316,7 +315,6 @@
     confettiCannon("right");
   }
 
-  // shoots a spray of confetti up-and-inward from one bottom corner
   function confettiCannon(side) {
     const layer = document.getElementById("confetti");
     const W = window.innerWidth;
@@ -336,7 +334,6 @@
       el.style[side] = "0px";
       layer.appendChild(el);
 
-      // parabolic arc: launch out to an apex, then fall past the bottom while fading
       const apexX = dir * (W * 0.12 + Math.random() * W * 0.5);
       const apexY = -(H * 0.25 + Math.random() * H * 0.4);
       const endX = apexX + dir * (30 + Math.random() * 160);
@@ -356,24 +353,6 @@
     }
   }
 
-  // ===== end of round: persist to the backend, then reveal =====
-  async function finishRound(won) {
-    gameOver = true;
-    lastWon = won;
-    try {
-      const res = await fetch("/api/result", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ won, grid: submitted }),
-      });
-      if (res.ok) serverStats = await res.json();
-    } catch (e) {
-      /* offline — fall back to whatever stats we already have */
-    }
-    const delay = won ? 700 : 400;
-    setTimeout(() => showModal({ reveal: true, won, finished: true }), delay);
-  }
-
   // ===== toast =====
   function toast(msg) {
     const t = document.createElement("div");
@@ -384,28 +363,28 @@
   }
 
   // ===== modal =====
-  // opts: { reveal: show the answer/character, won, finished: show countdown }
   function showModal(opts) {
     const { reveal, won, finished } = opts;
     const s = serverStats || { played: 0, winRate: 0, streak: 0, maxStreak: 0 };
     const cardClass = reveal ? (won ? "win" : "lose") : "lose";
     const badgeText = reveal ? (won ? "WIN! 🥕" : "NEXT TIME") : "STATS";
 
-    const hero = reveal
-      ? `<div class="hero">
-           <div class="char">
-             <img class="portrait" src="${answerEntry.img}" alt="${answerEntry.name}"
-                  onerror="this.style.display='none'; this.closest('.char').classList.add('noimg');" />
-           </div>
-           <div class="info">
-             <div class="answer">${answer}</div>
-             <div class="full">${answerEntry.name}</div>
-             <div class="quote">${answerEntry.quote}</div>
-           </div>
-         </div>`
-      : `<div class="info" style="text-align:center;padding:14px 0 6px;">
-           <div class="answer" style="color:var(--ink)">Keep guessing!</div>
-         </div>`;
+    const hero =
+      reveal && answerEntry
+        ? `<div class="hero">
+             <div class="char">
+               <img class="portrait" src="${answerEntry.img}" alt="${answerEntry.name}"
+                    onerror="this.style.display='none'; this.closest('.char').classList.add('noimg');" />
+             </div>
+             <div class="info">
+               <div class="answer">${answerEntry.word}</div>
+               <div class="full">${answerEntry.name}</div>
+               <div class="quote">${answerEntry.quote}</div>
+             </div>
+           </div>`
+        : `<div class="info" style="text-align:center;padding:14px 0 6px;">
+             <div class="answer" style="color:var(--ink)">Keep guessing!</div>
+           </div>`;
 
     const footer = finished
       ? `<div class="countdown" id="countdown">Next Pakadle in …</div>`
@@ -433,10 +412,7 @@
   function startCountdown() {
     const el = document.getElementById("countdown");
     function tick() {
-      const now = new Date();
-      const next = new Date(now);
-      next.setHours(24, 0, 0, 0); // next local midnight
-      const ms = next - now;
+      const ms = rolloverTarget - Date.now();
       if (ms <= 0) {
         location.reload();
         return;
@@ -463,7 +439,6 @@
 
   // ===== how-to-play onboarding (multi-step) =====
   const HOWTO_STEPS = [
-    // 1 — welcome
     `<h2>How to Play</h2>
      <p>Guess the daily <b>Umamusume</b> in <b>6 tries</b>.</p>
      <div class="ex-row">
@@ -471,7 +446,6 @@
      </div>
      <p class="sub">Type letters, then press <b>Enter</b> to submit. Each guess has to fill the whole row.</p>`,
 
-    // 2 — colors (uses the real board palette)
     `<h2>Read the colors</h2>
      <p>After each guess, every tile changes color:</p>
      <div class="ex-row">
@@ -487,7 +461,6 @@
      </div>
      <p class="cap"><b class="slate">O</b> is not in the word.</p>`,
 
-    // 3 — the twist: answers are words taken from a character's full name
     `<h2>Answers hide in names</h2>
      <p>The catch: the answer is a <b>word taken from a character's full name</b> — not always a name on its own.</p>
      <div class="namecard"><span class="hl">Special</span> <span class="dim">Week</span></div>
@@ -497,11 +470,10 @@
      <p class="cap">A 7-letter answer might be <b>SPECIAL</b> — from <b>Special Week</b>. There's no uma simply named "Special"!</p>
      <p class="sub">Same goes for <b>GOLD</b> (Gold Ship), <b>SUZUKA</b> (Silence Suzuka)… any word inside an uma's name counts.</p>`,
 
-    // 4 — daily
     `<h2>One puzzle a day</h2>
      <p>A brand-new Umamusume every day, and <b>everyone gets the same one</b>.</p>
      <p>Win in fewer guesses to grow your <b>streak</b>. Tap <b>Stats</b> anytime to see how you're doing.</p>
-     <p class="sub">🥕 Come back after midnight for the next Pakadle!</p>`,
+     <p class="sub">🥕 Come back after the daily reset for the next Pakadle!</p>`,
   ];
   let howtoStep = 0;
 
