@@ -247,7 +247,9 @@ header .actions { display: flex; align-items: center; gap: 8px; }
 .card { position: relative; }
 .card .card-x {
   position: absolute; top: 8px; left: 12px; z-index: 7;
-  border: none; background: none; cursor: pointer; font-family: inherit;
-  font-size: 1.6rem; line-height: 1; color: var(--ink-soft); padding: 2px 6px;
+  width: auto; margin: 0; padding: 2px 6px;
+  border: none; background: none; box-shadow: none; border-radius: 0;
+  cursor: pointer; font-family: inherit;
+  font-size: 1.6rem; line-height: 1; color: var(--ink-soft);
 }
 .card .card-x:hover { color: var(--ink); }

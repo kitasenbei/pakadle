@@ -307,15 +307,20 @@ header .actions {
   top: 8px;
   left: 12px;
   z-index: 7;
+  width: auto;
+  margin: 0;
+  padding: 2px 6px;
   border: none;
   background: none;
+  box-shadow: none;
+  border-radius: 0;
   cursor: pointer;
   font-family: inherit;
   font-size: 1.6rem;
   line-height: 1;
   color: var(--ink-soft);
-  padding: 2px 6px;
 }
+.card .card-x:active { transform: none; box-shadow: none; }
 .card .card-x:hover { color: var(--ink); }
 
 .card .badge {
