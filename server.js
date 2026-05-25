@@ -46,6 +46,9 @@ db.exec(`
   );
 `);
 
+// Pakapix (bundled sibling game) mounted under /pakapix, sharing this DB handle.
+const pakapix = require("./pakapix/routes.js")(db);
+
 // ---- UTC day helpers (server and client agree on a single rollover) ----
 function todayStr() {
   return new Date().toISOString().slice(0, 10); // UTC YYYY-MM-DD
@@ -193,6 +196,11 @@ const BLOCKED = new Set(["words.js", "server.js", "pakadle.db", "package.json"])
 
 const server = http.createServer((req, res) => {
   const url = new URL(req.url, `http://${req.headers.host}`);
+
+  // ---- Pakapix (bundled game) ----
+  if (url.pathname === "/pakapix" || url.pathname.startsWith("/pakapix/")) {
+    return pakapix.handle(req, res, url);
+  }
 
   // ---- API ----
   if (url.pathname === "/api/daily" && req.method === "GET") {

@@ -31,3 +31,11 @@ The puzzle for a date is deterministic: `puzzleNumber = days since 2026-01-01`, 
 | `GET /api/daily` | Today's puzzle + your saved progress + stats |
 | `POST /api/result` | Persist today's outcome (one per day) |
 | `GET /api/stats` | Played / win% / current streak / max streak / guess distribution |
+
+## Pakapix (bundled sibling game)
+
+A daily "guess the pixelated Umamusume" game is served at `/pakapix`. It is mounted
+by this server via `pakapix/routes.js`, with its own data, portrait assets, and
+tables (`pix_puzzles`, `pix_plays`), and it shares the visitor cookie with Pakadle.
+The portrait is scored and revealed server-side, so the clear image never reaches
+the browser until the player finishes. Header links cross-promote the two games.

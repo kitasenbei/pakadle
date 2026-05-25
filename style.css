@@ -695,3 +695,13 @@ header .actions {
   from { opacity: 0; }
   to   { opacity: 1; }
 }
+
+/* cross-promo link between the two games */
+.cross-link {
+  font-family: inherit; font-weight: 700; font-size: 0.85rem; text-decoration: none;
+  color: var(--sakura); background: transparent; border: 2px solid var(--sakura);
+  border-radius: 999px; padding: 6px 12px; white-space: nowrap; line-height: 1;
+  display: inline-flex; align-items: center;
+  transition: background 0.12s ease, color 0.12s ease;
+}
+.cross-link:hover { background: var(--sakura); color: #fff; }

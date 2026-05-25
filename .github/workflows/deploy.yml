@@ -23,7 +23,9 @@ jobs:
         run: |
           npx --yes esbuild game.js --minify --outfile=game.min.tmp.js
           mv game.min.tmp.js game.js
-          echo "minified game.js -> $(wc -c < game.js) bytes"
+          npx --yes esbuild pakapix/game.js --minify --outfile=pakapix/game.min.tmp.js
+          mv pakapix/game.min.tmp.js pakapix/game.js
+          echo "minified game.js -> $(wc -c < game.js) bytes; pakapix/game.js -> $(wc -c < pakapix/game.js) bytes"
 
       - name: Set up SSH
         env:
