@@ -220,6 +220,7 @@
     const won = lastWon;
     modalEl.innerHTML = `
       <div class="card">
+        <button class="card-x" id="card-x" aria-label="Close">×</button>
         <div class="result ${won ? "win" : "lose"}">${won ? "Got it! 🥕" : "So close…"}</div>
         <img class="reveal-img" src="/pakapix/api/portrait?g=done&t=${Date.now()}" alt="${reveal ? escapeHtml(reveal.name) : ""}" />
         <div class="who">${reveal ? escapeHtml(reveal.name) : ""}</div>
@@ -234,6 +235,7 @@
           : `<button class="cta" id="share-btn">Share 🔗</button><div class="countdown" id="countdown">Next Pakapix in …</div>`}
       </div>`;
     modalEl.classList.add("open");
+    document.getElementById("card-x").addEventListener("click", closeModal);
     if (testMode) {
       document.getElementById("again-btn").addEventListener("click", () => location.reload());
     } else {
@@ -263,7 +265,7 @@
     const n = guesses.length;
     const score = lastWon ? n : "X";
     const sq = lastWon ? "⬜".repeat(n - 1) + "🟪" : "⬜".repeat(MAX);
-    return `Pakapix #${number}  ${score}/6\n${sq}`;
+    return `Pakapix #${number}  ${score}/6\n${sq}\nhttps://pakadle.fun/pakapix`;
   }
   async function doShare() {
     const text = shareText();

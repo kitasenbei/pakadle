@@ -428,6 +428,7 @@
 
     modalEl.innerHTML = `
       <div class="card ${cardClass}">
+        <button class="card-x" id="card-x" aria-label="Close">×</button>
         <div class="badge ${cardClass}">${badgeText}</div>
         ${hero}
         <div class="stats">
@@ -440,6 +441,7 @@
         <div class="shine" aria-hidden="true"></div>
       </div>`;
     modalEl.classList.add("open");
+    document.getElementById("card-x").addEventListener("click", closeModal);
 
     // hide a portrait that fails to load (CSP-safe: no inline handler)
     const portrait = modalEl.querySelector(".portrait");
@@ -582,6 +584,9 @@
   howToBtn.addEventListener("click", openHowto);
   howtoEl.addEventListener("click", (e) => {
     if (e.target === howtoEl) closeHowto();
+  });
+  modalEl.addEventListener("click", (e) => {
+    if (e.target === modalEl) closeModal();
   });
 
   // ===== boot =====
