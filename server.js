@@ -202,6 +202,20 @@ const server = http.createServer((req, res) => {
     return pakapix.handle(req, res, url);
   }
 
+  // ---- Pakachess (bundled static game, no API) ----
+  if (url.pathname === "/pakachess" || url.pathname.startsWith("/pakachess/")) {
+    let sub = url.pathname.slice("/pakachess".length);
+    if (sub === "" || sub === "/") sub = "/index.html";
+    const baseDir = path.join(ROOT, "pakachess");
+    const fp = path.normalize(path.join(baseDir, sub));
+    if (!fp.startsWith(baseDir)) { res.writeHead(403); return res.end("forbidden"); }
+    return fs.readFile(fp, (err, buf) => {
+      if (err) { res.writeHead(404); return res.end("not found"); }
+      res.writeHead(200, { "Content-Type": MIME[path.extname(fp)] || "application/octet-stream" });
+      res.end(buf);
+    });
+  }
+
   // ---- API ----
   if (url.pathname === "/api/daily" && req.method === "GET") {
     const pid = ensurePid(req, res);

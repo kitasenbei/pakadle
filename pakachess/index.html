@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Pakachess</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/pakachess/style.css" />
+</head>
+<body>
+  <header>
+    <h1><span class="jp">ウマ娘</span> <span class="en">Pakachess</span></h1>
+    <div class="actions">
+      <a class="cross-link" href="/">← Pakadle</a>
+      <button id="new-game">New Game</button>
+    </div>
+  </header>
+
+  <main>
+    <div id="status">Your move</div>
+    <div class="layout">
+      <div class="boardcol">
+        <div class="tray top" id="tray-top"></div>
+        <div id="board"></div>
+        <div class="tray bottom" id="tray-bottom"></div>
+      </div>
+      <aside class="panel">
+        <div class="clocks">
+          <div class="clock b" id="clock-b"><span class="who">AI</span><span class="time">10:00</span></div>
+          <div class="clock w" id="clock-w"><span class="who">You</span><span class="time">10:00</span></div>
+        </div>
+        <div class="panel-h">Moves</div>
+        <div class="navrow">
+          <button class="nav" id="nav-first" title="First move (↑)">⏮</button>
+          <button class="nav" id="nav-prev" title="Previous (←)">◀</button>
+          <button class="nav" id="nav-next" title="Next (→)">▶</button>
+          <button class="nav" id="nav-last" title="Latest (↓)">⏭</button>
+        </div>
+        <div class="movelist" id="movelist"></div>
+      </aside>
+    </div>
+    <details id="legend-wrap">
+      <summary>which uma is which piece?</summary>
+      <div id="legend"></div>
+    </details>
+  </main>
+
+  <script src="/pakachess/game.js"></script>
+  <script>
+    // build the legend from the same map (kept tiny + standalone)
+    (function () {
+      const L = [
+        ["p", "Pawn", "Haru Urara"], ["n", "Knight", "Seiun Sky"], ["b", "Bishop", "Calstone Light O"],
+        ["r", "Rook", "Orfevre"], ["q", "Queen", "Aston Machan"], ["k", "King", "Durandal"],
+      ];
+      const IMG = {
+        p:"https://static.wikia.nocookie.net/umamusume/images/2/25/Haru_Urara_%28Main%29.png/revision/latest/scale-to-width-down/120",
+        n:"https://static.wikia.nocookie.net/umamusume/images/c/cd/Seiun_Sky_%28Main%29.png/revision/latest/scale-to-width-down/120",
+        b:"https://static.wikia.nocookie.net/umamusume/images/a/a5/Calstone_Light_O_%28Main%29.png/revision/latest/scale-to-width-down/120",
+        r:"https://static.wikia.nocookie.net/umamusume/images/d/dc/Orfevre_%28Main%29.png/revision/latest/scale-to-width-down/120",
+        q:"https://static.wikia.nocookie.net/umamusume/images/b/b3/Aston_Machan_%28Main%29.png/revision/latest/scale-to-width-down/120",
+        k:"https://static.wikia.nocookie.net/umamusume/images/f/fb/Durandal_%28Main%29.png/revision/latest/scale-to-width-down/120",
+      };
+      document.getElementById("legend").innerHTML = L.map(([t, role, nm]) =>
+        '<div class="lg"><div class="piece w"><img referrerpolicy="no-referrer" src="' + IMG[t] + '"></div>' +
+        '<div><b>' + role + '</b><br>' + nm + '</div></div>').join("");
+    })();
+  </script>
+</body>
+</html>
