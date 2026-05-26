@@ -27,6 +27,9 @@
   let state, sel, selMoves, lastMove, over, busy;
   let captured, moveHist, clocks, clockTimer;
   let history, viewIdx; // history[i] = snapshot after ply i (history[0] = start); viewIdx = position shown
+  let entrance = false; // animate pieces sliding in on a fresh board
+  let clockStarted = false; // clocks don't tick until the first move is played
+  const reduceMotion = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
   // ===================== engine =====================
   function fresh() {
@@ -120,6 +123,7 @@
     for (let r = 0; r < 8; r++) for (let c = 0; c < 8; c++) {
       const sq = document.createElement("div");
       sq.className = "sq " + ((r + c) % 2 ? "dark" : "light");
+      if (entrance && !reduceMotion) { sq.classList.add("enter"); sq.style.animationDelay = ((r + c) * 0.03).toFixed(3) + "s"; }
       if (live && sel && sel[0] === r && sel[1] === c) sq.classList.add("sel");
       if (dl && ((dl[0][0] === r && dl[0][1] === c) || (dl[1][0] === r && dl[1][1] === c))) sq.classList.add("last");
       if (chkSq && chkSq[0] === r && chkSq[1] === c) sq.classList.add("chk");
@@ -127,14 +131,52 @@
       if (mv) sq.classList.add(mv.cap ? "cap" : "move");
       const p = ds.board[r][c];
       if (p) {
+        if (live && !over && state.turn === "w" && p.c === "w") sq.classList.add("movable");
         const base = document.createElement("div"); base.className = "base " + p.c; sq.appendChild(base);
         const pc = document.createElement("div"); pc.className = "piece " + p.c; pc.title = NAME[p.t];
+        if (entrance && !reduceMotion) { pc.classList.add("enter"); pc.style.animationDelay = ((r + c) * 0.03 + 0.1).toFixed(3) + "s"; }
         pc.innerHTML = '<img src="' + IMG[p.t] + '" alt="' + NAME[p.t] + '" referrerpolicy="no-referrer">';
         sq.appendChild(pc);
       }
-      sq.addEventListener("click", () => onClick(r, c));
+      sq.dataset.r = r; sq.dataset.c = c;
       boardEl.appendChild(sq);
     }
+    entrance = false;
+  }
+
+  // a piece "lands" with a little overshoot bounce
+  function bounceAt(to) {
+    const pc = boardEl.children[to[0] * 8 + to[1]].querySelector(".piece");
+    if (!pc) return;
+    pc.classList.remove("land"); void pc.offsetWidth; pc.classList.add("land");
+    pc.addEventListener("animationend", () => pc.classList.remove("land"), { once: true });
+  }
+  // slide a floating clone from origin to destination (no square-clipping), then land
+  function animateSlide(from, to) {
+    const oSq = boardEl.children[from[0] * 8 + from[1]];
+    const dSq = boardEl.children[to[0] * 8 + to[1]];
+    const dPiece = dSq && dSq.querySelector(".piece");
+    if (!oSq || !dPiece) return;
+    const a = oSq.getBoundingClientRect(), b = dSq.getBoundingClientRect(), pr = dPiece.getBoundingClientRect();
+    const ghost = dPiece.cloneNode(true);
+    ghost.className = "piece slideghost";
+    ghost.style.cssText = "position:fixed;margin:0;z-index:900;pointer-events:none;width:" + pr.width +
+      "px;height:" + pr.height + "px;left:" + (a.left + a.width / 2) + "px;top:" + (a.top + a.height / 2) +
+      "px;transform:translate(-50%,-50%);transition:none;";
+    document.body.appendChild(ghost);
+    dPiece.style.opacity = "0";
+    ghost.getBoundingClientRect(); // force reflow so the start position sticks
+    requestAnimationFrame(() => {
+      ghost.style.transition = "left .22s cubic-bezier(.3,.85,.35,1), top .22s cubic-bezier(.3,.85,.35,1)";
+      ghost.style.left = (b.left + b.width / 2) + "px";
+      ghost.style.top = (b.top + b.height / 2) + "px";
+    });
+    const done = () => {
+      if (!ghost.parentNode) return;
+      ghost.remove(); dPiece.style.opacity = ""; bounceAt(to);
+    };
+    ghost.addEventListener("transitionend", done, { once: true });
+    setTimeout(done, 360);
   }
 
   function renderTrays() {
@@ -174,6 +216,15 @@
     clockWEl.classList.toggle("active", !over && state.turn === "w");
     clockBEl.classList.toggle("active", !over && state.turn === "b");
   }
+  function popTime(side) { // a little bounce on the digit that just ticked
+    const el = (side === "w" ? clockWEl : clockBEl).querySelector(".time");
+    el.classList.remove("tick"); void el.offsetWidth; el.classList.add("tick");
+  }
+  function setStatus(text, cls) { // status text pops when it changes
+    statusEl.textContent = text; statusEl.className = cls || "";
+    if (reduceMotion) return;
+    statusEl.classList.remove("pop"); void statusEl.offsetWidth; statusEl.classList.add("pop");
+  }
   function renderAll() { render(); renderTrays(); renderMoves(); renderClocks(); updateNav(); }
 
   // ===================== clock =====================
@@ -185,28 +236,104 @@
       if (clocks[state.turn] === 0) {
         over = true; stopClock();
         const loser = state.turn;
-        statusEl.textContent = loser === "w" ? "Out of time, the AI wins." : "AI flagged, you win! 🥕";
-        statusEl.className = loser === "b" ? "win" : "over";
+        setStatus(loser === "w" ? "Out of time, PakaBot wins." : "PakaBot flagged, you win! 🥕", loser === "b" ? "win" : "over");
       }
       renderClocks();
+      if (!reduceMotion && !over) popTime(state.turn);
     }, 1000);
   }
   function stopClock() { if (clockTimer) clearInterval(clockTimer); clockTimer = null; }
 
-  // ===================== flow =====================
-  function onClick(r, c) {
-    if (!atLive()) { goTo(history.length - 1); return; } // tap the board to return to the live game
-    if (over || busy || state.turn !== "w") return;
-    if (sel && selMoves) { const mv = selMoves.find(m => m.to[0] === r && m.to[1] === c); if (mv) { play(mv); return; } }
-    const p = state.board[r][c];
-    if (p && p.c === "w") { sel = [r, c]; selMoves = legalMoves(state, "w").filter(m => m.from[0] === r && m.from[1] === c); }
-    else { sel = null; selMoves = null; }
-    render();
+  // ===================== flow: click + drag =====================
+  let drag = null;
+  const DRAG_THRESHOLD = 6;
+  function selectAt(r, c) {
+    sel = [r, c];
+    selMoves = legalMoves(state, "w").filter(m => m.from[0] === r && m.from[1] === c);
+  }
+  function tryMoveTo(r, c, slide = true) {
+    if (!sel || !selMoves) return false;
+    const mv = selMoves.find(m => m.to[0] === r && m.to[1] === c);
+    if (mv) { play(mv, slide); return true; }
+    return false;
+  }
+  function sqUnder(x, y) {
+    const el = document.elementFromPoint(x, y);
+    const sq = el && el.closest ? el.closest(".sq") : null;
+    if (!sq || !boardEl.contains(sq)) return null;
+    return [+sq.dataset.r, +sq.dataset.c];
   }
 
-  function play(m) {
+  function onPointerDown(e) {
+    const sqEl = e.target.closest(".sq");
+    if (!sqEl) return;
+    const r = +sqEl.dataset.r, c = +sqEl.dataset.c;
+    if (!atLive()) { goTo(history.length - 1); return; }   // tap board to return to live game
+    if (over || busy || state.turn !== "w") return;
+    if (tryMoveTo(r, c)) return;                            // a piece was selected: this is its target
+    const p = state.board[r][c];
+    if (p && p.c === "w") {
+      selectAt(r, c); render();
+      const liveSq = boardEl.children[r * 8 + c]; // re-query: render() just rebuilt the board
+      drag = { from: [r, c], sqEl: liveSq, pieceEl: liveSq.querySelector(".piece"),
+               startX: e.clientX, startY: e.clientY, moved: false, ghost: null, hover: null, pid: e.pointerId };
+      try { boardEl.setPointerCapture(e.pointerId); } catch (_) {}
+    } else { sel = null; selMoves = null; render(); }
+  }
+  function onPointerMove(e) {
+    if (!drag || e.pointerId !== drag.pid) return;
+    if (!drag.moved) {
+      if (Math.hypot(e.clientX - drag.startX, e.clientY - drag.startY) < DRAG_THRESHOLD) return;
+      drag.moved = true;
+      const rect = drag.sqEl.getBoundingClientRect();
+      const g = drag.pieceEl.cloneNode(true);
+      g.classList.add("ghost"); g.style.width = rect.width + "px"; g.style.height = rect.width + "px";
+      document.body.appendChild(g); drag.ghost = g;
+      drag.pieceEl.style.opacity = "0.25";
+    }
+    drag.ghost.style.left = e.clientX + "px"; drag.ghost.style.top = e.clientY + "px";
+    const t = sqUnder(e.clientX, e.clientY);
+    const cur = t ? boardEl.children[t[0] * 8 + t[1]] : null;
+    if (cur !== drag.hover) {
+      if (drag.hover) drag.hover.classList.remove("draghover");
+      boardEl.querySelectorAll(".destghost").forEach(n => n.remove());
+      if (cur) {
+        cur.classList.add("draghover");
+        if (!cur.querySelector(".piece")) { // only preview on empty squares; occupied ones already show a uma
+          const dg = drag.pieceEl.cloneNode(true); // translucent preview snapped to the hovered square
+          dg.className = "piece destghost"; dg.style.opacity = "";
+          cur.appendChild(dg);
+        }
+      }
+      drag.hover = cur;
+    }
+  }
+  function onPointerUp(e) {
+    if (!drag || e.pointerId !== drag.pid) return;
+    const d = drag; drag = null;
+    try { boardEl.releasePointerCapture(e.pointerId); } catch (_) {}
+    endDragFor(d);
+    if (!d.moved) return;                                   // pure tap: selection stays for tap-to-move
+    const t = sqUnder(e.clientX, e.clientY);
+    if (t && t[0] === d.from[0] && t[1] === d.from[1]) { render(); return; } // dropped back: keep selected
+    if (t && tryMoveTo(t[0], t[1], false)) return; // dragged: piece is already there, just land it
+    sel = null; selMoves = null; render();                  // dropped on a non-target: deselect
+  }
+  function onPointerCancel(e) {
+    if (!drag || e.pointerId !== drag.pid) return;
+    const d = drag; drag = null; endDragFor(d);
+  }
+  function endDragFor(d) {
+    if (d.hover) d.hover.classList.remove("draghover");
+    boardEl.querySelectorAll(".destghost").forEach(n => n.remove());
+    if (d.ghost) d.ghost.remove();
+    if (d.pieceEl) d.pieceEl.style.opacity = "";
+  }
+
+  function play(m, slide = true) {
     const wasLive = atLive();
     const mover = state.turn;
+    if (!clockStarted) { clockStarted = true; startClock(); } // first move starts the clocks
     if (m.cap) captured[mover].push({ t: m.capType, c: opp(mover) });
     state = doMove(state, m);
     lastMove = [m.from, m.to]; sel = null; selMoves = null;
@@ -220,16 +347,17 @@
     history.push({ state: clone(state), lastMove });
     if (wasLive) viewIdx = history.length - 1; // stay live unless you were reviewing
     renderAll();
+    if (atLive() && !reduceMotion) { if (slide) animateSlide(m.from, m.to); else bounceAt(m.to); }
 
     if (mate || stale) {
       over = true; stopClock();
-      statusEl.textContent = mate ? (them === "w" ? "Checkmate, the AI wins." : "Checkmate, you win! 🥕") : "Stalemate, it's a draw.";
-      statusEl.className = mate && them === "b" ? "win" : "over";
+      setStatus(mate ? (them === "w" ? "Checkmate, PakaBot wins." : "Checkmate, you win! 🥕") : "Stalemate, it's a draw.",
+                mate && them === "b" ? "win" : "over");
       renderClocks();
       return;
     }
-    if (them === "b") { statusEl.textContent = chk ? "Check! AI to move." : "Pakachess is thinking..."; statusEl.className = chk ? "chkmsg" : ""; busy = true; setTimeout(aiMove, 450); }
-    else { statusEl.textContent = chk ? "Check! Your move." : "Your move"; statusEl.className = chk ? "chkmsg" : ""; }
+    if (them === "b") { setStatus(chk ? "Check! PakaBot to move." : "PakaBot is thinking...", chk ? "chkmsg" : ""); busy = true; setTimeout(aiMove, 450); }
+    else { setStatus(chk ? "Check! Your move." : "Your move", chk ? "chkmsg" : ""); }
   }
 
   function aiMove() {
@@ -244,9 +372,15 @@
     state = fresh(); sel = null; selMoves = null; lastMove = null; over = false; busy = false;
     captured = { w: [], b: [] }; moveHist = []; clocks = { w: CLOCK_START, b: CLOCK_START };
     history = [{ state: clone(state), lastMove: null }]; viewIdx = 0;
-    statusEl.textContent = "Your move"; statusEl.className = "";
-    renderAll(); startClock();
+    setStatus("Your move", "");
+    clockStarted = false; stopClock(); // wait for the first move before ticking
+    entrance = true; renderAll();
   }
+
+  boardEl.addEventListener("pointerdown", onPointerDown);
+  boardEl.addEventListener("pointermove", onPointerMove);
+  boardEl.addEventListener("pointerup", onPointerUp);
+  boardEl.addEventListener("pointercancel", onPointerCancel);
 
   $("new-game").addEventListener("click", newGame);
   navFirst.addEventListener("click", () => goTo(0));
@@ -264,4 +398,25 @@
     else if (e.key === "ArrowDown") { goTo(history.length - 1); e.preventDefault(); }
   });
   newGame();
+
+  // ===== drifting petals (ambient background) =====
+  (function petals() {
+    const layer = $("petals");
+    if (!layer || (window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches)) return;
+    const COLORS = ["#E85D8B", "#F2A93B", "#4CA62E", "#F6C6D8"];
+    for (let i = 0; i < 22; i++) {
+      const p = document.createElement("div"); p.className = "petal";
+      const inner = document.createElement("i");
+      const size = 8 + Math.random() * 10;
+      inner.style.width = inner.style.height = size + "px";
+      inner.style.background = COLORS[i % COLORS.length];
+      inner.style.opacity = (0.18 + Math.random() * 0.22).toFixed(2);
+      inner.style.animationDuration = (2 + Math.random() * 2.5).toFixed(2) + "s";
+      p.appendChild(inner);
+      p.style.left = (Math.random() * 100) + "vw";
+      p.style.animationDuration = (9 + Math.random() * 8).toFixed(2) + "s";
+      p.style.animationDelay = (-Math.random() * 16).toFixed(2) + "s";
+      layer.appendChild(p);
+    }
+  })();
 })();

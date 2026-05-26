@@ -64,6 +64,11 @@ header .actions {
   align-items: center;
   gap: 8px;
 }
+.cross-links {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
 
 #new-game {
   font-family: inherit;
@@ -705,6 +710,11 @@ header .actions {
   .key { height: 46px; }
 }
 
+/* not enough room: stack the title (ウマ娘 / Pakadle) vertically */
+@media (max-width: 480px) {
+  h1 { display: flex; flex-direction: column; line-height: 1.02; }
+}
+
 /* respect users who prefer less motion: kill the looping/idle flair */
 @media (prefers-reduced-motion: reduce) {
   #petals { display: none; }
@@ -726,3 +736,5 @@ header .actions {
   transition: background 0.12s ease, color 0.12s ease;
 }
 .cross-link:hover { background: var(--sakura); color: #fff; }
+.cross-link.chess { color: var(--turf); border-color: var(--turf); }
+.cross-link.chess:hover { background: var(--turf); color: #fff; }
