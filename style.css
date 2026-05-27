@@ -78,7 +78,11 @@ header .actions {
   background: var(--turf);
   border: none;
   border-radius: 999px;
-  padding: 8px 16px;
+  height: 38px;
+  padding: 0 18px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   cursor: pointer;
   box-shadow: 0 3px 0 var(--turf-dark);
   transition: transform 0.08s ease, box-shadow 0.08s ease;

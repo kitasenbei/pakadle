@@ -49,6 +49,10 @@ db.exec(`
 // Pakapix (bundled sibling game) mounted under /pakapix, sharing this DB handle.
 const pakapix = require("./pakapix/routes.js")(db);
 
+// Pakachess online multiplayer (server-authoritative, over WebSockets).
+const pakachessWs = require("./pakachess/ws.js");
+const pakachessOnline = require("./pakachess/online.js");
+
 // ---- UTC day helpers (server and client agree on a single rollover) ----
 function todayStr() {
   return new Date().toISOString().slice(0, 10); // UTC YYYY-MM-DD
@@ -311,6 +315,9 @@ const server = http.createServer((req, res) => {
     res.end(buf);
   });
 });
+
+// Pakachess WebSocket endpoint (/pakachess/ws), server-authoritative games.
+pakachessOnline.init(server, pakachessWs, () => crypto.randomUUID());
 
 server.listen(PORT, () => {
   console.log(`Pakadle running → http://localhost:${PORT}  (${WORDS.length} uma in the pool)`);

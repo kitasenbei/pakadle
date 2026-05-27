@@ -15,39 +15,89 @@
     <h1><span class="jp">ウマ娘</span> <span class="en">Pakachess</span></h1>
     <div class="actions">
       <a class="cross-link" href="/">← Pakadle</a>
-      <button id="new-game">New Game</button>
+      <button id="to-menu" hidden>Menu</button>
+      <button id="new-game" hidden>New Game</button>
     </div>
   </header>
 
   <main>
-    <div id="status">Your move</div>
-    <div class="layout">
-      <div class="boardcol">
-        <div class="tray top" id="tray-top"></div>
-        <div id="board"></div>
-        <div class="tray bottom" id="tray-bottom"></div>
+    <!-- entry screen: pick a mode -->
+    <div id="menu">
+      <div class="name-row">
+        <label for="name-input">Your name</label>
+        <input id="name-input" type="text" maxlength="24" placeholder="Trainer" autocomplete="off" spellcheck="false" />
       </div>
-      <aside class="panel">
-        <div class="clocks">
-          <div class="clock b" id="clock-b"><span class="who">PakaBot</span><span class="time">10:00</span></div>
-          <div class="clock w" id="clock-w"><span class="who">You</span><span class="time">10:00</span></div>
+      <div class="menu-grid">
+        <button class="mode-card" id="mode-bot">
+          <span class="mode-emoji">🥕</span>
+          <span class="mode-name">Play PakaBot</span>
+        </button>
+        <button class="mode-card online" id="mode-online">
+          <span class="mode-emoji">🤝</span>
+          <span class="mode-name">Play Online</span>
+        </button>
+      </div>
+      <div id="room-entry" hidden>
+        <p class="room-label">Room code</p>
+        <input id="room-input" maxlength="8" placeholder="ABCD" autocomplete="off" spellcheck="false" />
+        <div class="room-btns">
+          <button id="room-cancel" class="ghost-btn">Back</button>
+          <button id="room-play" class="primary-btn">Play</button>
         </div>
-        <div class="panel-h">Moves</div>
-        <div class="navrow">
-          <button class="nav" id="nav-first" title="First move (↑)">⏮</button>
-          <button class="nav" id="nav-prev" title="Previous (←)">◀</button>
-          <button class="nav" id="nav-next" title="Next (→)">▶</button>
-          <button class="nav" id="nav-last" title="Latest (↓)">⏭</button>
-        </div>
-        <div class="movelist" id="movelist"></div>
-      </aside>
+      </div>
+      <div id="waiting" hidden>
+        <div class="spinner"></div>
+        <p class="wait-text">Waiting for your friend...</p>
+        <p class="wait-room">Room <span id="wait-code"></span></p>
+        <p class="wait-hint">Playing as <span id="wait-name"></span></p>
+        <button id="cancel-wait" class="ghost-btn">Cancel</button>
+      </div>
     </div>
-    <details id="legend-wrap">
-      <summary>which uma is which piece?</summary>
-      <div id="legend"></div>
-    </details>
+
+    <!-- the game itself -->
+    <div id="game" hidden>
+      <div id="status">Your move</div>
+      <div id="disc-banner" hidden>Opponent disconnected, waiting for them to return...</div>
+      <div class="layout">
+        <div class="boardcol">
+          <div class="tray top" id="tray-top"></div>
+          <div id="board"></div>
+          <div class="tray bottom" id="tray-bottom"></div>
+        </div>
+        <aside class="panel">
+          <div class="clocks">
+            <div class="clock opp" id="clock-opp"><span class="who" id="opp-name">PakaBot</span><span class="time">10:00</span></div>
+            <div class="clock self" id="clock-self"><span class="who">You</span><span class="time">10:00</span></div>
+          </div>
+          <div class="panel-h">Moves</div>
+          <div class="navrow">
+            <button class="nav" id="nav-first" title="First move (↑)">⏮</button>
+            <button class="nav" id="nav-prev" title="Previous (←)">◀</button>
+            <button class="nav" id="nav-next" title="Next (→)">▶</button>
+            <button class="nav" id="nav-last" title="Latest (↓)">⏭</button>
+          </div>
+          <div class="movelist" id="movelist"></div>
+        </aside>
+      </div>
+      <details id="legend-wrap">
+        <summary>which uma is which piece?</summary>
+        <div id="legend"></div>
+      </details>
+    </div>
   </main>
 
+  <!-- resign confirmation -->
+  <div id="modal" hidden>
+    <div class="modal-card">
+      <p class="modal-title">Resign this game?</p>
+      <div class="modal-btns">
+        <button id="modal-cancel" class="ghost-btn">Keep playing</button>
+        <button id="modal-confirm" class="danger-btn">Resign</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="/pakachess/engine.js"></script>
   <script src="/pakachess/game.js"></script>
   <script>
     // build the legend from the same map (kept tiny + standalone)
