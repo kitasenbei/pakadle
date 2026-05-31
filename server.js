@@ -109,10 +109,18 @@ function ensurePid(req, res) {
 
 function createApp(options = {}) {
   const words = options.words || loadWords();
-  // Set of allowed guesses (uppercase). Server is the source of truth here:
-  // the answer never reaches the browser, but neither does the full list,
-  // so submission validation lives here too.
-  const wordSet = new Set(words.map((w) => w.word.toUpperCase()));
+  // Set of allowed guesses (uppercase). Includes each uma's curated answer AND
+  // every subword of their full name, so "WEEK" is accepted on a Special Week
+  // day even though the canonical answer is SPECIAL. Length-mismatched tokens
+  // (e.g. "O", "TM") are inert: the length check in /api/guess rejects them.
+  const wordSet = new Set();
+  for (const w of words) {
+    wordSet.add(String(w.word).toUpperCase());
+    for (const tok of String(w.name).toUpperCase().split(/\s+/)) {
+      const clean = tok.replace(/[^A-Z]/g, "");
+      if (clean) wordSet.add(clean);
+    }
+  }
   // Test seam: a callable that returns the current UTC date as YYYY-MM-DD.
   // Tests pass a fixed function so the day-rotated answer is deterministic.
   const todayStr = options.todayStr || (() => new Date().toISOString().slice(0, 10));

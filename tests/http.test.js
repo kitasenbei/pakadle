@@ -255,6 +255,86 @@ test("POST /api/guess: WRONGLY (in the stub list) is scored, not rejected", asyn
   }
 });
 
+// ---- /api/guess: alias subwords (non-canonical words from an uma's full name) ----
+//
+// The howto promises "any word inside an uma's name counts". With one entry
+// {word: "GOLD", name: "Gold Ship"}, the curated answer is GOLD but SHIP must
+// also be accepted as a valid guess (it scores, it doesn't 422).
+async function bootGoldShipApp() {
+  const dbFile = tmpDb("aliases");
+  const stub = [{ word: "GOLD", name: "Gold Ship", quote: "", img: "" }];
+  const app = createApp({ dbFile, words: stub, todayStr: () => "2026-01-01" });
+  await new Promise((r) => app.server.listen(0, "127.0.0.1", r));
+  const { port } = app.server.address();
+  const base = `http://127.0.0.1:${port}`;
+  let cookie = "";
+  async function req(method, urlPath, body) {
+    const headers = { "Content-Type": "application/json" };
+    if (cookie) headers["Cookie"] = cookie;
+    const res = await fetch(base + urlPath, { method, headers, body: body == null ? undefined : JSON.stringify(body) });
+    const sc = res.headers.get("set-cookie");
+    if (sc) {
+      const m = sc.match(/pid=([A-Za-z0-9-]+)/);
+      if (m) cookie = `pid=${m[1]}`;
+    }
+    return { status: res.status, body: await res.json() };
+  }
+  async function teardown() {
+    await new Promise((r) => app.server.close(r));
+    app.db.close();
+    try { fs.unlinkSync(dbFile); } catch {}
+  }
+  return { req, teardown };
+}
+
+test("POST /api/guess accepts a non-canonical subword from an uma's full name", async () => {
+  const { req, teardown } = await bootGoldShipApp();
+  try {
+    await req("GET", "/api/daily");
+    // SHIP is in the name "Gold Ship" but isn't the curated answer (GOLD is).
+    // Pre-alias behavior would have 422'd this; now it should score.
+    const r = await req("POST", "/api/guess", { guess: "SHIP" });
+    assert.equal(r.status, 200);
+    assert.equal(r.body.won, false);
+    // GOLD vs SHIP: no shared letters → all absent.
+    assert.deepEqual(r.body.states, ["absent", "absent", "absent", "absent"]);
+  } finally {
+    await teardown();
+  }
+});
+
+test("POST /api/guess still 422s a 4-letter word that isn't in any uma name", async () => {
+  const { req, teardown } = await bootGoldShipApp();
+  try {
+    await req("GET", "/api/daily");
+    // BLAH is the right length but is neither GOLD nor a subword of "Gold Ship".
+    const r = await req("POST", "/api/guess", { guess: "BLAH" });
+    assert.equal(r.status, 422);
+    assert.equal(r.body.error, "not in word list");
+  } finally {
+    await teardown();
+  }
+});
+
+test("POST /api/guess: an alias guess and a wrong canonical guess both count toward the 6-guess limit", async () => {
+  const { req, teardown } = await bootGoldShipApp();
+  try {
+    await req("GET", "/api/daily");
+    // Use SHIP four times + a real win on the fifth submission.
+    for (let i = 0; i < 4; i++) {
+      const r = await req("POST", "/api/guess", { guess: "SHIP" });
+      assert.equal(r.status, 200);
+      assert.equal(r.body.row, i);
+    }
+    const win = await req("POST", "/api/guess", { guess: "GOLD" });
+    assert.equal(win.status, 200);
+    assert.equal(win.body.won, true);
+    assert.equal(win.body.row, 4);
+  } finally {
+    await teardown();
+  }
+});
+
 // ---- /api/guess: already-finished guard ----
 
 test("POST /api/guess after the game is finished returns 409", async () => {

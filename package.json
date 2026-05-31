@@ -1,6 +1,6 @@
 {
   "name": "pakadle",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Daily Umamusume word game (Wordle-style) with a zero-dependency SQLite backend.",
   "private": true,
   "scripts": {
