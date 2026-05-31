@@ -165,6 +165,7 @@
   // ===== typing =====
   function addLetter(ch) {
     if (isRevealing || gameOver || guess.length >= wordLen) return;
+    clearInvalid();
     const tile = boardEl.children[currentRow].children[guess.length];
     tile.textContent = ch;
     tile.classList.add("filled", "pop");
@@ -174,10 +175,36 @@
 
   function delLetter() {
     if (isRevealing || gameOver || guess.length === 0) return;
+    clearInvalid();
     guess = guess.slice(0, -1);
     const tile = boardEl.children[currentRow].children[guess.length];
     tile.textContent = "";
     tile.classList.remove("filled");
+  }
+
+  // ===== invalid-word marker (red borders + inline "Invalid word!" badge) =====
+  function markInvalid() {
+    const rowEl = boardEl.children[currentRow];
+    if (!rowEl) return;
+    rowEl.classList.add("invalid");
+    if (!rowEl.querySelector(".row-warn")) {
+      const warn = document.createElement("div");
+      warn.className = "row-warn";
+      warn.setAttribute("role", "alert");
+      warn.innerHTML =
+        '<span class="row-warn-icon" aria-hidden="true">!</span>' +
+        '<span class="row-warn-text">Invalid word!</span>';
+      rowEl.appendChild(warn);
+    }
+    shakeRow();
+  }
+
+  function clearInvalid() {
+    const rowEl = boardEl.children[currentRow];
+    if (!rowEl || !rowEl.classList.contains("invalid")) return;
+    rowEl.classList.remove("invalid");
+    const warn = rowEl.querySelector(".row-warn");
+    if (warn) warn.remove();
   }
 
   // ===== submit a guess (validated + scored by the server) =====
@@ -203,8 +230,13 @@
       data = await res.json();
       if (!res.ok) {
         isRevealing = false;
-        shakeRow();
-        toast(data && data.error === "invalid guess" ? "Not a valid guess" : "Something went wrong");
+        const err = data && data.error;
+        if (err === "not in word list" || err === "invalid guess") {
+          markInvalid();
+        } else {
+          shakeRow();
+          toast("Something went wrong");
+        }
         return;
       }
     } catch (e) {

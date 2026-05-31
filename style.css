@@ -11,6 +11,7 @@
   --slate:     #7C748F;  /* muted plum-grey — "absent" */
   --tile-line: #DAD0C2;  /* empty tile border */
   --tile-edge: #B9AE9E;  /* filled tile border */
+  --err:       #D04444;  /* invalid-word border + warning text */
   --key-bg:    #EAE0D2;  /* keyboard key */
   --key-text:  #3A2E39;
   --shadow:    rgba(58, 46, 57, 0.18);
@@ -145,6 +146,46 @@ header .actions {
   display: grid;
   grid-template-columns: repeat(var(--cols), 1fr);
   gap: 6px;
+  position: relative;
+}
+
+/* Invalid-word marker: red tile borders + an inline badge to the right.
+   Triggered by the server rejecting a guess that isn't an Umamusume word. */
+.row.invalid .tile { border-color: var(--err, #d33); }
+.row-warn {
+  position: absolute;
+  left: calc(100% + 10px);
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--err, #d33);
+  font-weight: 800;
+  font-size: 0.9rem;
+  white-space: nowrap;
+  pointer-events: none;
+  animation: warn-in 0.18s ease both;
+}
+.row-warn-icon {
+  display: inline-flex;
+  width: 22px;
+  height: 22px;
+  border: 2px solid currentColor;
+  border-radius: 50%;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  line-height: 1;
+}
+@keyframes warn-in {
+  from { opacity: 0; transform: translateY(-50%) scale(0.9); }
+  to   { opacity: 1; transform: translateY(-50%) scale(1); }
+}
+/* On narrow screens the label would overflow off-screen; keep the icon only. */
+@media (max-width: 640px) {
+  .row-warn-text { display: none; }
+  .row-warn { left: calc(100% + 4px); }
 }
 
 .tile {

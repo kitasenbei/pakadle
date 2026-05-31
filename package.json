@@ -1,9 +1,10 @@
 {
   "name": "pakadle",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Daily Umamusume word game (Wordle-style) with a zero-dependency SQLite backend.",
   "private": true,
   "scripts": {
-    "start": "node server.js"
+    "start": "node server.js",
+    "test": "node --test --test-reporter=spec tests/*.test.js"
   }
 }
