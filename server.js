@@ -141,7 +141,34 @@ function createApp(options = {}) {
       updated_at TEXT NOT NULL,
       PRIMARY KEY (pid, date)
     );
+    CREATE TABLE IF NOT EXISTS meta (
+      key   TEXT PRIMARY KEY,
+      value TEXT NOT NULL
+    );
   `);
+
+  // ---- daily-answer secret ----------------------------------------------
+  // words.js is public (it's in the repo), so the old "idx = dayNumber % N"
+  // formula leaked tomorrow's answer to anyone who could clone the repo.
+  // We pick the daily index with HMAC-SHA256(seed, date) instead, where seed
+  // is a per-deployment value that never enters git. Resolution order:
+  //   options.dailySeed > PAKADLE_DAILY_SEED env > meta.daily_seed in the DB
+  //   > generate 32 random bytes and persist into meta.
+  let dailySeed = options.dailySeed || process.env.PAKADLE_DAILY_SEED;
+  if (!dailySeed) {
+    const row = db.prepare("SELECT value FROM meta WHERE key = 'daily_seed'").get();
+    if (row) dailySeed = row.value;
+    else {
+      dailySeed = crypto.randomBytes(32).toString("hex");
+      db.prepare("INSERT INTO meta (key, value) VALUES ('daily_seed', ?)").run(dailySeed);
+    }
+  }
+  const puzzleIdxFor =
+    options.puzzleIdxFor ||
+    ((dateStr) => {
+      const digest = crypto.createHmac("sha256", dailySeed).update(dateStr).digest();
+      return digest.readUInt32BE(0) % words.length;
+    });
 
   // Pakapix (bundled sibling game) mounted under /pakapix, sharing this DB handle.
   const pakapix = require("./pakapix/routes.js")(db);
@@ -153,8 +180,8 @@ function createApp(options = {}) {
   function puzzleForDate(dateStr) {
     let row = db.prepare("SELECT date, number, idx FROM puzzles WHERE date = ?").get(dateStr);
     if (!row) {
-      const number = dayNumber(dateStr);
-      const idx = ((number % words.length) + words.length) % words.length;
+      const number = dayNumber(dateStr); // public "Pakadle #N" identifier
+      const idx = puzzleIdxFor(dateStr); // secret-keyed answer pick
       db.prepare("INSERT INTO puzzles (date, number, idx) VALUES (?, ?, ?)").run(dateStr, number, idx);
       row = { date: dateStr, number, idx };
     }
@@ -333,7 +360,7 @@ function createApp(options = {}) {
   // Pakachess WebSocket endpoint (/pakachess/ws), server-authoritative games.
   pakachessOnline.init(server, pakachessWs, () => crypto.randomUUID());
 
-  return { server, db, words, evaluate, dayNumber, secondsUntilRollover, puzzleForDate, computeStats, getPlay, rowsWithStates, MAX_GUESSES };
+  return { server, db, words, evaluate, dayNumber, secondsUntilRollover, puzzleForDate, puzzleIdxFor, computeStats, getPlay, rowsWithStates, MAX_GUESSES };
 }
 
 module.exports = { createApp, evaluate, dayNumber, secondsUntilRollover, MAX_GUESSES, DAILY_EPOCH };

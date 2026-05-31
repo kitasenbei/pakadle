@@ -2,6 +2,7 @@
 
 const test = require("node:test");
 const assert = require("node:assert/strict");
+const crypto = require("node:crypto");
 const fs = require("node:fs");
 const os = require("node:os");
 const path = require("node:path");
@@ -158,6 +159,114 @@ test("computeStats: a one-day gap breaks the streak even with two adjacent wins 
     assert.equal(s.maxStreak, 2);
   } finally {
     app.db.close();
+    fs.unlinkSync(dbFile);
+  }
+});
+
+// ---- puzzleIdxFor: HMAC-keyed answer selection ----
+//
+// Goal: anyone with the public words.js (it's in the repo) cannot predict
+// tomorrow's answer without also knowing the per-deployment dailySeed.
+// These tests pin the math: same seed+date is deterministic, but the index
+// is genuinely keyed by the seed (different seeds → different indices).
+
+// A synthetic stub large enough that random collisions across a handful of
+// trials are vanishingly unlikely. Names don't have to be realistic uma data.
+const HMAC_STUB = Array.from({ length: 1024 }, (_, i) => ({
+  word: "W" + String(i).padStart(4, "0"),
+  name: "Stub " + i,
+  quote: "",
+  img: "",
+}));
+
+function hmacAppWithSeed(seed) {
+  const dbFile = tmpDb("hmac-" + Buffer.from(seed).toString("hex").slice(0, 8));
+  const app = createApp({ dbFile, words: HMAC_STUB, dailySeed: seed });
+  return { app, dbFile };
+}
+
+test("puzzleIdxFor: same seed + same date yields the same index across two app instances", () => {
+  const seed = "deterministic-seed";
+  const a = hmacAppWithSeed(seed);
+  const b = hmacAppWithSeed(seed);
+  try {
+    const date = "2026-07-15";
+    assert.equal(a.app.puzzleIdxFor(date), b.app.puzzleIdxFor(date));
+  } finally {
+    a.app.db.close(); b.app.db.close();
+    fs.unlinkSync(a.dbFile); fs.unlinkSync(b.dbFile);
+  }
+});
+
+test("puzzleIdxFor: implements HMAC-SHA256(seed, date) first-4-bytes mod N", () => {
+  const seed = "formula-check";
+  const a = hmacAppWithSeed(seed);
+  try {
+    const date = "2026-09-09";
+    const expected = crypto.createHmac("sha256", seed).update(date).digest().readUInt32BE(0) % HMAC_STUB.length;
+    assert.equal(a.app.puzzleIdxFor(date), expected);
+  } finally {
+    a.app.db.close(); fs.unlinkSync(a.dbFile);
+  }
+});
+
+test("puzzleIdxFor: different seeds produce different indices for the same date (5 trials, no fallback to dayNumber)", () => {
+  const date = "2026-03-14";
+  // dayNumber(date) % HMAC_STUB.length is what an attacker would compute from
+  // the public formula. Verify none of 5 distinct random seeds happens to
+  // collide with it (collision probability per seed: 1/1024).
+  const publicFormula = ((dayNumber(date) % HMAC_STUB.length) + HMAC_STUB.length) % HMAC_STUB.length;
+  const indices = [];
+  const cleanups = [];
+  try {
+    for (let i = 0; i < 5; i++) {
+      const { app, dbFile } = hmacAppWithSeed("seed-trial-" + i);
+      cleanups.push({ app, dbFile });
+      indices.push(app.puzzleIdxFor(date));
+    }
+    // At least 4 of 5 must differ from the public formula. P(all 5 collide) ~ 1e-15.
+    const matches = indices.filter((v) => v === publicFormula).length;
+    assert.ok(matches <= 1, `too many seeds matched the public formula (${matches}/5); HMAC may not be in use`);
+    // And the seeds should disagree among themselves (not all 5 equal).
+    assert.ok(new Set(indices).size >= 2, "5 seeds all produced the same idx; selection isn't seed-dependent");
+  } finally {
+    cleanups.forEach(({ app, dbFile }) => { app.db.close(); fs.unlinkSync(dbFile); });
+  }
+});
+
+test("puzzleIdxFor: same seed, different dates yield different indices (no constant function)", () => {
+  const { app, dbFile } = hmacAppWithSeed("date-sensitivity");
+  try {
+    const dates = ["2026-01-01", "2026-01-02", "2026-06-15", "2026-12-31", "2027-04-04"];
+    const indices = dates.map((d) => app.puzzleIdxFor(d));
+    assert.ok(new Set(indices).size >= 4, `expected ≥4 distinct indices across 5 dates, got ${new Set(indices).size}`);
+  } finally {
+    app.db.close(); fs.unlinkSync(dbFile);
+  }
+});
+
+test("puzzleIdxFor: server with no provided seed bootstraps a random one into the DB meta table", () => {
+  const dbFile = tmpDb("seed-bootstrap");
+  try {
+    // First boot — no seed in options, no env var (cleared explicitly), no meta row.
+    const prevEnv = process.env.PAKADLE_DAILY_SEED;
+    delete process.env.PAKADLE_DAILY_SEED;
+    try {
+      const a = createApp({ dbFile, words: HMAC_STUB });
+      const row = a.db.prepare("SELECT value FROM meta WHERE key = 'daily_seed'").get();
+      assert.ok(row && row.value && row.value.length >= 32, "expected a non-trivial generated seed");
+      const idx1 = a.puzzleIdxFor("2026-08-08");
+      a.db.close();
+
+      // Second boot on the same DB — should reuse the persisted seed, not generate a new one.
+      const b = createApp({ dbFile, words: HMAC_STUB });
+      const idx2 = b.puzzleIdxFor("2026-08-08");
+      assert.equal(idx1, idx2);
+      b.db.close();
+    } finally {
+      if (prevEnv !== undefined) process.env.PAKADLE_DAILY_SEED = prevEnv;
+    }
+  } finally {
     fs.unlinkSync(dbFile);
   }
 });

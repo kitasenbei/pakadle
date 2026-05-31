@@ -23,9 +23,11 @@ function tmpDb(name) {
 }
 
 // Boots the app on a random port; returns helpers + a teardown.
+// puzzleIdxFor is forced to 0 so the answer is always words[0] (TESTING in the
+// default stub) regardless of the daily HMAC seed.
 async function bootApp(words = STUB_WORDS) {
   const dbFile = tmpDb("app");
-  const app = createApp({ dbFile, words, todayStr: () => PINNED_DATE });
+  const app = createApp({ dbFile, words, todayStr: () => PINNED_DATE, puzzleIdxFor: () => 0 });
   await new Promise((resolve) => app.server.listen(0, "127.0.0.1", resolve));
   const { port } = app.server.address();
   const base = `http://127.0.0.1:${port}`;
@@ -263,7 +265,7 @@ test("POST /api/guess: WRONGLY (in the stub list) is scored, not rejected", asyn
 async function bootGoldShipApp() {
   const dbFile = tmpDb("aliases");
   const stub = [{ word: "GOLD", name: "Gold Ship", quote: "", img: "" }];
-  const app = createApp({ dbFile, words: stub, todayStr: () => "2026-01-01" });
+  const app = createApp({ dbFile, words: stub, todayStr: () => "2026-01-01", puzzleIdxFor: () => 0 });
   await new Promise((r) => app.server.listen(0, "127.0.0.1", r));
   const { port } = app.server.address();
   const base = `http://127.0.0.1:${port}`;
