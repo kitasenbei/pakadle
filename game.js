@@ -250,32 +250,40 @@
     playedStates.push(states);
     const rowEl = boardEl.children[currentRow];
     const tiles = rowEl.children;
+    const firstTryWin = data.won && currentRow === 0;
 
-    for (let i = 0; i < wordLen; i++) {
-      setTimeout(() => {
-        tiles[i].classList.add("flip");
-        setTimeout(() => tiles[i].classList.add(states[i]), FLIP_HALF);
-      }, i * FLIP_STAGGER);
-    }
-
-    const total = (wordLen - 1) * FLIP_STAGGER + FLIP_DUR;
-    setTimeout(() => {
-      updateKeyboard(sending, states);
-      isRevealing = false;
-      guess = "";
-
-      if (data.finished) {
-        gameOver = true;
-        lastWon = data.won;
-        if (data.stats) serverStats = data.stats;
-        answerEntry = data.reveal || null;
-        if (answerEntry) new Image().src = answerEntry.img;
-        if (data.won) winBounce(rowEl);
-        setTimeout(() => showModal({ reveal: true, won: data.won, finished: true }), data.won ? 700 : 400);
-      } else {
-        currentRow++;
+    // the normal reveal succession: flip the row, then bounce/confetti + modal
+    const reveal = () => {
+      for (let i = 0; i < wordLen; i++) {
+        setTimeout(() => {
+          tiles[i].classList.add("flip");
+          setTimeout(() => tiles[i].classList.add(states[i]), FLIP_HALF);
+        }, i * FLIP_STAGGER);
       }
-    }, total);
+
+      const total = (wordLen - 1) * FLIP_STAGGER + FLIP_DUR;
+      setTimeout(() => {
+        updateKeyboard(sending, states);
+        isRevealing = false;
+        guess = "";
+
+        if (data.finished) {
+          gameOver = true;
+          lastWon = data.won;
+          if (data.stats) serverStats = data.stats;
+          answerEntry = data.reveal || null;
+          if (answerEntry) new Image().src = answerEntry.img;
+          if (data.won) winBounce(rowEl);
+          setTimeout(() => showModal({ reveal: true, won: data.won, finished: true }), data.won ? 700 : 400);
+        } else {
+          currentRow++;
+        }
+      }, total);
+    };
+
+    // nail it on the first guess -> horses sweep the grid, then the normal reveal
+    if (firstTryWin) horsePads().then(reveal);
+    else reveal();
   }
 
   function updateKeyboard(g, states) {
@@ -391,6 +399,85 @@
       );
       anim.onfinish = () => el.remove();
     }
+  }
+
+  // ===== horse pads (first-try win): sweep the grid with horses, DJ-pad style =====
+  // Each sweep lights tiles diagonal-band by diagonal-band; we cycle the four
+  // diagonal directions so the wavefront keeps changing corner.
+  const PAD_COLORS = ["var(--sakura)", "var(--gold)", "var(--turf)", "#5BB8E8"];
+  // ordering key per tile -> the lower the value, the sooner it lights.
+  const PAD_DIRS = [
+    (r, c, R, C) => r + (C - 1 - c),          // top-right  -> bottom-left
+    (r, c, R, C) => r + c,                     // top-left   -> bottom-right
+    (r, c, R, C) => (R - 1 - r) + c,           // bottom-left -> top-right
+    (r, c, R, C) => (R - 1 - r) + (C - 1 - c), // bottom-right -> top-left
+  ];
+  let padsRunning = false;
+
+  // pop a horse into a tile, tagging it with the wave that owns it
+  function lightTile(tile, color, id) {
+    tile.dataset.wave = id;
+    tile.classList.add("lit");
+    tile.style.setProperty("--pad", color);
+    let h = tile.querySelector(".grid-horse");
+    if (!h) {
+      h = document.createElement("span");
+      h.className = "grid-horse";
+      h.textContent = "🐎";
+      tile.appendChild(h);
+    }
+    h.classList.remove("out");
+    void h.offsetWidth;            // reflow so the pop animation restarts
+    h.classList.add("in");
+  }
+  // clear a tile only if a newer wave hasn't taken it over
+  function clearTile(tile, id) {
+    if (tile.dataset.wave !== String(id)) return;
+    delete tile.dataset.wave;
+    tile.classList.remove("lit");
+    tile.style.removeProperty("--pad");
+    const h = tile.querySelector(".grid-horse");
+    if (h) { h.classList.add("out"); h.addEventListener("animationend", () => h.remove(), { once: true }); }
+  }
+
+  // Sweep the four diagonal directions once each, then resolve. Awaitable so the
+  // caller can chain the normal win reveal after the horses finish.
+  async function horsePads() {
+    if (padsRunning) return;
+    if (window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    padsRunning = true;
+
+    const rows = boardEl.children;
+    const R = rows.length, C = wordLen;
+    const maxK = (R - 1) + (C - 1);
+    const band = Math.max(2, Math.round(maxK * 0.5));       // how many diagonals stay lit at once
+    const step = 50;                                        // ms between diagonal bands
+    const sleep = (ms) => new Promise((res) => setTimeout(res, ms));
+
+    // a band of horses sweeps across: lit at the leading edge, cleared behind it
+    async function wave(id, key, color) {
+      for (let p = 0; p <= maxK + band; p++) {
+        for (let r = 0; r < R; r++)
+          for (let c = 0; c < C; c++) {
+            const k = key(r, c, R, C);
+            if (k === p) lightTile(rows[r].children[c], color, id);
+            else if (k === p - band) clearTile(rows[r].children[c], id);
+          }
+        await sleep(step);
+      }
+    }
+
+    for (let d = 0; d < PAD_DIRS.length; d++) {
+      // launch the wave without awaiting it: the next direction starts while
+      // this one is still crossing, so they overlap (quasi-consecutive).
+      wave(d + 1, PAD_DIRS[d], PAD_COLORS[d]);
+      if (d < PAD_DIRS.length - 1) await sleep(step * (maxK + 1) * 0.7);
+    }
+    await sleep(step * (maxK + band + 1));                  // let the last wave finish & clear
+
+    boardEl.querySelectorAll(".grid-horse").forEach((h) => h.remove());
+    boardEl.querySelectorAll(".tile.lit").forEach((t) => { t.classList.remove("lit"); t.style.removeProperty("--pad"); delete t.dataset.wave; });
+    padsRunning = false;
   }
 
   // ===== toast =====
@@ -598,6 +685,7 @@
 
   // ===== physical keyboard =====
   document.addEventListener("keydown", (e) => {
+    if (e.key === "5") { horsePads(); return; }   // TODO: trigger on first-try win instead
     if (howtoEl.classList.contains("open")) {
       if (e.key === "Escape") closeHowto();
       else if (e.key === "Enter") document.getElementById("howto-next").click();
