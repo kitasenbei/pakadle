@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Pakadle Duel — realtime Umamusume word racing</title>
+  <meta name="description" content="Race another trainer to guess the hidden Umamusume first. Realtime head-to-head Pakadle with rooms, quick match, configurable rounds, and a ranked Elo ladder." />
+  <meta name="theme-color" content="#FBF5EA" />
+  <link rel="icon" type="image/png" href="/favicon.png" />
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/duel/style.css" />
+</head>
+<body>
+  <div id="petals" aria-hidden="true"></div>
+  <div id="confetti" aria-hidden="true"></div>
+
+  <header>
+    <h1>
+      <span class="jp">ウマ娘</span>
+      <span class="en">Pakadle <b class="vs">Duel</b></span>
+    </h1>
+    <div class="actions">
+      <a class="cross-link" href="/">← Pakadle</a>
+      <a class="cross-link chess" href="/pakachess">Pakachess ♟️</a>
+      <div id="acct-chip" class="acct-chip" hidden>
+        <span class="acct-name" id="acct-name"></span>
+        <span class="acct-rating" id="acct-rating"></span>
+      </div>
+      <button id="auth-btn" class="pill-btn">Sign in</button>
+      <button id="board-btn" class="pill-btn ghost">🏆 Ranks</button>
+      <button id="quit-btn" class="pill-btn danger" hidden>Quit</button>
+    </div>
+  </header>
+
+  <main>
+    <!-- ===== lobby ===== -->
+    <section id="lobby">
+      <p class="tagline">Race another trainer to guess the hidden uma first. 🐎💨</p>
+
+      <div class="guest-row" id="guest-row">
+        <label for="guest-name">Playing as guest</label>
+        <input id="guest-name" type="text" maxlength="24" placeholder="Trainer" autocomplete="off" spellcheck="false" />
+        <span class="guest-hint">Sign in to play <b>ranked</b> and climb the ladder.</span>
+      </div>
+
+      <div class="menu-grid">
+        <button class="mode-card" id="mode-quick">
+          <span class="mode-emoji">⚡</span>
+          <span class="mode-name">Quick Match</span>
+          <span class="mode-sub">Best of 3 · fastest solve · 90s</span>
+        </button>
+        <button class="mode-card" id="mode-create">
+          <span class="mode-emoji">🛠️</span>
+          <span class="mode-name">Create Room</span>
+          <span class="mode-sub">Set the rules, invite a friend</span>
+        </button>
+        <button class="mode-card" id="mode-join">
+          <span class="mode-emoji">🚪</span>
+          <span class="mode-name">Join Room</span>
+          <span class="mode-sub">Enter a friend's code</span>
+        </button>
+      </div>
+
+      <!-- create-room settings -->
+      <div id="create-panel" class="panel-box" hidden>
+        <h3>Room settings</h3>
+        <div class="setting">
+          <span class="set-label">Rounds</span>
+          <div class="seg" id="set-rounds">
+            <button data-v="1">Best of 1</button>
+            <button data-v="3" class="on">Best of 3</button>
+            <button data-v="5">Best of 5</button>
+            <button data-v="7">Best of 7</button>
+          </div>
+        </div>
+        <div class="setting">
+          <span class="set-label">Win a round by</span>
+          <div class="seg" id="set-winby">
+            <button data-v="speed" class="on">Fastest solve</button>
+            <button data-v="guesses">Fewest guesses</button>
+          </div>
+        </div>
+        <div class="setting">
+          <span class="set-label">Time limit per round</span>
+          <div class="seg" id="set-time">
+            <button data-v="30">30s</button>
+            <button data-v="60">60s</button>
+            <button data-v="90" class="on">90s</button>
+            <button data-v="120">2m</button>
+            <button data-v="180">3m</button>
+            <button data-v="0">None</button>
+          </div>
+        </div>
+        <div class="row-btns">
+          <button class="ghost-btn" id="create-back">Back</button>
+          <button class="primary-btn" id="create-go">Create room</button>
+        </div>
+      </div>
+
+      <!-- join-room code -->
+      <div id="join-panel" class="panel-box" hidden>
+        <h3>Join a room</h3>
+        <p class="room-label">Room code</p>
+        <input id="join-code" maxlength="8" placeholder="ABCD" autocomplete="off" spellcheck="false" />
+        <div class="row-btns">
+          <button class="ghost-btn" id="join-back">Back</button>
+          <button class="primary-btn" id="join-go">Join</button>
+        </div>
+      </div>
+
+      <!-- waiting / queued -->
+      <div id="waiting" class="panel-box" hidden>
+        <div class="spinner"></div>
+        <p class="wait-text" id="wait-text">Finding an opponent…</p>
+        <p class="wait-room" id="wait-room" hidden>Room code <b id="wait-code"></b> — share it with a friend</p>
+        <button class="ghost-btn" id="wait-cancel">Cancel</button>
+      </div>
+    </section>
+
+    <!-- ===== the duel ===== -->
+    <section id="duel" hidden>
+      <div class="duel-top">
+        <div class="scoreline">
+          <div class="who you"><span class="nm" id="you-name">You</span><span class="sc" id="you-score">0</span></div>
+          <div class="meta">
+            <div class="round-no" id="round-no">Round 1</div>
+            <div class="clock" id="clock">—</div>
+            <div class="winby" id="winby-label"></div>
+          </div>
+          <div class="who opp"><span class="sc" id="opp-score">0</span><span class="nm" id="opp-name">Opponent</span></div>
+        </div>
+        <div id="ranked-tag" class="ranked-tag" hidden>RANKED</div>
+      </div>
+
+      <div id="disc-banner" class="banner" hidden>Opponent disconnected — waiting for them to return…</div>
+
+      <div class="arena">
+        <div class="side you">
+          <div class="side-head">Your grid</div>
+          <div id="board-you" class="board"></div>
+        </div>
+        <div class="side opp">
+          <div class="side-head"><span id="opp-head">Opponent</span> <span class="opp-progress" id="opp-progress"></span></div>
+          <div id="board-opp" class="board masked"></div>
+        </div>
+      </div>
+
+      <div id="keyboard"></div>
+    </section>
+  </main>
+
+  <div id="toast-wrap"></div>
+
+  <!-- countdown overlay -->
+  <div id="countdown" class="overlay" hidden><div class="cd-num" id="cd-num">3</div></div>
+
+  <!-- round / match result overlay -->
+  <div id="result" class="overlay" hidden></div>
+
+  <!-- auth modal -->
+  <div id="auth-modal" class="overlay" hidden>
+    <div class="auth-card">
+      <button class="card-x" id="auth-x" aria-label="Close">×</button>
+      <div class="auth-tabs">
+        <button class="auth-tab on" id="tab-login">Sign in</button>
+        <button class="auth-tab" id="tab-register">Create account</button>
+      </div>
+      <div class="auth-body">
+        <label>Trainer name<input id="auth-name" type="text" maxlength="24" autocomplete="username" spellcheck="false" /></label>
+        <label>Password<input id="auth-pass" type="password" maxlength="200" autocomplete="current-password" /></label>
+        <p class="auth-err" id="auth-err"></p>
+        <button class="primary-btn wide" id="auth-go">Sign in</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- leaderboard modal -->
+  <div id="board-modal" class="overlay" hidden>
+    <div class="lb-card">
+      <button class="card-x" id="lb-x" aria-label="Close">×</button>
+      <h2>🏆 Top Trainers</h2>
+      <div class="lb-list" id="lb-list"></div>
+    </div>
+  </div>
+
+  <script src="/duel/game.js"></script>
+</body>
+</html>
