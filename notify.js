@@ -1,4 +1,4 @@
-// Pakadle notifications — a tiny, self-contained "what's new" center shared by
+// Pakadle notifications: a tiny, self-contained "what's new" center shared by
 // every bundled game (Pakadle, Duel, …). It injects its own styles + a bell
 // button into the page header, tracks which announcements you've already seen in
 // localStorage, and auto-opens the panel the first time there's something unread.
@@ -14,12 +14,12 @@
       id: "v0.4.0-anti-peek",
       date: "v0.4.0 · June 2026",
       tag: "Fair play",
-      title: "No more peeking — tab-switching is now penalized",
+      title: "No more peeking: tab-switching is now penalized",
       body:
         "<b>What changed in v0.4.0:</b>" +
         "<ul>" +
         "<li><b>Pakadle:</b> switch tabs or windows while a puzzle is live and " +
-        "today's puzzle is now <b>locked</b> — it counts as a loss and you can't resume it until the next daily reset.</li>" +
+        "today's puzzle is now <b>locked</b>: it counts as a loss and you can't resume it until the next daily reset.</li>" +
         "<li><b>Pakadle Duel:</b> switch tabs or windows mid-round and you now " +
         "<b>automatically forfeit the match and lose 100 rating</b>.</li>" +
         "<li>Added this <b>notifications center</b> (the 🔔) so updates like this one reach you in-game.</li>" +
