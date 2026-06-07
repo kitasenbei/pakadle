@@ -403,8 +403,9 @@ function createApp(options = {}) {
         blocked: play.blocked,
         stats: computeStats(pid),
       };
-      // only reveal the character once the player is done
-      if (play.finished) out.reveal = { word: e.word, name: e.name, quote: e.quote, img: e.img };
+      // only reveal the character once the player is done — but never for a
+      // blocked (cheated) play: peek and you forfeit the reveal too.
+      if (play.finished && !play.blocked) out.reveal = { word: e.word, name: e.name, quote: e.quote, img: e.img };
       return sendJson(res, out);
     }
 
@@ -481,9 +482,11 @@ function createApp(options = {}) {
       const p = puzzleForDate(date);
       const e = words[p.idx];
       const play = getPlay(pid, date);
-      const reveal = { word: e.word, name: e.name, quote: e.quote, img: e.img };
       if (play.finished) {
-        return sendJson(res, { finished: true, won: play.won, blocked: play.blocked, reveal, stats: computeStats(pid) });
+        // already finished: reveal only if this was an honest finish, not a block
+        const out = { finished: true, won: play.won, blocked: play.blocked, stats: computeStats(pid) };
+        if (!play.blocked) out.reveal = { word: e.word, name: e.name, quote: e.quote, img: e.img };
+        return sendJson(res, out);
       }
       const now = new Date();
       const startedAt = play.startedAt || now.toISOString();
@@ -493,7 +496,8 @@ function createApp(options = {}) {
          ON CONFLICT(pid, date) DO UPDATE SET
            finished = 1, won = 0, blocked = 1, updated_at = excluded.updated_at`
       ).run(pid, date, JSON.stringify(play.grid), now.toISOString(), startedAt);
-      return sendJson(res, { finished: true, won: false, blocked: true, reveal, stats: computeStats(pid) });
+      // a fresh block never reveals the uma — that's the point of the penalty
+      return sendJson(res, { finished: true, won: false, blocked: true, stats: computeStats(pid) });
     }
 
     // ---- Duel accounts / auth / leaderboard ----

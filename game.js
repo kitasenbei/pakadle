@@ -556,8 +556,12 @@
         'No peeking. The horses are watching. 🐎👀 Come back after the daily reset for a fresh puzzle.</div>'
       : "";
 
-    const hero =
-      reveal && answerEntry
+    // a blocked (cheated) game never shows the uma — no horse for peekers.
+    const hero = blockedMode
+      ? `<div class="info" style="text-align:center;padding:14px 0 6px;">
+             <div class="answer" style="color:var(--ink)">🔒 Answer hidden</div>
+           </div>`
+      : reveal && answerEntry
         ? `<div class="hero">
              <div class="char">
                <img class="portrait" src="${answerEntry.img}" alt="${answerEntry.name}" />
@@ -641,7 +645,7 @@
   }
 
   function openStats() {
-    showModal({ reveal: gameOver, won: lastWon, finished: gameOver });
+    showModal({ reveal: gameOver, won: lastWon, finished: gameOver, blocked });
   }
 
   // ===== how-to-play onboarding (multi-step) =====
@@ -774,8 +778,8 @@
     if (data) {
       lastWon = false;
       if (data.stats) serverStats = data.stats;
-      if (data.reveal) answerEntry = data.reveal;
     }
+    answerEntry = null; // cheated -> no uma to reveal
     showModal({ reveal: true, won: false, finished: true, blocked: true });
   }
 

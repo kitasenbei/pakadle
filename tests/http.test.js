@@ -388,13 +388,14 @@ test("POST /api/forfeit blocks today's puzzle: finished, lost, revealed, and loc
     assert.equal(f.body.finished, true);
     assert.equal(f.body.won, false);
     assert.equal(f.body.blocked, true);
-    assert.equal(f.body.reveal.word, "TESTING"); // answer revealed on a forfeit
+    assert.equal(f.body.reveal, undefined, "a cheated/blocked game never reveals the uma");
 
     // a reload sees the locked state, keeps the earlier guess, and can't resume
     const d = await req("GET", "/api/daily");
     assert.equal(d.body.finished, true);
     assert.equal(d.body.won, false);
     assert.equal(d.body.blocked, true);
+    assert.equal(d.body.reveal, undefined, "still no reveal after reload");
     assert.equal(d.body.rows.length, 1);
     assert.equal(d.body.rows[0].guess, "WRONGLY");
 
