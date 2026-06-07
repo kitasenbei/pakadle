@@ -26,7 +26,11 @@ function init(server, ws, ensurePid, deps) {
     identify = () => null,
     // onMatch(aAccountId, bAccountId, result)  result: "a" | "b" | "draw"  (updates the rank ladder)
     onMatch = () => {},
+    // penalize(accountId, points) -> { rating, delta } | null  (anti-cheat rating dock)
+    penalize = () => null,
   } = deps;
+  // flat rating hit for leaving the tab/window mid-round in Duel.
+  const FOCUS_PENALTY = deps.focusPenalty != null ? deps.focusPenalty : 100;
   const COUNTDOWN_MS = deps.countdownMs != null ? deps.countdownMs : 3000;     // "3·2·1·go" pre-round
   const ROUND_GRACE_MS = deps.roundGraceMs != null ? deps.roundGraceMs : 4500; // reveal lingers between rounds
   const MATCH_GRACE_MS = deps.matchGraceMs != null ? deps.matchGraceMs : 1500; // before the game is reaped
@@ -236,6 +240,42 @@ function init(server, ws, ensurePid, deps) {
     setTimeout(() => cleanup(g), MATCH_GRACE_MS);
   }
 
+  // Forfeit triggered by the offender leaving the tab/window mid-round. On top of
+  // the normal forfeit (match goes to the opponent, ranked Elo settles), the
+  // offender is docked a flat FOCUS_PENALTY from their account rating — a peeking
+  // deterrent. The penalty only bites a logged-in account; a guest just forfeits.
+  function focusForfeit(g, loserPid) {
+    if (g.over) return;
+    if (g.roundTimer) clearTimeout(g.roundTimer);
+    if (g.round) g.round.over = true;
+    g.over = true;
+    const winner = other(g, loserPid);
+    const ladder = g.ranked ? settleRatings(g, winner) : {};
+    // dock the offender on top of any ranked Elo change (after settle, so it
+    // reads the freshly-updated rating).
+    const loserAcct = g.account[loserPid];
+    let pen = null;
+    if (loserAcct) { try { pen = penalize(loserAcct.id, FOCUS_PENALTY); } catch (_) {} }
+    sendEach(g, (pid) => {
+      const acct = g.account[pid];
+      const mine = acct && ladder[acct.id];
+      const msg = {
+        t: "matchOver", reason: "focus", ranked: g.ranked,
+        outcome: pid === winner ? "win" : "lose", score: scoreFor(g, pid),
+        rating: mine ? mine.rating : (acct ? acct.rating : null),
+        delta: mine ? mine.delta : null,
+      };
+      if (pid === loserPid && pen) {
+        // surface the docked rating + combined delta (ranked move, if any, − penalty)
+        msg.rating = pen.rating;
+        msg.delta = (mine ? mine.delta : 0) + pen.delta;
+        msg.penalty = FOCUS_PENALTY;
+      }
+      return msg;
+    });
+    setTimeout(() => cleanup(g), MATCH_GRACE_MS);
+  }
+
   // ---- guessing -----------------------------------------------------------
   function handleGuess(g, pid, raw) {
     if (g.over || !g.round || g.round.over) return;
@@ -357,7 +397,11 @@ function init(server, ws, ensurePid, deps) {
         if (msg.t === "leave" || msg.t === "resign") {
           dropFromLobby(pid, conn);
           const gid = pidGame.get(pid);
-          if (gid != null && games.has(gid)) forfeit(games.get(gid), pid);
+          if (gid != null && games.has(gid)) {
+            // a tab/window-switch forfeit carries an extra rating penalty
+            if (msg.reason === "focus") focusForfeit(games.get(gid), pid);
+            else forfeit(games.get(gid), pid);
+          }
           return;
         }
 

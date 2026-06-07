@@ -364,6 +364,11 @@
     if (m.outcome === "win") confettiBurst();
     let sub = "Final score " + m.score.you + " – " + m.score.opp;
     if (m.reason === "forfeit") sub = (m.outcome === "win" ? "Opponent left. " : "") + sub;
+    if (m.reason === "focus") {
+      sub = (m.outcome === "lose"
+        ? "You left the tab mid-round — automatic forfeit. "
+        : "Opponent left the tab — they forfeit. ") + sub;
+    }
     let elo = "";
     if (m.ranked && typeof m.rating === "number") {
       const d = m.delta || 0;
@@ -373,6 +378,12 @@
       if (account) { account.rating = m.rating; renderAccount(); }
     } else if (!m.ranked) {
       elo = '<div class="elo casual">Casual match — sign in for ranked play.</div>';
+    }
+    // anti-peek dock (the offender only): make the flat rating hit explicit
+    if (typeof m.penalty === "number" && m.outcome === "lose") {
+      elo += '<div class="elo penalty">⚠️ Tab-switch penalty: <span class="down">−' + m.penalty + '</span> rating.</div>';
+      // in a casual match the ranked branch above didn't refresh our rating
+      if (!m.ranked && account && typeof m.rating === "number") { account.rating = m.rating; renderAccount(); }
     }
     resultEl.className = "overlay show " + cls;
     resultEl.innerHTML =
@@ -597,6 +608,21 @@
     else if (e.key === "Backspace") delLetter();
     else if (/^[a-zA-Z]$/.test(e.key)) addLetter(e.key.toUpperCase());
   });
+
+  // ===== anti-peek: leaving the tab/window mid-round forfeits the match =====
+  // Switching tabs (visibilitychange) or alt-tabbing away (blur) while a round
+  // is live is an automatic resign — and costs the offender 100 rating. We only
+  // arm it during an active round (not the lobby, countdown, or between rounds),
+  // and ignore blurs caused by our own modals.
+  function focusViolation() {
+    if (!inGame || !roundLive || locked || myFinished) return;
+    if (!authModal.hidden || !boardModal.hidden) return;
+    roundLive = false; lock(true);
+    wsSend({ t: "resign", reason: "focus" });
+    toast("You left the tab — match forfeited (−100 rating).");
+  }
+  document.addEventListener("visibilitychange", () => { if (document.hidden) focusViolation(); });
+  window.addEventListener("blur", focusViolation);
 
   // ===================== boot =====================
   buildKeyboard();

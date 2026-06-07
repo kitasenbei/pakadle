@@ -225,6 +225,7 @@ main { width:100%; max-width:760px; padding:8px 14px 28px; position:relative; z-
 .elo b { color:var(--gold); font-size:1.15rem; }
 .elo .up { color:var(--turf); } .elo .down { color:var(--sakura); }
 .elo.casual { color:var(--soft); font-size:.82rem; }
+.elo.penalty { margin-top:6px; color:var(--sakura); font-size:.85rem; font-weight:800; }
 .result-btns { display:flex; gap:10px; margin-top:18px; }
 
 /* ---- auth + leaderboard cards ---- */

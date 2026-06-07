@@ -165,6 +165,52 @@ test("duel: ranked private match races to a decisive Elo result", async (t) => {
   assert.ok(alpha.rating > bravo.rating);
 });
 
+test("duel: tab-switch forfeit hands the match over AND docks 100 rating", async (t) => {
+  const app = await boot();
+  const { port } = app.server.address();
+  const base = `http://127.0.0.1:${port}`;
+  const { client, teardown } = makeHarness();
+  t.after(() => teardown(app));
+
+  const A = await register(base, "Stayer", "hunter2x");
+  const B = await register(base, "Peeker", "hunter2x");
+
+  const a = client(base, A.cookie), b = client(base, B.cookie);
+  await Promise.all([a.ready, b.ready]);
+  await a.next("idle"); await b.next("idle");
+
+  a.send({ t: "join", code: "PEEK", cfg: { rounds: 3, winBy: "speed", timeLimit: 0 } });
+  await a.next("waiting");
+  b.send({ t: "join", code: "PEEK" });
+  await a.next("start"); await b.next("start");
+  await a.next("round"); await b.next("round");
+  await a.next("go"); await b.next("go");
+
+  // Peeker leaves the tab mid-round -> automatic forfeit with a rating penalty
+  b.send({ t: "resign", reason: "focus" });
+
+  const moA = await a.next("matchOver");
+  const moB = await b.next("matchOver");
+
+  assert.equal(moA.outcome, "win");
+  assert.equal(moA.reason, "focus");
+  assert.ok(moA.delta > 0, "the trainer who stayed gains rating");
+  assert.equal(moA.penalty, undefined, "no penalty on the innocent side");
+
+  assert.equal(moB.outcome, "lose");
+  assert.equal(moB.reason, "focus");
+  assert.equal(moB.penalty, 100, "offender is docked a flat 100");
+  // combined delta = ranked loss (negative) minus the 100 penalty
+  assert.ok(moB.delta <= -100, "the dock is on top of the ranked loss");
+  assert.equal(moB.rating, 1000 + moB.delta, "reported rating matches the delta");
+
+  // persisted: the leaderboard shows the docked rating
+  const lb = await (await fetch(base + "/api/leaderboard")).json();
+  const peeker = lb.leaders.find((x) => x.name === "Peeker");
+  assert.equal(peeker.rating, moB.rating);
+  assert.ok(peeker.rating < 900, "rating fell well past the bare Elo loss");
+});
+
 test("auth: duplicate names and bad passwords are rejected", async (t) => {
   const app = await boot();
   const { port } = app.server.address();

@@ -167,6 +167,9 @@ function createApp(options = {}) {
   // when this pid first loaded today's puzzle, so we can measure time-to-first-guess.
   // (ALTER throws if the column already exists; harmless on an up-to-date DB.)
   try { db.exec("ALTER TABLE plays ADD COLUMN started_at TEXT"); } catch {}
+  // set when a player forfeits the day by leaving the tab/window mid-game.
+  // A blocked play is finished+lost AND locked: you can't resume it after reload.
+  try { db.exec("ALTER TABLE plays ADD COLUMN blocked INTEGER NOT NULL DEFAULT 0"); } catch {}
 
   // A first-guess win this fast (seconds from loading the puzzle to nailing it) is
   // almost certainly a run where the answer was already known elsewhere. Not proof,
@@ -256,12 +259,13 @@ function createApp(options = {}) {
   }
 
   function getPlay(pid, date) {
-    const row = db.prepare("SELECT grid, finished, won, started_at FROM plays WHERE pid = ? AND date = ?").get(pid, date);
+    const row = db.prepare("SELECT grid, finished, won, started_at, blocked FROM plays WHERE pid = ? AND date = ?").get(pid, date);
     return {
       grid: row ? JSON.parse(row.grid) : [],
       finished: row ? !!row.finished : false,
       won: row ? !!row.won : false,
       startedAt: row ? row.started_at : null,
+      blocked: row ? !!row.blocked : false,
     };
   }
 
@@ -326,6 +330,18 @@ function createApp(options = {}) {
     return out;
   }
 
+  // ---- anti-cheat penalty: dock a flat amount from an account's rating -----
+  // Used when a Duel player leaves the tab/window mid-round. Floored at 0 so a
+  // rating never goes negative. Returns { rating, delta } (delta is negative).
+  function penalize(accountId, points) {
+    if (!accountId) return null;
+    const a = db.prepare("SELECT id, rating FROM accounts WHERE id = ?").get(accountId);
+    if (!a) return null;
+    const next = Math.max(0, a.rating - points);
+    db.prepare("UPDATE accounts SET rating = ? WHERE id = ?").run(next, a.id);
+    return { rating: next, delta: next - a.rating };
+  }
+
   const server = http.createServer((req, res) => {
     const url = new URL(req.url, `http://${req.headers.host}`);
 
@@ -384,6 +400,7 @@ function createApp(options = {}) {
         rows: rowsWithStates(play.grid, answer),
         finished: play.finished,
         won: play.won,
+        blocked: play.blocked,
         stats: computeStats(pid),
       };
       // only reveal the character once the player is done
@@ -453,6 +470,30 @@ function createApp(options = {}) {
     if (url.pathname === "/api/stats" && req.method === "GET") {
       const pid = ensurePid(req, res);
       return sendJson(res, computeStats(pid));
+    }
+
+    // Anti-peek: leaving the tab/window mid-game forfeits today's puzzle. The
+    // client reports it here; the play is finished+lost AND blocked, so a reload
+    // can't resume it. Idempotent — once finished, just echoes the current state.
+    if (url.pathname === "/api/forfeit" && req.method === "POST") {
+      const pid = ensurePid(req, res);
+      const date = todayStr();
+      const p = puzzleForDate(date);
+      const e = words[p.idx];
+      const play = getPlay(pid, date);
+      const reveal = { word: e.word, name: e.name, quote: e.quote, img: e.img };
+      if (play.finished) {
+        return sendJson(res, { finished: true, won: play.won, blocked: play.blocked, reveal, stats: computeStats(pid) });
+      }
+      const now = new Date();
+      const startedAt = play.startedAt || now.toISOString();
+      db.prepare(
+        `INSERT INTO plays (pid, date, grid, finished, won, updated_at, started_at, blocked)
+         VALUES (?, ?, ?, 1, 0, ?, ?, 1)
+         ON CONFLICT(pid, date) DO UPDATE SET
+           finished = 1, won = 0, blocked = 1, updated_at = excluded.updated_at`
+      ).run(pid, date, JSON.stringify(play.grid), now.toISOString(), startedAt);
+      return sendJson(res, { finished: true, won: false, blocked: true, reveal, stats: computeStats(pid) });
     }
 
     // ---- Duel accounts / auth / leaderboard ----
@@ -553,13 +594,14 @@ function createApp(options = {}) {
       return a ? { id: a.id, name: a.name, rating: a.rating } : null;
     },
     onMatch: applyMatch,
+    penalize, // anti-cheat: dock rating when a player tabs away mid-round
     ...(options.duelTimings || {}), // test seam: shrink countdown/grace windows
   });
 
   return {
     server, db, words, evaluate, dayNumber, secondsUntilRollover, puzzleForDate, puzzleIdxFor,
     computeStats, getPlay, rowsWithStates, MAX_GUESSES,
-    accountFromReq, applyMatch, hashPassword, verifyPassword,
+    accountFromReq, applyMatch, penalize, hashPassword, verifyPassword,
   };
 }
 
