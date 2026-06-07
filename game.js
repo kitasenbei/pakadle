@@ -558,8 +558,9 @@
 
     // a blocked (cheated) game never shows the uma — no horse for peekers.
     const hero = blockedMode
-      ? `<div class="info" style="text-align:center;padding:14px 0 6px;">
-             <div class="answer" style="color:var(--ink)">🔒 Answer hidden</div>
+      ? `<div class="locked-hero">
+             <span class="lock-mark">🔒</span>
+             <span class="locked-cap">Answer hidden</span>
            </div>`
       : reveal && answerEntry
         ? `<div class="hero">

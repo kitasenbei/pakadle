@@ -395,6 +395,21 @@ header .actions {
   box-shadow: 0 3px 0 #5f5872;
   font-size: 0.85rem;
 }
+/* blocked (cheated) games: a compact centered lock that clears the badge */
+.card .locked-hero {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 26px 0 8px;
+}
+.card .locked-hero .lock-mark { font-size: 2.6rem; line-height: 1; }
+.card .locked-hero .locked-cap {
+  font-weight: 800;
+  font-size: 1.05rem;
+  letter-spacing: 0.5px;
+  color: var(--slate);
+}
 .card .block-note {
   margin: 4px 16px 0;
   padding: 10px 12px;
