@@ -366,8 +366,8 @@
     if (m.reason === "forfeit") sub = (m.outcome === "win" ? "Opponent left. " : "") + sub;
     if (m.reason === "focus") {
       sub = (m.outcome === "lose"
-        ? "You left the tab mid-round — automatic forfeit. "
-        : "Opponent left the tab — they forfeit. ") + sub;
+        ? "You left the tab mid-round, automatic forfeit. "
+        : "Opponent left the tab, they forfeit. ") + sub;
     }
     let elo = "";
     if (m.ranked && typeof m.rating === "number") {
@@ -377,7 +377,7 @@
       // keep our local account rating fresh
       if (account) { account.rating = m.rating; renderAccount(); }
     } else if (!m.ranked) {
-      elo = '<div class="elo casual">Casual match — sign in for ranked play.</div>';
+      elo = '<div class="elo casual">Casual match. Sign in for ranked play.</div>';
     }
     // anti-peek dock (the offender only): make the flat rating hit explicit
     if (typeof m.penalty === "number" && m.outcome === "lose") {
@@ -509,7 +509,7 @@
       if (!r.ok) { authErr.textContent = d.error || "Something went wrong."; return; }
       account = d.account; renderAccount();
       authModal.hidden = true; authPassI.value = "";
-      toast(authMode === "login" ? "Welcome back, " + account.name + "!" : "Account created — good luck out there!");
+      toast(authMode === "login" ? "Welcome back, " + account.name + "!" : "Account created. Good luck out there!");
     } catch (_) { authErr.textContent = "Connection error."; }
   }
   async function logout() {
@@ -619,7 +619,7 @@
     if (!authModal.hidden || !boardModal.hidden) return;
     roundLive = false; lock(true);
     wsSend({ t: "resign", reason: "focus" });
-    toast("You left the tab — match forfeited (−100 rating).");
+    toast("You left the tab. Match forfeited (−100 rating).");
   }
   document.addEventListener("visibilitychange", () => { if (document.hidden) focusViolation(); });
   window.addEventListener("blur", focusViolation);

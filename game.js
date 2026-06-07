@@ -553,7 +553,7 @@
     const badgeText = blockedMode ? "LOCKED 🔒" : reveal ? (won ? "WIN! 🥕" : "NEXT TIME") : "STATS";
     const notice = blockedMode
       ? '<div class="block-note">You switched tabs or windows mid-game, so today\'s Pakadle is <b>locked</b>. ' +
-        'No peeking — the horses are watching. 🐎👀 Come back after the daily reset for a fresh puzzle.</div>'
+        'No peeking. The horses are watching. 🐎👀 Come back after the daily reset for a fresh puzzle.</div>'
       : "";
 
     const hero =
