@@ -167,14 +167,6 @@ function createApp(options = {}) {
   // when this pid first loaded today's puzzle, so we can measure time-to-first-guess.
   // (ALTER throws if the column already exists; harmless on an up-to-date DB.)
   try { db.exec("ALTER TABLE plays ADD COLUMN started_at TEXT"); } catch {}
-  // set when a player forfeits the day by leaving the tab/window mid-game.
-  // A blocked play is finished+lost AND locked: you can't resume it after reload.
-  try { db.exec("ALTER TABLE plays ADD COLUMN blocked INTEGER NOT NULL DEFAULT 0"); } catch {}
-
-  // A first-guess win this fast (seconds from loading the puzzle to nailing it) is
-  // almost certainly a run where the answer was already known elsewhere. Not proof,
-  // just very, very suspicious. The horses are watching.
-  const SUS_SECONDS = options.susSeconds || 5;
 
   // ---- daily-answer secret ----------------------------------------------
   // words.js is public (it's in the repo), so the old "idx = dayNumber % N"
@@ -259,13 +251,12 @@ function createApp(options = {}) {
   }
 
   function getPlay(pid, date) {
-    const row = db.prepare("SELECT grid, finished, won, started_at, blocked FROM plays WHERE pid = ? AND date = ?").get(pid, date);
+    const row = db.prepare("SELECT grid, finished, won, started_at FROM plays WHERE pid = ? AND date = ?").get(pid, date);
     return {
       grid: row ? JSON.parse(row.grid) : [],
       finished: row ? !!row.finished : false,
       won: row ? !!row.won : false,
       startedAt: row ? row.started_at : null,
-      blocked: row ? !!row.blocked : false,
     };
   }
 
@@ -400,12 +391,10 @@ function createApp(options = {}) {
         rows: rowsWithStates(play.grid, answer),
         finished: play.finished,
         won: play.won,
-        blocked: play.blocked,
         stats: computeStats(pid),
       };
-      // only reveal the character once the player is done — but never for a
-      // blocked (cheated) play: peek and you forfeit the reveal too.
-      if (play.finished && !play.blocked) out.reveal = { word: e.word, name: e.name, quote: e.quote, img: e.img };
+      // only reveal the character once the player is done
+      if (play.finished) out.reveal = { word: e.word, name: e.name, quote: e.quote, img: e.img };
       return sendJson(res, out);
     }
 
@@ -456,14 +445,6 @@ function createApp(options = {}) {
           out.reveal = { word: e.word, name: e.name, quote: e.quote, img: e.img };
           out.stats = computeStats(pid);
         }
-        // first guess + nailed instantly = "lucky" is not the word the horses would use
-        if (won && grid.length === 1) {
-          const solveSeconds = (now - new Date(startedAt)) / 1000;
-          if (solveSeconds < SUS_SECONDS) {
-            out.sus = true;
-            out.solveSeconds = Math.round(solveSeconds * 10) / 10;
-          }
-        }
         return sendJson(res, out);
       });
     }
@@ -471,33 +452,6 @@ function createApp(options = {}) {
     if (url.pathname === "/api/stats" && req.method === "GET") {
       const pid = ensurePid(req, res);
       return sendJson(res, computeStats(pid));
-    }
-
-    // Anti-peek: leaving the tab/window mid-game forfeits today's puzzle. The
-    // client reports it here; the play is finished+lost AND blocked, so a reload
-    // can't resume it. Idempotent — once finished, just echoes the current state.
-    if (url.pathname === "/api/forfeit" && req.method === "POST") {
-      const pid = ensurePid(req, res);
-      const date = todayStr();
-      const p = puzzleForDate(date);
-      const e = words[p.idx];
-      const play = getPlay(pid, date);
-      if (play.finished) {
-        // already finished: reveal only if this was an honest finish, not a block
-        const out = { finished: true, won: play.won, blocked: play.blocked, stats: computeStats(pid) };
-        if (!play.blocked) out.reveal = { word: e.word, name: e.name, quote: e.quote, img: e.img };
-        return sendJson(res, out);
-      }
-      const now = new Date();
-      const startedAt = play.startedAt || now.toISOString();
-      db.prepare(
-        `INSERT INTO plays (pid, date, grid, finished, won, updated_at, started_at, blocked)
-         VALUES (?, ?, ?, 1, 0, ?, ?, 1)
-         ON CONFLICT(pid, date) DO UPDATE SET
-           finished = 1, won = 0, blocked = 1, updated_at = excluded.updated_at`
-      ).run(pid, date, JSON.stringify(play.grid), now.toISOString(), startedAt);
-      // a fresh block never reveals the uma — that's the point of the penalty
-      return sendJson(res, { finished: true, won: false, blocked: true, stats: computeStats(pid) });
     }
 
     // ---- Duel accounts / auth / leaderboard ----

@@ -11,6 +11,21 @@
   // newest first. Each needs a STABLE unique id; `tag` is an optional pill.
   var ANNOUNCEMENTS = [
     {
+      id: "v0.5.0-relax-daily-anti-peek",
+      date: "v0.5.0 · June 2026",
+      tag: "Fair play",
+      title: "Daily Pakadle drops its tab-switching penalty",
+      body:
+        "The daily Pakadle no longer locks when a player switches tabs or windows mid-puzzle. " +
+        "The anti-peek penalty added in v0.4.0 has been removed from the daily game, and leaving " +
+        "the tab no longer counts as a loss." +
+        "<ul>" +
+        "<li><b>Pakadle:</b> no tab-switch penalty. The daily plays out as a solo puzzle again.</li>" +
+        "<li><b>Pakadle Duel:</b> the penalty remains. Leaving the tab mid-round still forfeits " +
+        "the match and deducts 100 rating.</li>" +
+        "</ul>",
+    },
+    {
       id: "v0.4.0-anti-peek",
       date: "v0.4.0 · June 2026",
       tag: "Fair play",

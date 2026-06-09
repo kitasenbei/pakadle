@@ -375,62 +375,6 @@ test("GET /api/daily after finishing returns the played rows and the reveal", as
   }
 });
 
-// ---- /api/forfeit: tab-switch locks the day ----
-
-test("POST /api/forfeit blocks today's puzzle: finished, lost, revealed, and locked", async () => {
-  const { req, teardown } = await bootApp();
-  try {
-    await req("GET", "/api/daily");
-    await req("POST", "/api/guess", { guess: "WRONGLY" }); // one guess in progress
-
-    const f = await req("POST", "/api/forfeit", { reason: "focus" });
-    assert.equal(f.status, 200);
-    assert.equal(f.body.finished, true);
-    assert.equal(f.body.won, false);
-    assert.equal(f.body.blocked, true);
-    assert.equal(f.body.reveal, undefined, "a cheated/blocked game never reveals the uma");
-
-    // a reload sees the locked state, keeps the earlier guess, and can't resume
-    const d = await req("GET", "/api/daily");
-    assert.equal(d.body.finished, true);
-    assert.equal(d.body.won, false);
-    assert.equal(d.body.blocked, true);
-    assert.equal(d.body.reveal, undefined, "still no reveal after reload");
-    assert.equal(d.body.rows.length, 1);
-    assert.equal(d.body.rows[0].guess, "WRONGLY");
-
-    // further guesses are refused now that the game is finished
-    const g = await req("POST", "/api/guess", { guess: "TESTING" });
-    assert.equal(g.status, 409);
-
-    // the forfeit counts as a played loss in stats
-    const s = await req("GET", "/api/stats");
-    assert.equal(s.body.played, 1);
-    assert.equal(s.body.wins, 0);
-  } finally {
-    await teardown();
-  }
-});
-
-test("POST /api/forfeit is idempotent and won't overturn a real win", async () => {
-  const { req, teardown } = await bootApp();
-  try {
-    await req("GET", "/api/daily");
-    await req("POST", "/api/guess", { guess: "TESTING" }); // already won
-
-    const f = await req("POST", "/api/forfeit", { reason: "focus" });
-    assert.equal(f.status, 200);
-    assert.equal(f.body.won, true, "a finished win stays a win");
-    assert.equal(f.body.blocked, false);
-
-    const d = await req("GET", "/api/daily");
-    assert.equal(d.body.won, true);
-    assert.equal(d.body.blocked, false);
-  } finally {
-    await teardown();
-  }
-});
-
 // ---- /api/stats ----
 
 test("GET /api/stats returns zeroed stats for a brand-new pid", async () => {

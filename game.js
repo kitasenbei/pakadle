@@ -36,7 +36,6 @@
   let guess = "";
   let isRevealing = false;
   let gameOver = false;
-  let blocked = false; // forfeited the day by leaving the tab/window mid-game
   let lastWon = false;
   let serverStats = null;
   let rolloverTarget = 0; // epoch ms of the next daily rollover
@@ -90,7 +89,6 @@
     guess = "";
     isRevealing = false;
     gameOver = false;
-    blocked = false;
     serverStats = data.stats || null;
     rolloverTarget = Date.now() + (data.secondsUntilRollover || 0) * 1000;
     answerEntry = data.reveal || null;
@@ -112,9 +110,8 @@
     if (data.finished) {
       gameOver = true;
       lastWon = data.won;
-      blocked = !!data.blocked;
       if (answerEntry) new Image().src = answerEntry.img;
-      setTimeout(() => showModal({ reveal: true, won: lastWon, finished: true, blocked }), 350);
+      setTimeout(() => showModal({ reveal: true, won: lastWon, finished: true }), 350);
     }
 
     let seen = false;
@@ -288,7 +285,6 @@
     if (firstTryWin) {
       horsePads().then(() => {
         reveal();
-        if (data.sus) flagCheat(data.solveSeconds);   // ...too fast. the horses noticed.
       });
     } else {
       reveal();
@@ -489,24 +485,6 @@
     padsRunning = false;
   }
 
-  // ===== cheat accusation (fast first-try win) =====
-  function flagCheat(seconds) {
-    const when = typeof seconds === "number" ? `${seconds} second${seconds === 1 ? "" : "s"}` : "no time at all";
-    const el = document.createElement("div");
-    el.className = "cheat-popup";
-    el.innerHTML =
-      '<div class="cheat-card">' +
-      '<div class="cheat-horses">🐎👀🐎</div>' +
-      "<h3>This is likely a cheated run.</h3>" +
-      `<p>First guess in ${when}. The horses are watching.</p>` +
-      '<button class="cheat-dismiss">...fine</button>' +
-      "</div>";
-    document.body.appendChild(el);
-    const close = () => el.remove();
-    el.querySelector(".cheat-dismiss").addEventListener("click", close);
-    el.addEventListener("click", (e) => { if (e.target === el) close(); });
-  }
-
   // ===== toast =====
   function toast(msg) {
     const t = document.createElement("div");
@@ -547,23 +525,12 @@
   // ===== modal =====
   function showModal(opts) {
     const { reveal, won, finished } = opts;
-    const blockedMode = !!opts.blocked;
     const s = serverStats || { played: 0, winRate: 0, streak: 0, maxStreak: 0 };
     const cardClass = reveal ? (won ? "win" : "lose") : "lose";
-    const badgeText = blockedMode ? "LOCKED 🔒" : reveal ? (won ? "WIN! 🥕" : "NEXT TIME") : "STATS";
-    const notice = blockedMode
-      ? '<div class="block-note">You switched tabs or windows mid-game, so today\'s Pakadle is <b>locked</b>. ' +
-        'No peeking. The horses are watching. 🐎👀 Come back after the daily reset for a fresh puzzle.</div>'
-      : "";
+    const badgeText = reveal ? (won ? "WIN! 🥕" : "NEXT TIME") : "STATS";
 
-    // a blocked (cheated) game never shows the uma — no horse for peekers.
-    const hero = blockedMode
-      ? `<div class="locked-hero">
-             <span class="lock-mark">🔒</span>
-             <span class="locked-cap">Answer hidden</span>
-           </div>`
-      : reveal && answerEntry
-        ? `<div class="hero">
+    const hero = reveal && answerEntry
+      ? `<div class="hero">
              <div class="char">
                <img class="portrait" src="${answerEntry.img}" alt="${answerEntry.name}" />
              </div>
@@ -573,12 +540,12 @@
                <div class="quote">${answerEntry.quote}</div>
              </div>
            </div>`
-        : `<div class="info" style="text-align:center;padding:14px 0 6px;">
+      : `<div class="info" style="text-align:center;padding:14px 0 6px;">
              <div class="answer" style="color:var(--ink)">Keep guessing!</div>
            </div>`;
 
     const footer = finished
-      ? `${blockedMode ? "" : '<button id="share-btn" class="share-btn">Share 🔗</button>'}
+      ? `<button id="share-btn" class="share-btn">Share 🔗</button>
          <div class="countdown" id="countdown">Next Pakadle in …</div>`
       : `<button id="modal-close">Got it</button>`;
 
@@ -587,7 +554,6 @@
         <button class="card-x" id="card-x" aria-label="Close">×</button>
         <div class="badge ${cardClass}">${badgeText}</div>
         ${hero}
-        ${notice}
         <div class="stats">
           <div class="stat"><span class="num">${s.played}</span><span class="lbl">Played</span></div>
           <div class="stat"><span class="num">${s.winRate}</span><span class="lbl">Win %</span></div>
@@ -646,7 +612,7 @@
   }
 
   function openStats() {
-    showModal({ reveal: gameOver, won: lastWon, finished: gameOver, blocked });
+    showModal({ reveal: gameOver, won: lastWon, finished: gameOver });
   }
 
   // ===== how-to-play onboarding (multi-step) =====
@@ -724,7 +690,6 @@
   // ===== physical keyboard =====
   document.addEventListener("keydown", (e) => {
     if (e.key === "5") { horsePads(); return; }   // TODO: trigger on first-try win instead
-    if (e.key === "6") { flagCheat(2.3); return; } // preview the cheat-accusation popup
     if (howtoEl.classList.contains("open")) {
       if (e.key === "Escape") closeHowto();
       else if (e.key === "Enter") document.getElementById("howto-next").click();
@@ -746,49 +711,6 @@
   });
   modalEl.addEventListener("click", (e) => {
     if (e.target === modalEl) closeModal();
-  });
-
-  // ===== anti-peek: leaving the tab/window mid-game locks today's puzzle =====
-  // Switching tabs (visibilitychange) or alt-tabbing to another window (blur)
-  // while a puzzle is live forfeits the day: the server marks it finished+lost
-  // and blocked, so a reload can't resume it. We only arm this once a puzzle is
-  // actually in play — not during the how-to, an open modal, or after game over.
-  function isPlaying() {
-    return (
-      !gameOver && !blocked && wordLen > 0 &&
-      !howtoEl.classList.contains("open") &&
-      !modalEl.classList.contains("open")
-    );
-  }
-
-  async function forfeitDay() {
-    if (gameOver || blocked) return;
-    blocked = true;
-    gameOver = true;
-    isRevealing = false;
-    let data = null;
-    try {
-      const res = await fetch("/api/forfeit", {
-        method: "POST",
-        credentials: "same-origin",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ reason: "focus" }),
-      });
-      data = await res.json();
-    } catch (e) {}
-    if (data) {
-      lastWon = false;
-      if (data.stats) serverStats = data.stats;
-    }
-    answerEntry = null; // cheated -> no uma to reveal
-    showModal({ reveal: true, won: false, finished: true, blocked: true });
-  }
-
-  document.addEventListener("visibilitychange", () => {
-    if (document.hidden && isPlaying()) forfeitDay();
-  });
-  window.addEventListener("blur", () => {
-    if (isPlaying()) forfeitDay();
   });
 
   // ===== boot =====
