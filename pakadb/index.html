@@ -19,9 +19,13 @@
   <header class="cp-bar">
     <div class="cp-brand">
       <span class="cp-logo">PAKA<b>DB</b></span>
+      <div class="cp-tabs" id="cp-tabs">
+        <button class="cp-tab on" data-view="db">DATABASE</button>
+        <button class="cp-tab" data-view="breed">BREEDING</button>
+      </div>
       <span class="cp-meta" id="cp-count">--</span>
     </div>
-    <div class="cp-controls">
+    <div class="cp-controls" id="cp-db-controls">
       <input id="cp-search" class="cp-input" type="search" placeholder="SEARCH NAME…" autocomplete="off" spellcheck="false" aria-label="Search by name" />
       <div class="pd-dd" id="cp-sort" data-value="name" data-prefix="SORT: ">
         <button class="pd-dd-btn" type="button" aria-haspopup="listbox" aria-expanded="false">
@@ -40,19 +44,82 @@
       </div>
       <a class="cp-exit" href="/">EXIT ▸</a>
     </div>
+    <div class="cp-controls" id="cp-breed-controls" hidden>
+      <button class="cp-ghost" id="cp-roster-open">SAVED UMAS</button>
+      <button class="cp-ghost" id="cp-breed-reset">RESET TREE</button>
+      <a class="cp-exit" href="/">EXIT ▸</a>
+    </div>
   </header>
 
-  <!-- filter rail -->
-  <div class="cp-filters" id="cp-filters"></div>
+  <!-- ===== DATABASE view ===== -->
+  <div id="view-db">
+    <div class="cp-filters" id="cp-filters"></div>
+    <div class="cp-adv" id="cp-adv" hidden></div>
+    <main class="cp-grid" id="cp-grid" aria-live="polite"></main>
+    <p class="cp-empty" id="cp-empty" hidden>No beautiful mares match that filter.</p>
+  </div>
 
-  <!-- data grid -->
-  <main class="cp-grid" id="cp-grid" aria-live="polite"></main>
-  <p class="cp-empty" id="cp-empty" hidden>No beautiful mares match that filter.</p>
+  <!-- ===== BREEDING view ===== -->
+  <div id="view-breed" hidden>
+    <div class="bd-summary" id="bd-summary"></div>
+    <div class="bd-stage" id="bd-stage"></div>
 
-  <!-- detail drawer -->
+    <!-- inline slot picker (appears under the tree when a slot is tapped) -->
+    <div class="bd-picker" id="bd-picker" hidden>
+      <div class="bd-picker-head">
+        <span class="bd-picker-title" id="bd-picker-title">Assign</span>
+        <button class="cp-ghost bd-picker-clear" id="bd-picker-clear">CLEAR</button>
+        <button class="dh-x" id="bd-picker-close">✕</button>
+      </div>
+      <input id="bd-picker-search" class="cp-input bd-picker-search" type="search" placeholder="SEARCH MARE…" autocomplete="off" spellcheck="false" />
+      <div class="bd-picker-list" id="bd-picker-list"></div>
+    </div>
+
+    <div class="bd-coverage" id="bd-coverage"></div>
+    <div class="bd-factors" id="bd-factors"></div>
+  </div>
+
+  <!-- detail drawer (database) -->
   <aside class="cp-drawer" id="cp-drawer" aria-hidden="true">
     <div class="cp-drawer-inner" id="cp-drawer-inner"></div>
   </aside>
+
+  <!-- slot picker (breeding) -->
+  <div class="cp-picker" id="cp-picker" hidden>
+    <div class="cp-picker-box">
+      <div class="cp-picker-head">
+        <input id="cp-picker-search" class="cp-input" type="search" placeholder="SEARCH MARE…" autocomplete="off" spellcheck="false" />
+        <button class="cp-ghost" id="cp-picker-clear">CLEAR SLOT</button>
+        <button class="dh-x" id="cp-picker-x">✕</button>
+      </div>
+      <div class="cp-picker-list" id="cp-picker-list"></div>
+    </div>
+  </div>
+
+  <!-- saved-uma roster -->
+  <div class="cp-picker" id="cp-roster" hidden>
+    <div class="cp-picker-box">
+      <div class="cp-picker-head">
+        <b class="cp-modal-title">Saved Umas</b>
+        <button class="cp-ghost" id="cp-roster-new">+ NEW UMA</button>
+        <button class="dh-x" id="cp-roster-x">✕</button>
+      </div>
+      <div class="cp-picker-list" id="cp-roster-list"></div>
+    </div>
+  </div>
+
+  <!-- spark editor -->
+  <div class="cp-picker" id="cp-editor" hidden>
+    <div class="cp-picker-box">
+      <div class="cp-picker-head">
+        <b class="cp-modal-title" id="cp-editor-title">Edit Uma</b>
+        <button class="cp-ghost" id="cp-editor-save">SAVE</button>
+        <button class="dh-x" id="cp-editor-x">✕</button>
+      </div>
+      <div class="cp-picker-list" id="cp-editor-body"></div>
+    </div>
+  </div>
+
   <div class="cp-scrim" id="cp-scrim" hidden></div>
 
   <script src="/pakadb/pakadb.js" defer></script>

@@ -1,4 +1,4 @@
-// PakaDB data ingestion — pulls rich Umamusume data from gametora's public
+// PakaDB data ingestion: pulls rich Umamusume data from gametora's public
 // /data store and normalizes it into local JSON + self-hosted portraits.
 //
 // This is a BUILD-TIME tool, run manually to refresh the dataset. The Pakadle
@@ -22,6 +22,7 @@ const DIR = __dirname;
 const DATA_DIR = path.join(DIR, "data");
 const RAW_DIR = path.join(DATA_DIR, "raw");
 const IMG_DIR = path.join(DIR, "assets", "uma");
+const ICON_DIR = path.join(DIR, "assets", "skill_icons");
 
 const SKIP_IMAGES = process.argv.includes("--no-images");
 
@@ -120,11 +121,36 @@ async function main() {
   }));
 
   // representative (original) card per char_id = smallest card_id
-  const repCard = new Map();
+  // all cards per character (sorted; lowest card_id = the original/base outfit)
+  const cardsByChar = new Map();
   for (const c of cards) {
-    const cur = repCard.get(c.char_id);
-    if (!cur || c.card_id < cur.card_id) repCard.set(c.char_id, c);
+    if (!cardsByChar.has(c.char_id)) cardsByChar.set(c.char_id, []);
+    cardsByChar.get(c.char_id).push(c);
   }
+  for (const list of cardsByChar.values()) list.sort((a, b) => a.card_id - b.card_id);
+
+  // one card (outfit) -> normalized object; portraits keyed by costume id
+  const cardObj = (card) => ({
+    cardId: card.card_id,
+    tid: card.tid,
+    title: card.title || null,
+    costume: card.costume,
+    rarity: card.rarity,
+    obtained: card.obtained || null,
+    image: `assets/uma/${card.card_id}.png`,
+    thumb: `assets/uma/${card.card_id}_thumb.png`,
+    statsBase: mapStats(card.base_stats),
+    statsMax: mapStats(card.five_star_stats || card.four_star_stats),
+    growth: mapStats(card.stat_bonus),
+    aptitude: mapAptitude(card.aptitude),
+    skills: {
+      unique: resolve(card.skills_unique),
+      innate: resolve(card.skills_innate),
+      awakening: resolve(card.skills_awakening),
+      event: resolve(card.skills_event),
+      evo: resolveEvo(card.skills_evo),
+    },
+  });
 
   // breeding: char -> relation_types, and relation_type -> points
   const relationPoints = {};
@@ -142,25 +168,20 @@ async function main() {
     .sort((a, b) => (a.en_name || "").localeCompare(b.en_name || ""));
 
   const umas = [];
-  const imageJobs = [];
+  const costumes = new Set(); // (char_id, costume) portraits to fetch
   for (const c of playable) {
-    const card = repCard.get(c.char_id);
-    if (!card) { log(`     ! no card for ${c.char_id} ${c.en_name}, skipping`); continue; }
+    const list = cardsByChar.get(c.char_id);
+    if (!list || !list.length) { log(`     ! no card for ${c.char_id} ${c.en_name}, skipping`); continue; }
 
-    const imgFile = `${c.char_id}.png`;
-    const thumbFile = `${c.char_id}_thumb.png`;
-    imageJobs.push({ charId: c.char_id, costume: card.costume, imgFile, thumbFile, name: c.en_name });
+    const alts = list.map(cardObj);            // every outfit, base first
+    const base = alts[0];
+    list.forEach((card) => costumes.add(c.char_id + "|" + card.card_id));
 
     umas.push({
       id: c.char_id,
-      cardId: card.card_id,
-      urlName: card.url_name,
       name: c.en_name,
       nameJp: c.jp_name,
-      title: card.title || null,
-      rarity: card.rarity,
-      image: `assets/uma/${imgFile}`,
-      thumb: `assets/uma/${thumbFile}`,
+      urlName: list[0].url_name,
       bio: {
         birthday: (c.birth_year || c.birth_month || c.birth_day)
           ? { year: c.birth_year || null, month: c.birth_month || null, day: c.birth_day || null } : null,
@@ -171,47 +192,85 @@ async function main() {
         vaEn: c.va_en || null,
         realLife: c.rl || null,
       },
-      statsBase: mapStats(card.base_stats),
-      statsMax: mapStats(card.five_star_stats || card.four_star_stats),
-      growth: mapStats(card.stat_bonus),
-      aptitude: mapAptitude(card.aptitude),
-      skills: {
-        unique: resolve(card.skills_unique),
-        innate: resolve(card.skills_innate),
-        awakening: resolve(card.skills_awakening),
-        event: resolve(card.skills_event),
-        evo: resolveEvo(card.skills_evo),
-      },
+      // base outfit surfaced at the top level (grid, breeding, default drawer)
+      cardId: base.cardId,
+      title: base.title,
+      rarity: base.rarity,
+      image: base.image,
+      thumb: base.thumb,
+      statsBase: base.statsBase,
+      statsMax: base.statsMax,
+      growth: base.growth,
+      aptitude: base.aptitude,
+      skills: base.skills,
+      alts: alts,                              // full outfit list (includes base)
       relationTypes: members[c.char_id] || [],
     });
   }
 
+  const altTotal = umas.reduce((s, u) => s + u.alts.length, 0);
   writeJSON(path.join(DATA_DIR, "umas.json"), umas);
   writeJSON(path.join(DATA_DIR, "skills.json"), Array.from(skillById.values()));
   writeJSON(path.join(DATA_DIR, "breeding.json"), { relationPoints, members });
-  log(`     normalized ${umas.length} playable equines`);
+  log(`     normalized ${umas.length} playable equines (${altTotal} outfits incl. alts)`);
 
   if (SKIP_IMAGES) { log("5/5  Skipping images (--no-images)."); return; }
 
-  log(`5/5  Downloading portraits (${imageJobs.length} umas)…`);
+  const jobs = Array.from(costumes).map((k) => { const p = k.split("|"); return { charId: p[0], cardId: p[1] }; });
+  log(`5/5  Downloading portraits (${jobs.length} outfits)…`);
   let ok = 0, skipped = 0, failed = 0;
-  for (const j of imageJobs) {
-    const base = `${HOST}/images/umamusume/characters/chara_stand_${j.charId}_${j.costume}.png`;
-    const thumb = `${HOST}/images/umamusume/characters/thumb/chara_stand_${j.charId}_${j.costume}.png`;
-    const fullPath = path.join(IMG_DIR, j.imgFile);
-    const thumbPath = path.join(IMG_DIR, j.thumbFile);
+  for (const j of jobs) {
+    const full = `${HOST}/images/umamusume/characters/chara_stand_${j.charId}_${j.cardId}.png`;
+    const thumb = `${HOST}/images/umamusume/characters/thumb/chara_stand_${j.charId}_${j.cardId}.png`;
+    const fullPath = path.join(IMG_DIR, `${j.cardId}.png`);
+    const thumbPath = path.join(IMG_DIR, `${j.cardId}_thumb.png`);
     if (fs.existsSync(fullPath) && fs.existsSync(thumbPath)) { skipped++; continue; }
     try {
-      if (!fs.existsSync(fullPath)) fs.writeFileSync(fullPath, await getBuffer(base));
+      if (!fs.existsSync(fullPath)) fs.writeFileSync(fullPath, await getBuffer(full));
       if (!fs.existsSync(thumbPath)) fs.writeFileSync(thumbPath, await getBuffer(thumb));
       ok++;
-      if (ok % 20 === 0) log(`     …${ok} downloaded`);
+      if (ok % 30 === 0) log(`     …${ok} downloaded`);
     } catch (e) {
       failed++;
-      log(`     ! ${j.name} (${j.charId}): ${e.message}`);
+      log(`     ! card ${j.cardId}: ${e.message}`);
     }
   }
   log(`     portraits: ${ok} downloaded, ${skipped} already present, ${failed} failed`);
+
+  // skill icons (small set of shared icons, keyed by iconId)
+  mkdirp(ICON_DIR);
+  var iconIds = Array.from(new Set(skills.map((s) => s.iconid).filter(Boolean)));
+  log(`     downloading ${iconIds.length} skill icons…`);
+  let iok = 0, iskip = 0, ifail = 0;
+  for (const iid of iconIds) {
+    const dest = path.join(ICON_DIR, iid + ".png");
+    if (fs.existsSync(dest)) { iskip++; continue; }
+    try {
+      fs.writeFileSync(dest, await getBuffer(`${HOST}/images/umamusume/skill_icons/utx_ico_skill_${iid}.png`));
+      iok++;
+    } catch (e) { ifail++; log(`     ! skill icon ${iid}: ${e.message}`); }
+  }
+  log(`     skill icons: ${iok} downloaded, ${iskip} already present, ${ifail} failed`);
+
+  // stat icons (Speed/Stamina/Power/Guts/Wit): sourced from game8 (gametora renders
+  // these via CSS/SVG, so no clean asset URL). Fixed set, rarely changes.
+  const STAT_ICON_DIR = path.join(DIR, "assets", "stat_icons");
+  mkdirp(STAT_ICON_DIR);
+  const STAT_ICONS = {
+    speed: "https://img.game8.co/4215860/6dd970fab835ef46f73bd46253ca2d70.png/show",
+    stamina: "https://img.game8.co/4215861/da59c92924fdef527d5bd04184ff87c7.png/show",
+    power: "https://img.game8.co/4215858/c83b8057c62356630b3bd293e272354b.png/show",
+    guts: "https://img.game8.co/4215859/b02b8c92b20c8e3026c5bc2e7f02fcf7.png/show",
+    wit: "https://img.game8.co/4215862/63bcaa618b84baf84439e9a2fe65fb87.png/show",
+  };
+  let sok = 0;
+  for (const k of Object.keys(STAT_ICONS)) {
+    const dest = path.join(STAT_ICON_DIR, k + ".png");
+    if (fs.existsSync(dest)) { continue; }
+    try { fs.writeFileSync(dest, await getBuffer(STAT_ICONS[k])); sok++; }
+    catch (e) { log(`     ! stat icon ${k}: ${e.message}`); }
+  }
+  log(`     stat icons: ${sok} downloaded`);
   log("Done.");
 }
 

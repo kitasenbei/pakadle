@@ -95,8 +95,8 @@
     guesses = (d.guesses || []).map((t, i, arr) => ({ text: t, correct: d.won && i === arr.length - 1 }));
 
     subtitleEl.innerHTML = testMode
-      ? `Pakapix · <b>practice</b> (random uma each reload)`
-      : `Pakapix <b>#${number}</b> · guess the Umamusume`;
+      ? `Pakapix: <b>practice</b> (random uma each reload)`
+      : `Pakapix <b>#${number}</b>: guess the Umamusume`;
     guessesEl.innerHTML = "";
     guesses.forEach(addGuessRow);
     renderDots();

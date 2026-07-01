@@ -93,7 +93,7 @@
     rolloverTarget = Date.now() + (data.secondsUntilRollover || 0) * 1000;
     answerEntry = data.reveal || null;
 
-    subtitleEl.innerHTML = `Pakadle <b>#${data.number}</b> · guess the <b>${wordLen}</b>-letter Umamusume`;
+    subtitleEl.innerHTML = `Pakadle <b>#${data.number}</b>: guess the <b>${wordLen}</b>-letter Umamusume`;
     buildBoard();
     resetKeyboard();
     closeModal();

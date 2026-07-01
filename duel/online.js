@@ -31,7 +31,7 @@ function init(server, ws, ensurePid, deps) {
   } = deps;
   // flat rating hit for leaving the tab/window mid-round in Duel.
   const FOCUS_PENALTY = deps.focusPenalty != null ? deps.focusPenalty : 100;
-  const COUNTDOWN_MS = deps.countdownMs != null ? deps.countdownMs : 3000;     // "3·2·1·go" pre-round
+  const COUNTDOWN_MS = deps.countdownMs != null ? deps.countdownMs : 3000;     // "3-2-1-go" pre-round
   const ROUND_GRACE_MS = deps.roundGraceMs != null ? deps.roundGraceMs : 4500; // reveal lingers between rounds
   const MATCH_GRACE_MS = deps.matchGraceMs != null ? deps.matchGraceMs : 1500; // before the game is reaped
 

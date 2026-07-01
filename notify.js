@@ -12,7 +12,7 @@
   var ANNOUNCEMENTS = [
     {
       id: "v0.5.0-relax-daily-anti-peek",
-      date: "v0.5.0 · June 2026",
+      date: "v0.5.0, June 2026",
       tag: "Fair play",
       title: "Daily Pakadle drops its tab-switching penalty",
       body:
@@ -27,7 +27,7 @@
     },
     {
       id: "v0.4.0-anti-peek",
-      date: "v0.4.0 · June 2026",
+      date: "v0.4.0, June 2026",
       tag: "Fair play",
       title: "No more peeking: tab-switching is now penalized",
       body:
