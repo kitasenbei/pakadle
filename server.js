@@ -201,6 +201,12 @@ function createApp(options = {}) {
   // Pakadle Duel: realtime head-to-head racing, shares the same tiny WS server.
   const duelOnline = require("./duel/online.js");
 
+  // Pakeiba: realtime multiplayer horse racing (rooms + bots), same WS server.
+  // Not finished yet (targeting 2026-07-06); keep the code but gate public access.
+  // Flip on for local dev with PAKEIBA=1.
+  const PAKEIBA_ENABLED = process.env.PAKEIBA === "1" || process.env.PAKEIBA === "true";
+  const pakeibaOnline = require("./pakeiba/online.js");
+
   function puzzleForDate(dateStr) {
     let row = db.prepare("SELECT date, number, idx FROM puzzles WHERE date = ?").get(dateStr);
     if (!row) {
@@ -367,6 +373,41 @@ function createApp(options = {}) {
       return fs.readFile(fp, (err, buf) => {
         if (err) { res.writeHead(404); return res.end("not found"); }
         res.writeHead(200, { "Content-Type": MIME[path.extname(fp)] || "application/octet-stream" });
+        res.end(buf);
+      });
+    }
+
+    // ---- Pakeiba (bundled static game; realtime over /pakeiba/ws) ----
+    // Gated until it ships: always intercept the path, but 404 unless enabled,
+    // so nothing under /pakeiba/ leaks through the static handler below.
+    if (url.pathname === "/pakeiba" || url.pathname.startsWith("/pakeiba/")) {
+      if (!PAKEIBA_ENABLED) { res.writeHead(404); return res.end("not found"); }
+      let sub = url.pathname.slice("/pakeiba".length);
+      if (sub === "" || sub === "/") sub = "/index.html";
+      if (sub === "/ws") { res.writeHead(426); return res.end("upgrade required"); }
+      const baseDir = path.join(ROOT, "pakeiba");
+      const fp = path.normalize(path.join(baseDir, sub));
+      if (!fp.startsWith(baseDir)) { res.writeHead(403); return res.end("forbidden"); }
+      if (path.basename(fp) === "online.js") { res.writeHead(403); return res.end("forbidden"); }
+      return fs.readFile(fp, (err, buf) => {
+        if (err) { res.writeHead(404); return res.end("not found"); }
+        res.writeHead(200, {
+          "Content-Type": MIME[path.extname(fp)] || "application/octet-stream",
+          "Cache-Control": "no-cache",
+        });
+        res.end(buf);
+      });
+    }
+
+    // ---- PakaDB (rich character database + future breeding tool) ----
+    // Its own static mini-app under pakadb/, backed by the gametora-sourced
+    // dataset in pakadb/data/ (built by pakadb/build-data.js). Kept entirely
+    // separate from words.js (the Pakadle puzzle roster). Sub-paths (css/js/
+    // data/assets) fall through to the static handler below.
+    if (url.pathname === "/pakadb" || url.pathname === "/pakadb/") {
+      return fs.readFile(path.join(ROOT, "pakadb", "index.html"), (err, buf) => {
+        if (err) { res.writeHead(404); return res.end("not found"); }
+        res.writeHead(200, { "Content-Type": "text/html; charset=utf-8", "Cache-Control": "no-cache" });
         res.end(buf);
       });
     }
@@ -555,6 +596,10 @@ function createApp(options = {}) {
     penalize, // anti-cheat: dock rating when a player tabs away mid-round
     ...(options.duelTimings || {}), // test seam: shrink countdown/grace windows
   });
+
+  // Pakeiba WebSocket endpoint (/pakeiba/ws): rooms, bots, server-run races.
+  // Only wire it up when Pakeiba is enabled (see PAKEIBA_ENABLED above).
+  if (PAKEIBA_ENABLED) pakeibaOnline.init(server, pakachessWs, () => crypto.randomUUID());
 
   return {
     server, db, words, evaluate, dayNumber, secondsUntilRollover, puzzleForDate, puzzleIdxFor,

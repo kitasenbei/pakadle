@@ -705,6 +705,7 @@
   });
 
   statsBtn.addEventListener("click", openStats);
+  document.getElementById("pakadb").addEventListener("click", () => { window.location.href = "/pakadb"; });
   howToBtn.addEventListener("click", openHowto);
   howtoEl.addEventListener("click", (e) => {
     if (e.target === howtoEl) closeHowto();

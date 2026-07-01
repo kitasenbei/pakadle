@@ -72,6 +72,7 @@ h1 .jp { color:var(--sakura); } h1 .en { color:var(--turf); }
 .ghost-btn:hover { border-color:var(--sakura); color:var(--sakura); }
 
 #disc-banner { background:#FBEAC8; color:#8A6D00; border-radius:10px; padding:8px 14px; font-weight:700; font-size:.9rem; margin:0 0 12px; text-align:center; }
+#spec-banner { background:#E3EEF8; color:#2B6CA6; border-radius:10px; padding:8px 14px; font-weight:800; font-size:.9rem; margin:0 0 12px; text-align:center; }
 
 /* ===== room code entry ===== */
 #room-entry { display:flex; flex-direction:column; align-items:center; gap:6px; padding:26px 10px; }
@@ -256,7 +257,7 @@ main { width:100%; display:flex; flex-direction:column; align-items:center; padd
   .panel { flex:none; width:min(92vw,520px); }
 }
 
-/* not enough room: stack the title (ウマ娘 / Pakachess) vertically */
+/* not enough room: stack the title vertically */
 @media (max-width:480px) {
   h1 { display:flex; flex-direction:column; line-height:1.02; }
 }

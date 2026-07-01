@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PakaDB - Umamusume Database</title>
+  <meta name="description" content="Rich Umamusume character database: aptitudes, stats, growth, and skills. Breeding support tool." />
+  <meta name="theme-color" content="#FBF5EA" />
+  <meta name="robots" content="noindex" />
+  <link rel="icon" type="image/png" href="/favicon.png" />
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/pakadb/pakadb.css" />
+</head>
+<body>
+  <!-- top control strip -->
+  <header class="cp-bar">
+    <div class="cp-brand">
+      <span class="cp-logo">PAKA<b>DB</b></span>
+      <span class="cp-meta" id="cp-count">--</span>
+    </div>
+    <div class="cp-controls">
+      <input id="cp-search" class="cp-input" type="search" placeholder="SEARCH NAME…" autocomplete="off" spellcheck="false" aria-label="Search by name" />
+      <div class="pd-dd" id="cp-sort" data-value="name" data-prefix="SORT: ">
+        <button class="pd-dd-btn" type="button" aria-haspopup="listbox" aria-expanded="false">
+          <span class="pd-dd-label">SORT: NAME</span>
+          <span class="pd-dd-caret" aria-hidden="true"></span>
+        </button>
+        <ul class="pd-dd-menu" role="listbox" aria-label="Sort by">
+          <li class="pd-dd-opt" role="option" data-value="name">NAME</li>
+          <li class="pd-dd-opt" role="option" data-value="rarity">RARITY</li>
+          <li class="pd-dd-opt" role="option" data-value="speed">SPEED</li>
+          <li class="pd-dd-opt" role="option" data-value="stamina">STAMINA</li>
+          <li class="pd-dd-opt" role="option" data-value="power">POWER</li>
+          <li class="pd-dd-opt" role="option" data-value="guts">GUTS</li>
+          <li class="pd-dd-opt" role="option" data-value="wit">WIT</li>
+        </ul>
+      </div>
+      <a class="cp-exit" href="/">EXIT ▸</a>
+    </div>
+  </header>
+
+  <!-- filter rail -->
+  <div class="cp-filters" id="cp-filters"></div>
+
+  <!-- data grid -->
+  <main class="cp-grid" id="cp-grid" aria-live="polite"></main>
+  <p class="cp-empty" id="cp-empty" hidden>No beautiful mares match that filter.</p>
+
+  <!-- detail drawer -->
+  <aside class="cp-drawer" id="cp-drawer" aria-hidden="true">
+    <div class="cp-drawer-inner" id="cp-drawer-inner"></div>
+  </aside>
+  <div class="cp-scrim" id="cp-scrim" hidden></div>
+
+  <script src="/pakadb/pakadb.js" defer></script>
+</body>
+</html>

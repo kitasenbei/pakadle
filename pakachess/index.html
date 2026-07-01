@@ -12,9 +12,10 @@
 <body>
   <div id="petals" aria-hidden="true"></div>
   <header>
-    <h1><span class="jp">ウマ娘</span> <span class="en">Pakachess</span></h1>
+    <h1><span class="en">Pakachess</span></h1>
     <div class="actions">
       <a class="cross-link" href="/">← Pakadle</a>
+      <a class="cross-link" href="/duel">Duel ⚔️</a>
       <button id="to-menu" hidden>Menu</button>
       <button id="new-game" hidden>New Game</button>
     </div>
@@ -57,6 +58,7 @@
     <!-- the game itself -->
     <div id="game" hidden>
       <div id="status">Your move</div>
+      <div id="spec-banner" hidden></div>
       <div id="disc-banner" hidden>Opponent disconnected, waiting for them to return...</div>
       <div class="layout">
         <div class="boardcol">

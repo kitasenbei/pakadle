@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Pakeiba: realtime Umamusume horse racing</title>
+  <meta name="description" content="Make a room, gather up to 12 trainers (or bots), and race your horse down a straight track. Realtime multiplayer Umamusume racing." />
+  <meta name="theme-color" content="#FBF5EA" />
+  <link rel="icon" type="image/png" href="/favicon.png" />
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/pakeiba/style.css" />
+</head>
+<body>
+  <div id="petals" aria-hidden="true"></div>
+
+  <header>
+    <h1>
+      <span class="en">Pakeiba <b class="hoof">🐎</b></span>
+    </h1>
+    <div class="actions">
+      <a class="cross-link" href="/">← Pakadle</a>
+      <a class="cross-link chess" href="/pakachess">Pakachess ♟️</a>
+      <a class="cross-link duel" href="/duel">Duel ⚔️</a>
+      <button id="quit-btn" class="pill-btn danger" hidden>Leave</button>
+    </div>
+  </header>
+
+  <main>
+    <!-- ===== lobby ===== -->
+    <section id="lobby">
+      <p class="tagline">Make a room, gather up to 12 trainers, and race down the straight. 🐎💨</p>
+
+      <div class="guest-row">
+        <label for="guest-name">Your trainer name</label>
+        <input id="guest-name" type="text" maxlength="24" placeholder="Trainer" autocomplete="off" spellcheck="false" />
+      </div>
+
+      <div class="menu-grid">
+        <button class="mode-card" id="mode-create">
+          <span class="mode-emoji">🏇</span>
+          <span class="mode-name">Create Room</span>
+          <span class="mode-sub">Start a race, invite friends + bots</span>
+        </button>
+        <button class="mode-card" id="mode-join">
+          <span class="mode-emoji">🚪</span>
+          <span class="mode-name">Join Room</span>
+          <span class="mode-sub">Enter a friend's code</span>
+        </button>
+      </div>
+
+      <!-- create / join code -->
+      <div id="code-panel" class="panel-box" hidden>
+        <h3 id="code-title">Join a room</h3>
+        <p class="room-label">Room code</p>
+        <input id="room-code" maxlength="8" placeholder="ABCD" autocomplete="off" spellcheck="false" />
+        <div class="row-btns">
+          <button class="ghost-btn" id="code-back">Back</button>
+          <button class="primary-btn" id="code-go">Go</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== room (paddock / racing) ===== -->
+    <section id="room" hidden>
+      <div class="room-head">
+        <div class="room-code-chip">Room <b id="room-code-show">----</b></div>
+        <div class="room-count"><span id="runner-count">0</span>/12 runners</div>
+      </div>
+
+      <!-- paddock: roster + host controls before the gate -->
+      <div id="paddock">
+        <h2 class="paddock-title">🏇 Paddock</h2>
+        <div id="roster" class="roster"></div>
+        <div class="host-controls" id="host-controls" hidden>
+          <button class="ghost-btn" id="add-bot">+ Add bot 🤖</button>
+          <button class="primary-btn" id="start-race">Start race! 🏁</button>
+        </div>
+        <p class="wait-host" id="wait-host" hidden>Waiting for the host to start the race…</p>
+        <p class="share-hint">Share code <b id="share-code">----</b> so friends can join.</p>
+      </div>
+
+      <!-- the track -->
+      <div id="track-wrap" hidden>
+        <div class="race-meta">
+          <div class="round-no" id="race-status">Get ready…</div>
+        </div>
+        <div id="track" class="track"></div>
+        <button id="run-btn" class="run-btn">TAP TO RUN! 🐎</button>
+        <p class="run-hint">Mash the button or tap <b>Space</b> to gallop.</p>
+      </div>
+    </section>
+  </main>
+
+  <div id="toast-wrap"></div>
+
+  <!-- countdown overlay -->
+  <div id="countdown" class="overlay" hidden><div class="cd-num" id="cd-num">3</div></div>
+
+  <!-- results overlay -->
+  <div id="result" class="overlay" hidden></div>
+
+  <script src="/pakeiba/game.js"></script>
+  <script src="/notify.js"></script>
+</body>
+</html>

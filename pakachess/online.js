@@ -14,6 +14,7 @@ function init(server, ws, ensurePid) {
   const pidGame = new Map();    // pid -> game id
   const pidConn = new Map();    // pid -> live conn
   const rooms = new Map();      // room code -> { pid, conn } waiting for a partner
+  const codeGame = new Map();   // room code -> active game id (lets late joiners spectate)
   let nextId = 1;
   const pidName = new Map();    // pid -> chosen display name
   const cleanCode = (s) => String(s).toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 8);
@@ -21,6 +22,7 @@ function init(server, ws, ensurePid) {
 
   const opp = (c) => (c === "w" ? "b" : "w");
   const colorOf = (g, pid) => (g.players.w === pid ? "w" : g.players.b === pid ? "b" : null);
+  const isSpectator = (g, pid) => g.spectators.has(pid);
 
   function liveClocks(g) {
     let lw = g.clock.w, lb = g.clock.b;
@@ -32,12 +34,12 @@ function init(server, ws, ensurePid) {
   }
 
   function sendTo(g, pid, msg) { const c = g.conns[pid]; if (c && c.alive) c.send(msg); }
-  function broadcast(g, msg) { sendTo(g, g.players.w, msg); sendTo(g, g.players.b, msg); }
+  function broadcast(g, msg) { for (const pid in g.conns) sendTo(g, pid, msg); } // players + spectators
 
   function cleanup(g) {
     games.delete(g.id);
-    if (pidGame.get(g.players.w) === g.id) pidGame.delete(g.players.w);
-    if (pidGame.get(g.players.b) === g.id) pidGame.delete(g.players.b);
+    if (g.code && codeGame.get(g.code) === g.id) codeGame.delete(g.code);
+    for (const pid of [g.players.w, g.players.b, ...g.spectators]) if (pidGame.get(pid) === g.id) pidGame.delete(pid);
   }
 
   function finish(g, result, reason) {
@@ -48,12 +50,12 @@ function init(server, ws, ensurePid) {
     setTimeout(() => cleanup(g), 1500); // let the over message land, then free it
   }
 
-  function startGame(pidA, pidB) {
+  function startGame(pidA, pidB, code) {
     const white = Math.random() < 0.5 ? pidA : pidB;
     const black = white === pidA ? pidB : pidA;
     const names = { w: pidName.get(white) || "Trainer", b: pidName.get(black) || "Trainer" };
     const g = {
-      id: nextId++, players: { w: white, b: black }, conns: {}, names,
+      id: nextId++, code, players: { w: white, b: black }, conns: {}, names, spectators: new Set(),
       state: E.fresh(), clock: { w: START_MS, b: START_MS },
       turnStart: null, started: false, over: false, result: null, reason: null,
       moves: [], lastMove: null, discSince: null,
@@ -61,15 +63,17 @@ function init(server, ws, ensurePid) {
     g.conns[white] = pidConn.get(white) || null;
     g.conns[black] = pidConn.get(black) || null;
     games.set(g.id, g);
+    if (code) codeGame.set(code, g.id);
     pidGame.set(white, g.id); pidGame.set(black, g.id);
-    sendTo(g, white, { t: "start", color: "w", opponent: names.b, clocks: { w: 600, b: 600 } });
-    sendTo(g, black, { t: "start", color: "b", opponent: names.w, clocks: { w: 600, b: 600 } });
+    sendTo(g, white, { t: "start", color: "w", opponent: names.b, white: names.w, black: names.b, clocks: { w: 600, b: 600 } });
+    sendTo(g, black, { t: "start", color: "b", opponent: names.w, white: names.w, black: names.b, clocks: { w: 600, b: 600 } });
   }
 
   function syncTo(g, pid) {
-    const col = colorOf(g, pid);
+    const col = colorOf(g, pid); // null for a spectator
     sendTo(g, pid, {
-      t: "sync", color: col, opponent: g.names[opp(col)],
+      t: "sync", color: col, opponent: col ? g.names[opp(col)] : null,
+      white: g.names.w, black: g.names.b,
       state: g.state, clocks: liveClocks(g), moves: g.moves, lastMove: g.lastMove,
       over: g.over, result: g.result, reason: g.reason,
     });
@@ -104,10 +108,14 @@ function init(server, ws, ensurePid) {
   function leaveQueueOrGame(pid, conn, asResign) {
     for (const [code, w] of rooms) if (w.pid === pid && w.conn === conn) rooms.delete(code);
     const gid = pidGame.get(pid);
-    if (gid != null) {
-      const g = games.get(gid);
-      if (g && !g.over) finish(g, opp(colorOf(g, pid)), asResign ? "resign" : "abandon");
+    if (gid == null) return;
+    const g = games.get(gid);
+    if (!g) return;
+    if (isSpectator(g, pid)) {            // a spectator leaving just stops watching
+      g.spectators.delete(pid); delete g.conns[pid]; pidGame.delete(pid);
+      return;
     }
+    if (!g.over) finish(g, opp(colorOf(g, pid)), asResign ? "resign" : "abandon");
   }
 
   ws.attach(server, {
@@ -125,9 +133,14 @@ function init(server, ws, ensurePid) {
           const code = cleanCode(msg.code);
           if (!code) { conn.send({ t: "error", msg: "Enter a room code." }); return; }
           const w = rooms.get(code);
+          const liveId = codeGame.get(code);
           if (w && w.pid !== pid && pidConn.get(w.pid) && pidConn.get(w.pid).alive) {
             rooms.delete(code);
-            startGame(w.pid, pid);                 // friend was waiting in this room -> pair up
+            startGame(w.pid, pid, code);           // friend was waiting in this room -> pair up
+          } else if (liveId != null && games.has(liveId) && !games.get(liveId).over) {
+            const g = games.get(liveId);           // game already running in this room -> spectate
+            g.spectators.add(pid); g.conns[pid] = conn; pidGame.set(pid, liveId);
+            syncTo(g, pid);
           } else {
             for (const [c, rw] of rooms) if (rw.pid === pid) rooms.delete(c); // drop any prior wait
             rooms.set(code, { pid, conn });
@@ -155,18 +168,22 @@ function init(server, ws, ensurePid) {
         const gid = pidGame.get(pid);
         if (gid != null && games.has(gid)) {
           const g = games.get(gid);
-          if (g.conns[pid] === conn) g.conns[pid] = null;
-          if (!g.over) broadcast(g, { t: "oppDisc" });
+          if (isSpectator(g, pid)) {            // spectator left: drop quietly
+            if (g.conns[pid] === conn) { delete g.conns[pid]; g.spectators.delete(pid); pidGame.delete(pid); }
+          } else {
+            if (g.conns[pid] === conn) g.conns[pid] = null;
+            if (!g.over) broadcast(g, { t: "oppDisc" });
+          }
         }
       };
 
-      // greet: resume an active game if one exists, else idle
+      // greet: resume/rejoin an active game if one exists, else idle
       const gid = pidGame.get(pid);
       if (gid != null && games.has(gid)) {
         const g = games.get(gid);
         g.conns[pid] = conn;
         syncTo(g, pid);
-        broadcast(g, { t: "oppConn" });
+        if (!isSpectator(g, pid)) broadcast(g, { t: "oppConn" });
       } else {
         conn.send({ t: "idle" });
       }

@@ -22,6 +22,7 @@
   const trayTop = $("tray-top"), trayBottom = $("tray-bottom");
   const moveListEl = $("movelist");
   const clockSelfEl = $("clock-self"), clockOppEl = $("clock-opp"), oppNameEl = $("opp-name");
+  const selfNameEl = clockSelfEl.querySelector(".who"), specBanner = $("spec-banner");
   const navFirst = $("nav-first"), navPrev = $("nav-prev"), navNext = $("nav-next"), navLast = $("nav-last");
   const menuEl = $("menu"), gameEl = $("game"), waitingEl = $("waiting");
   const toMenuBtn = $("to-menu"), newGameBtn = $("new-game"), discBanner = $("disc-banner");
@@ -42,7 +43,10 @@
 
   // mode + online networking
   let mode = null;        // "bot" | "online" | null (on the menu)
-  let myColor = "w";      // which color the human controls
+  let myColor = "w";      // which color the human controls (null when spectating)
+  let viewColor = "w";    // board perspective (myColor for players, "w" for spectators)
+  let spectating = false; // watching someone else's game (read-only)
+  let names = { w: "", b: "" }; // both players' names (for spectator labels / over text)
   let flip = false;       // render with black at the bottom
   let ws = null, reconnecting = false;
   const idx = (r, c) => (flip ? (7 - r) * 8 + (7 - c) : r * 8 + c); // board coord -> child index
@@ -69,7 +73,7 @@
       const p = ds.board[r][c];
       if (p) {
         if (live && !over && state.turn === myColor && p.c === myColor) sq.classList.add("movable");
-        const team = p.c === myColor ? "mine" : "theirs";
+        const team = p.c === viewColor ? "mine" : "theirs";
         const base = document.createElement("div"); base.className = "base " + team; sq.appendChild(base);
         const pc = document.createElement("div"); pc.className = "piece " + p.c; pc.title = NAME[p.t];
         if (entrance && !reduceMotion) { pc.classList.add("enter"); pc.style.animationDelay = ((dr + dc) * 0.03 + 0.1).toFixed(3) + "s"; }
@@ -129,7 +133,7 @@
     const pts = (arr) => arr.reduce((s, p) => s + VAL[p.t], 0);
     const icons = (arr) => arr.slice().sort((a, b) => VAL[b.t] - VAL[a.t])
       .map(p => '<img class="cap ' + p.c + '" src="' + IMG[p.t] + '" referrerpolicy="no-referrer" title="' + NAME[p.t] + '">').join("");
-    const mine = captured[myColor], theirs = captured[opp(myColor)];
+    const mine = captured[viewColor], theirs = captured[opp(viewColor)];
     const diff = pts(mine) - pts(theirs);
     trayBottom.innerHTML = icons(mine) + (diff > 0 ? '<span class="adv">+' + diff + "</span>" : "");
     trayTop.innerHTML = icons(theirs) + (diff < 0 ? '<span class="adv">+' + (-diff) + "</span>" : "");
@@ -158,13 +162,13 @@
 
   const fmt = (s) => Math.floor(s / 60) + ":" + String(s % 60).padStart(2, "0");
   function renderClocks() {
-    clockSelfEl.querySelector(".time").textContent = fmt(clocks[myColor]);
-    clockOppEl.querySelector(".time").textContent = fmt(clocks[opp(myColor)]);
-    clockSelfEl.classList.toggle("active", !over && state.turn === myColor);
-    clockOppEl.classList.toggle("active", !over && state.turn === opp(myColor));
+    clockSelfEl.querySelector(".time").textContent = fmt(clocks[viewColor]);
+    clockOppEl.querySelector(".time").textContent = fmt(clocks[opp(viewColor)]);
+    clockSelfEl.classList.toggle("active", !over && state.turn === viewColor);
+    clockOppEl.classList.toggle("active", !over && state.turn === opp(viewColor));
   }
   function popTime(color) {
-    const el = (color === myColor ? clockSelfEl : clockOppEl).querySelector(".time");
+    const el = (color === viewColor ? clockSelfEl : clockOppEl).querySelector(".time");
     el.classList.remove("tick"); void el.offsetWidth; el.classList.add("tick");
   }
   function setStatus(text, cls) {
@@ -321,8 +325,8 @@
     botPlay(best[Math.floor(Math.random() * best.length)]);
   }
   function newGame() { // PakaBot game
-    mode = "bot"; myColor = "w"; flip = false;
-    oppNameEl.textContent = "PakaBot";
+    mode = "bot"; myColor = "w"; viewColor = "w"; spectating = false; flip = false;
+    selfNameEl.textContent = "You"; oppNameEl.textContent = "PakaBot";
     state = fresh(); sel = null; selMoves = null; lastMove = null; over = false; busy = false;
     captured = { w: [], b: [] }; moveHist = []; clocks = { w: CLOCK_START, b: CLOCK_START };
     history = [{ state: clone(state), lastMove: null }]; viewIdx = 0;
@@ -335,6 +339,11 @@
   // ===================== online =====================
   function onlineTurnStatus(turn, chk) {
     if (over) return;
+    if (spectating) {
+      const nm = turn === "w" ? names.w : names.b;
+      setStatus((chk ? "Check, " : "") + nm + " to move", chk ? "chkmsg" : "");
+      return;
+    }
     const mine = turn === myColor;
     setStatus(chk ? (mine ? "Check! Your move." : "Check! Opponent to move.")
                   : (mine ? "Your move" : "Opponent to move"), chk ? "chkmsg" : "");
@@ -351,12 +360,12 @@
     onlineTurnStatus(them, chk);
   }
   function setClocks(c, turn) {
-    const prevSelf = clocks[myColor], prevOpp = clocks[opp(myColor)];
+    const prevSelf = clocks[viewColor], prevOpp = clocks[opp(viewColor)];
     clocks = { w: c.w, b: c.b };
     renderClocks();
     if (!reduceMotion && turn) {
-      if (turn === myColor && clocks[myColor] < prevSelf) popTime(myColor);
-      else if (turn !== myColor && clocks[opp(myColor)] < prevOpp) popTime(opp(myColor));
+      if (turn === viewColor && clocks[viewColor] < prevSelf) popTime(viewColor);
+      else if (turn !== viewColor && clocks[opp(viewColor)] < prevOpp) popTime(opp(viewColor));
     }
   }
   function recomputeCaptured(s) { // rebuild trays from the board after a reconnect
@@ -372,9 +381,10 @@
   }
 
   function beginOnlineFresh(msg) {
-    mode = "online"; reconnecting = false;
-    myColor = msg.color; flip = (myColor === "b");
-    oppNameEl.textContent = msg.opponent || "Opponent";
+    mode = "online"; reconnecting = false; spectating = false;
+    myColor = msg.color; viewColor = myColor; flip = (myColor === "b");
+    names = { w: msg.white || "White", b: msg.black || "Black" };
+    selfNameEl.textContent = "You"; oppNameEl.textContent = msg.opponent || "Opponent";
     localStorage.setItem("pkc_online", "1");
     state = fresh(); sel = null; selMoves = null; lastMove = null; over = false; busy = false;
     captured = { w: [], b: [] }; moveHist = []; clocks = { w: msg.clocks.w, b: msg.clocks.b };
@@ -386,8 +396,13 @@
   }
   function beginOnlineSync(msg) {
     mode = "online"; reconnecting = false;
-    myColor = msg.color; flip = (myColor === "b");
-    oppNameEl.textContent = msg.opponent || "Opponent";
+    spectating = (msg.color == null);              // no color assigned -> watching
+    myColor = msg.color;                            // null for a spectator (no input)
+    viewColor = myColor || "w";                     // spectators watch from white's side
+    flip = (viewColor === "b");
+    names = { w: msg.white || "White", b: msg.black || "Black" };
+    if (spectating) { selfNameEl.textContent = names.w; oppNameEl.textContent = names.b; }
+    else { selfNameEl.textContent = "You"; oppNameEl.textContent = msg.opponent || "Opponent"; }
     localStorage.setItem("pkc_online", "1");
     state = clone(msg.state);
     sel = null; selMoves = null; lastMove = msg.lastMove || null; busy = false;
@@ -405,18 +420,19 @@
     over = true; stopClock();
     localStorage.removeItem("pkc_online");
     let text, cls;
+    const why = reason === "checkmate" ? "Checkmate" : reason === "timeout" ? "Time" : reason === "resign" ? "Resignation" : "Left";
     if (result === "draw") { text = reason === "stalemate" ? "Stalemate, it's a draw." : "Draw."; cls = "over"; }
+    else if (spectating) { text = why + ", " + names[result] + " wins."; cls = "over"; }
     else {
       const youWon = result === myColor;
-      const why = reason === "checkmate" ? "Checkmate" : reason === "timeout" ? "Time" : reason === "resign" ? "Resignation" : "Opponent left";
       text = youWon ? (why + ", you win! 🥕") : (why + ", you lose.");
       cls = youWon ? "win" : "over";
     }
     setStatus(text, cls);
     renderClocks();
     setDisc(false);
-    toMenuBtn.textContent = "Menu";
-    newGameBtn.hidden = false; newGameBtn.textContent = "Play again";
+    toMenuBtn.textContent = spectating ? "Leave" : "Menu";
+    newGameBtn.hidden = spectating; if (!spectating) newGameBtn.textContent = "Play again";
   }
 
   function handleServer(msg) {
@@ -478,6 +494,11 @@
 
   // ===================== screens =====================
   function setDisc(on) { if (discBanner) discBanner.hidden = !on; }
+  function setSpec() {
+    if (!specBanner) return;
+    specBanner.hidden = !spectating;
+    if (spectating) specBanner.textContent = "👀 Spectating , " + names.w + " vs " + names.b;
+  }
   function showMenu() {
     mode = null; stopClock(); setDisc(false);
     menuEl.hidden = false; gameEl.hidden = true; waitingEl.hidden = true; roomEntryEl.hidden = true;
@@ -501,9 +522,10 @@
     waitingEl.hidden = false;
   }
   function showGame() {
-    menuEl.hidden = true; gameEl.hidden = false; setDisc(false);
+    menuEl.hidden = true; gameEl.hidden = false; setDisc(false); setSpec();
     toMenuBtn.hidden = false;
-    if (mode === "online") { toMenuBtn.textContent = "Resign"; newGameBtn.hidden = true; }
+    if (spectating) { toMenuBtn.textContent = "Leave"; newGameBtn.hidden = true; }
+    else if (mode === "online") { toMenuBtn.textContent = "Resign"; newGameBtn.hidden = true; }
     else { toMenuBtn.textContent = "Menu"; newGameBtn.hidden = false; newGameBtn.textContent = "New Game"; }
   }
 
@@ -529,6 +551,7 @@
     showMenu();
   }
   toMenuBtn.addEventListener("click", () => {
+    if (spectating) { wsSend({ t: "leave" }); leaveToMenu(); return; } // stop watching, no confirm
     if (mode === "online" && !over) modalEl.hidden = false; // resigning a live game -> confirm first
     else leaveToMenu();                                     // bot game, or already over -> just leave
   });

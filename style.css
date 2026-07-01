@@ -71,7 +71,8 @@ header .actions {
   gap: 8px;
 }
 
-#new-game {
+#new-game,
+#pakadb {
   font-family: inherit;
   font-weight: 700;
   font-size: 0.95rem;
@@ -88,6 +89,14 @@ header .actions {
   box-shadow: 0 3px 0 var(--turf-dark);
   transition: transform 0.08s ease, box-shadow 0.08s ease;
 }
+
+/* PakaDB gets the amber accent so it reads as a separate action from Stats */
+#pakadb {
+  background: var(--gold);
+  box-shadow: 0 3px 0 #cf8a26;
+}
+#pakadb:hover { animation: wiggle 0.4s ease; }
+#pakadb:active { transform: translateY(3px); box-shadow: 0 0 0 #cf8a26; }
 
 .icon-btn {
   font-family: inherit;
@@ -784,7 +793,7 @@ header .actions {
   .key { height: 46px; }
 }
 
-/* not enough room: stack the title (ウマ娘 / Pakadle) vertically */
+/* not enough room: stack the title vertically */
 @media (max-width: 480px) {
   h1 { display: flex; flex-direction: column; line-height: 1.02; }
 }
