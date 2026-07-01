@@ -414,7 +414,7 @@
     if (!n.uma) {
       return '<div class="bd-node empty gen' + n.gen + '" data-slot="' + n.key + '">+ ' + n.role.toUpperCase() + "</div>";
     }
-    var uniq = (n.uma.skills && n.uma.skills.unique && n.uma.skills.unique[0]) ? n.uma.skills.unique[0].name : null;
+    var uskill = (n.uma.skills && n.uma.skills.unique && n.uma.skills.unique[0]) ? n.uma.skills.unique[0] : null;
     var hasSpark = !!slotSpark[n.key];
     // portrait: the chosen outfit if one was picked, else the base
     var thumb = n.uma.thumb, img = n.uma.image, cid = slotCard[n.key];
@@ -424,7 +424,7 @@
       '<div class="bd-node-meta">' +
         '<div class="bd-node-role">' + n.role + (hasSpark ? ' <span class="bd-spark-tag">SPARKS</span>' : "") + "</div>" +
         '<div class="bd-node-name">' + esc(n.uma.name) + "</div>" +
-        (uniq ? '<div class="bd-node-uniq" title="Unique skill (green factor)">🟢 ' + esc(uniq) + "</div>" : "") +
+        (uskill ? '<div class="bd-node-uniq" title="Unique skill (green factor)">' + skillIcon(uskill) + esc(uskill.name) + "</div>" : "") +
       "</div></div>";
   }
 
@@ -477,28 +477,28 @@
       svg += '<foreignObject x="' + (n.x + PAD) + '" y="' + (n.y + PAD) + '" width="' + NODE_W + '" height="' + NODE_H + '">' +
         nodeCard(n) + "</foreignObject>";
     });
+    // affinity total + rating + aptitude coverage, floated above the foal card
+    var foalNode = fl.nodes.filter(function (n) { return n.key === "foal"; })[0];
+    var topHtml = foalTop();
+    if (foalNode && topHtml) {
+      var COV_H = 108, covY = Math.max(0, foalNode.y + PAD - COV_H - 6);
+      svg += '<foreignObject x="' + (foalNode.x + PAD) + '" y="' + covY + '" width="' + NODE_W + '" height="' + COV_H + '">' + topHtml + "</foreignObject>";
+    }
     svg += "</svg>";
     $("bd-stage").innerHTML = svg;
 
-    var a = affinity(), r = rating(a.total);
-    var nm = function (id, fb) { return (id && BYID[id]) ? BYID[id].name : fb; };
-    var term = function (label, pts, bonds) {
-      return '<span class="bd-term"><span class="bd-term-k">' + esc(label) + '</span>' +
-        '<span class="bd-term-v"><b>' + pts + "</b> pts / " + bonds + " bond" + (bonds === 1 ? "" : "s") + "</span></span>";
-    };
-    $("bd-summary").innerHTML =
-      '<div class="bd-total"><span class="bd-total-n">' + a.total + '</span><span class="bd-total-l">Total<br>affinity</span></div>' +
-      '<span class="bd-rating bd-r-' + r.cls + '">' + r.sym + " " + r.label + "</span>" +
-      '<div class="bd-terms">' +
-        '<div class="bd-terms-h">Affinity comes from shared succession bonds:</div>' +
-        term("Foal with " + nm(bstate.p1, "Parent 1"), a.cP1, a.bP1) +
-        term("Foal with " + nm(bstate.p2, "Parent 2"), a.cP2, a.bP2) +
-        term(nm(bstate.p1, "Parent 1") + " with " + nm(bstate.p2, "Parent 2"), a.p12, a.b12) +
-        term("Foal with all 4 grandparents", a.cGP, a.bGP) +
-      "</div>";
-
-    renderCoverage();
     renderFactors();
+  }
+
+  // the block that floats above the foal card: total affinity + rating + aptitude mini
+  function foalTop() {
+    var foal = bstate.foal ? BYID[bstate.foal] : null;
+    if (!foal) return "";
+    var a = affinity(), r = rating(a.total);
+    var aff = '<div class="ftop-aff"><span class="ftop-n">' + a.total + '</span>' +
+      '<span class="ftop-l">affinity</span>' +
+      '<span class="ftop-rate bd-r-' + r.cls + '">' + r.sym + " " + r.label + "</span></div>";
+    return '<div class="ftop">' + aff + foalCovMini() + "</div>";
   }
 
   // inheritable factor pool from the ancestors' sparks
@@ -520,34 +520,22 @@
       row("Blue", starsBlue) + row("Pink", starsPink) + row("Green", green) + row("White", white);
   }
 
-  // aptitude coverage: flag the foal's weak aptitudes and which ancestors are
-  // strong there (A+) as pink-factor sources to fix them.
-  function renderCoverage() {
-    var host = $("bd-coverage");
+  // compact aptitude coverage that floats above the foal card: one tiny cell per
+  // aptitude (grade-colored), weak spots (C or worse) ringed pink.
+  var APT_ABBR = { turf: "TRF", dirt: "DRT", short: "SPR", mile: "MIL", medium: "MED", long: "LNG", front: "FRN", pace: "PCE", late: "LAT", end: "END" };
+  function foalCovMini() {
     var foal = bstate.foal ? BYID[bstate.foal] : null;
-    if (!foal) { host.innerHTML = '<div class="cov-empty">Pick a foal to see aptitude coverage.</div>'; return; }
-    var ancestors = ["p1", "p2", "gp11", "gp12", "gp21", "gp22"]
-      .map(function (k) { return bstate[k] ? BYID[bstate[k]] : null; }).filter(Boolean);
-
-    var cells = "";
-    APT_DEFS.forEach(function (grp) {
-      grp.keys.forEach(function (k) {
-        var g = aptGrade(foal, k[0]);
-        var weak = GRANK[g] < GRANK.B; // C or worse = wants a pink factor
-        var helpers = ancestors.filter(function (an) { return GRANK[aptGrade(an, k[0])] >= GRANK.A; })
-          .map(function (an) { return an.name; });
-        cells += '<div class="cov-cell' + (weak ? " weak" : "") + '">' +
-          '<div class="cov-k">' + k[1] + '</div>' +
-          '<div class="cov-g v-' + (g && GRANK[g] ? g : "null") + '">' + gradeTxt(g) + "</div>" +
-          (weak ? '<div class="cov-help">' + (helpers.length ? "↑ " + helpers.length + " source" + (helpers.length === 1 ? "" : "s") : "no source") + "</div>" : "") +
-          "</div>";
-      });
-    });
-    var weakCount = 0;
-    APT_DEFS.forEach(function (grp) { grp.keys.forEach(function (k) { if (GRANK[aptGrade(foal, k[0])] < GRANK.B) weakCount++; }); });
-    host.innerHTML =
-      '<div class="cov-h">Aptitude coverage: ' + (weakCount ? weakCount + " weak spot" + (weakCount === 1 ? "" : "s") + " (want pink factors)" : "no weak spots") + "</div>" +
-      '<div class="cov-grid">' + cells + "</div>";
+    if (!foal) return "";
+    var weak = 0;
+    var cells = APT_KEYS.map(function (k) {
+      var g = aptGrade(foal, k);
+      var isWeak = GRANK[g] < GRANK.B;
+      if (isWeak) weak++;
+      return '<span class="fcov-c v-' + (g && GRANK[g] ? g : "null") + (isWeak ? " weak" : "") + '" title="' + esc(KEY_LABEL[k]) + '">' +
+        '<small class="fcov-k">' + APT_ABBR[k] + "</small>" + gradeTxt(g) + "</span>";
+    }).join("");
+    return '<div class="fcov"><div class="fcov-h">APTITUDE' + (weak ? ' <span class="fcov-w">' + weak + " weak</span>" : "") + "</div>" +
+      '<div class="fcov-cells">' + cells + "</div></div>";
   }
 
   // ---- saved-uma roster ----
@@ -587,7 +575,8 @@
   function renderEditor() {
     var e = editing; if (!e) return;
     var u = BYID[e.charId];
-    var uniqName = (u && u.skills && u.skills.unique && u.skills.unique[0]) ? u.skills.unique[0].name : "Unique skill";
+    var uskill = (u && u.skills && u.skills.unique && u.skills.unique[0]) ? u.skills.unique[0] : null;
+    var uniqName = uskill ? uskill.name : "Unique skill";
     var opts = UMAS.map(function (x) { return '<option value="' + x.id + '"' + (x.id === e.charId ? " selected" : "") + ">" + esc(x.name) + "</option>"; }).join("");
     var blue = STAT_KEYS.map(function (k) { return '<div class="ed-row"><span class="ed-k">' + STAT_ABBR[k] + '</span><div class="ed-stars">' + starCtl("blue", k, e.blue[k] || 0) + "</div></div>"; }).join("");
     var pink = APT_KEYS.map(function (k) { return '<div class="ed-row"><span class="ed-k">' + KEY_LABEL[k] + '</span><div class="ed-stars">' + starCtl("pink", k, e.pink[k] || 0) + "</div></div>"; }).join("");
@@ -599,7 +588,7 @@
     $("cp-editor-body").innerHTML =
       '<div class="ed-sect"><div class="ed-h">Character</div><img class="ed-portrait" src="/pakadb/' + esc(u ? u.image : "") + '" alt="" />' +
         '<select class="cp-input ed-char" style="width:100%">' + opts + "</select></div>" +
-      '<div class="ed-sect"><div class="ed-h">🟢 Green spark (' + esc(uniqName) + ")</div><div class=\"ed-row\"><span class=\"ed-k\">Level</span><div class=\"ed-stars\">" + starCtl("green", "green", e.green || 0) + "</div></div></div>" +
+      '<div class="ed-sect"><div class="ed-h">' + (uskill ? skillIcon(uskill) : "") + "Green spark (" + esc(uniqName) + ")</div><div class=\"ed-row\"><span class=\"ed-k\">Level</span><div class=\"ed-stars\">" + starCtl("green", "green", e.green || 0) + "</div></div></div>" +
       '<div class="ed-sect"><div class="ed-h">🔵 Blue sparks (stats)</div>' + blue + "</div>" +
       '<div class="ed-sect"><div class="ed-h">🩷 Pink sparks (aptitude)</div>' + pink + "</div>" +
       '<div class="ed-sect"><div class="ed-h">⚪ White sparks (skills / races)</div>' + white +
