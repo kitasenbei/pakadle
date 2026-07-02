@@ -506,6 +506,14 @@ body.scrubbing .numc-val::selection { background: transparent; }
 .ed-h { font-size: 11px; font-weight: 800; letter-spacing: .3px; color: var(--turf); text-transform: uppercase; margin-bottom: 8px; }
 .ed-portrait { width: 56px; height: 56px; border-radius: 30%; object-fit: cover; object-position: top center;
   border: 2px solid var(--divider); float: right; margin: -30px 0 0 8px; }
+/* spark-editor uma picker button */
+.ed-charbtn { display: flex; align-items: center; gap: 10px; width: 100%; padding: 6px 10px; cursor: pointer;
+  background: var(--panel); border: 2px solid var(--turf-dark); border-radius: 12px; font-family: inherit; }
+.ed-charbtn:hover { border-color: var(--sakura); }
+.ed-charbtn-img { width: 40px; height: 40px; flex: none; border-radius: 30%; object-fit: cover; object-position: top center; border: 2px solid var(--divider); background: var(--bg); }
+.ed-charbtn-name { flex: 1; text-align: left; font-size: 14px; font-weight: 800; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ed-charbtn-caret { flex: none; color: var(--turf); font-weight: 800; font-size: 12px; }
+#char-picker { z-index: 40; }
 .ed-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 5px; }
 .ed-k { font-size: 11.5px; font-weight: 800; color: var(--ink2); }
 .ed-stars { display: flex; gap: 3px; }

@@ -744,7 +744,6 @@
     var svg = '<svg class="lm-svg" viewBox="0 0 ' + W + " " + H + '" width="100%" preserveAspectRatio="xMidYMid meet">' + defs + edges + nodes + "</svg>";
 
     host.innerHTML = header +
-      '<div class="bd-aff-cap">Your trainee sits at the center, surrounded by her parents and grandparents and every spark they can pass down. The numbers show how well each pair gets along, better compatibility means better inheritance, and the dashed line is how the two parents match up. <b>Tap any uma to swap her out, or tap a spark to change it.</b></div>' +
       '<div class="lm-wrap">' + svg + "</div>";
   }
 
@@ -897,7 +896,6 @@
     var u = BYID[e.charId];
     var uskill = (u && u.skills && u.skills.unique && u.skills.unique[0]) ? u.skills.unique[0] : null;
     var uniqName = uskill ? uskill.name : "Unique skill";
-    var opts = UMAS.map(function (x) { return '<option value="' + x.id + '"' + (x.id === e.charId ? " selected" : "") + ">" + esc(x.name) + "</option>"; }).join("");
     var blue = STAT_KEYS.map(function (k) { return '<div class="ed-row"><span class="ed-k">' + STAT_NAME[k] + '</span><div class="ed-stars">' + starCtl("blue", k, e.blue[k] || 0) + "</div></div>"; }).join("");
     var pink = APT_KEYS.map(function (k) { return '<div class="ed-row"><span class="ed-k">' + KEY_LABEL[k] + '</span><div class="ed-stars">' + starCtl("pink", k, e.pink[k] || 0) + "</div></div>"; }).join("");
     var white = (e.white || []).map(function (w, i) {
@@ -911,8 +909,11 @@
         '<button class="cp-ghost ed-wdel" data-wdel="' + i + '">✕</button></div>';
     }).join("");
     $("cp-editor-body").innerHTML =
-      '<div class="ed-sect"><div class="ed-h">Character</div><img class="ed-portrait" src="/pakadb/' + esc(u ? u.image : "") + '" alt="" />' +
-        '<select class="cp-input ed-char" style="width:100%">' + opts + "</select></div>" +
+      '<div class="ed-sect"><div class="ed-h">Character</div>' +
+        '<button type="button" class="ed-charbtn" id="ed-charbtn">' +
+          '<img class="ed-charbtn-img" src="/pakadb/' + esc(u ? u.thumb : "") + '" onerror="this.src=\'/pakadb/' + esc(u ? u.image : "") + "'\" alt=\"\" />" +
+          '<span class="ed-charbtn-name">' + esc(u ? u.name : "Pick a uma") + "</span>" +
+          '<span class="ed-charbtn-caret">▾</span></button></div>' +
       '<div class="ed-sect"><div class="ed-h">' + (uskill ? skillIcon(uskill) : "") + "Green spark (" + esc(uniqName) + ")</div><div class=\"ed-row\"><span class=\"ed-k\">Level</span><div class=\"ed-stars\">" + starCtl("green", "green", e.green || 0) + "</div></div></div>" +
       '<div class="ed-sect"><div class="ed-h">🔵 Blue sparks (stats)</div>' + blue + "</div>" +
       '<div class="ed-sect"><div class="ed-h">🩷 Pink sparks (aptitude)</div>' + pink + "</div>" +
@@ -1064,6 +1065,27 @@
     anchorUnder(el, anchor); s.focus();
   }
   function closeWhitePicker() { hideEl($("white-picker")); whitePickIdx = -1; }
+
+  // ---- uma picker (spark editor character selector) ----
+  function openCharPicker(anchor) {
+    var el = $("char-picker"); showEl(el);
+    var s = $("char-search"); s.value = ""; renderCharList("");
+    anchorUnder(el, anchor); s.focus();
+  }
+  function closeCharPicker() { hideEl($("char-picker")); }
+  function renderCharList(q) {
+    q = (q || "").trim().toLowerCase();
+    var list = UMAS.filter(function (u) { return !q || u.name.toLowerCase().indexOf(q) !== -1; });
+    $("char-list").innerHTML = list.map(function (u) {
+      var on = editing && editing.charId === u.id;
+      return '<div class="bp-row' + (on ? " on" : "") + '" data-charid="' + u.id + '">' +
+        '<img class="bp-img" loading="lazy" src="/pakadb/' + esc(u.thumb) + '" onerror="this.src=\'/pakadb/' + esc(u.image) + "'\" alt=\"\" />" +
+        '<div class="bp-meta"><div class="bp-name">' + esc(u.name) + "</div>" +
+        '<div class="bp-sub">' + "★".repeat(u.rarity || 0) + "</div></div>" +
+        (on ? '<span class="sk-check">✓</span>' : "") + "</div>";
+    }).join("");
+    $("char-list").scrollTop = 0;
+  }
   function whiteRow(name, iconId, kind) {
     var ico = kind === "race" ? raceBannerImg(RACE_BANNER[name], "bp-img wp-banner")
       : (iconId ? '<img class="bp-img sk-img" loading="lazy" src="/pakadb/assets/skill_icons/' + esc(iconId) + '.png" onerror="this.style.visibility=\'hidden\'" alt="" />'
@@ -1238,7 +1260,7 @@
     openDrawer(u);
   });
   $("cp-scrim").addEventListener("click", function () { closeDrawer(); closePicker(); });
-  document.addEventListener("keydown", function (e) { if (e.key === "Escape") { if (!$("bd-ctx").hidden) return closeCtx(); if (!$("white-picker").hidden) return closeWhitePicker(); closeDrawer(); closePicker(); closeRoster(); closeTrees(); closeEditor(); closeSkillPicker(); closeSlotPicker(); } });
+  document.addEventListener("keydown", function (e) { if (e.key === "Escape") { if (!$("bd-ctx").hidden) return closeCtx(); if (!$("char-picker").hidden) return closeCharPicker(); if (!$("white-picker").hidden) return closeWhitePicker(); closeDrawer(); closePicker(); closeRoster(); closeTrees(); closeEditor(); closeSkillPicker(); closeSlotPicker(); } });
 
   // ---- pakadle tooltip: one floating bubble driven by [data-tip], clip-proof ----
   (function () {
@@ -1571,18 +1593,27 @@
       return renderEditor();
     }
     if (e.target.id === "ed-add-white") { editing.white.push({ name: "", lvl: 1 }); return renderEditor(); }
+    var charbtn = e.target.closest("#ed-charbtn");
+    if (charbtn) { return openCharPicker(charbtn); }
     var wpick = e.target.closest(".ed-wpick");
     if (wpick) { return openWhitePicker(Number(wpick.getAttribute("data-wi")), wpick); }
     var wdel = e.target.closest(".ed-wdel");
     if (wdel) { editing.white.splice(Number(wdel.getAttribute("data-wdel")), 1); return renderEditor(); }
   });
-  $("cp-editor-body").addEventListener("input", function (e) {
-    if (!editing) return;
-    if (e.target.classList.contains("ed-char")) {
-      editing.charId = Number(e.target.value);
-      var u = BYID[editing.charId]; editing.name = u ? u.name : editing.name;
-      return renderEditor();
-    }
+
+  // uma picker wiring (spark editor character selector)
+  $("char-search").addEventListener("input", function (e) { renderCharList(e.target.value); });
+  $("char-close").addEventListener("click", closeCharPicker);
+  $("char-list").addEventListener("click", function (e) {
+    var row = e.target.closest(".bp-row"); if (!row || !editing) return;
+    editing.charId = Number(row.getAttribute("data-charid"));
+    var u = BYID[editing.charId]; editing.name = u ? u.name : editing.name;
+    closeCharPicker(); renderEditor();
+  });
+  document.addEventListener("click", function (e) {
+    if ($("char-picker").hidden) return;
+    if (e.target.closest("#char-picker") || e.target.closest("#ed-charbtn")) return;
+    closeCharPicker();
   });
 
   // white-spark picker wiring
