@@ -896,8 +896,12 @@
     var u = BYID[e.charId];
     var uskill = (u && u.skills && u.skills.unique && u.skills.unique[0]) ? u.skills.unique[0] : null;
     var uniqName = uskill ? uskill.name : "Unique skill";
-    var blue = STAT_KEYS.map(function (k) { return '<div class="ed-row"><span class="ed-k">' + STAT_NAME[k] + '</span><div class="ed-stars">' + starCtl("blue", k, e.blue[k] || 0) + "</div></div>"; }).join("");
-    var pink = APT_KEYS.map(function (k) { return '<div class="ed-row"><span class="ed-k">' + KEY_LABEL[k] + '</span><div class="ed-stars">' + starCtl("pink", k, e.pink[k] || 0) + "</div></div>"; }).join("");
+    var blue = '<div class="ed-grid">' + STAT_KEYS.map(function (k) {
+      return '<div class="ed-row"><span class="ed-k"><img class="ed-kico" src="/pakadb/assets/stat_icons/' + k + '.png" alt="" />' + STAT_NAME[k] + "</span><div class=\"ed-stars\">" + starCtl("blue", k, e.blue[k] || 0) + "</div></div>";
+    }).join("") + "</div>";
+    var pink = '<div class="ed-grid">' + APT_KEYS.map(function (k) {
+      return '<div class="ed-row apt-' + KEY_CAT[k] + '"><span class="ed-k">' + KEY_LABEL[k] + "</span><div class=\"ed-stars\">" + starCtl("pink", k, e.pink[k] || 0) + "</div></div>";
+    }).join("") + "</div>";
     var white = (e.white || []).map(function (w, i) {
       var bid = w.name ? RACE_BANNER[w.name] : null;
       var ic = w.name && !bid ? iconByName(w.name) : null;

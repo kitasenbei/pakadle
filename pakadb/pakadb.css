@@ -516,12 +516,22 @@ body.scrubbing .numc-val::selection { background: transparent; }
 #char-picker { z-index: 40; }
 #skill-picker { z-index: 42; }   /* above the filter panel + editor modal in every context */
 .ed-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 5px; }
-.ed-k { font-size: 11.5px; font-weight: 800; color: var(--ink2); }
+.ed-k { font-size: 11.5px; font-weight: 800; color: var(--ink2); display: inline-flex; align-items: center; }
+.ed-kico { width: 18px; height: 18px; margin-right: 5px; flex: none; }
 .ed-stars { display: flex; gap: 3px; }
 .star { font-family: inherit; width: 24px; height: 24px; padding: 0; cursor: pointer; font-size: 13px; font-weight: 800;
   border: 2px solid var(--tile-line); border-radius: 6px; background: var(--bg); color: var(--ink3); }
 .star.on { background: var(--gold); border-color: var(--gold); color: #fff; }
 .star0 { font-size: 11px; }
+/* blue/pink spark editor: compact 2-column card grid */
+.ed-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px 10px; }
+.ed-grid .ed-row { margin-bottom: 0; background: var(--bg); border: 2px solid var(--divider);
+  border-radius: 10px; padding: 4px 6px 4px 9px; }
+.ed-grid .star { width: 21px; height: 21px; font-size: 12px; }
+.ed-grid .ed-row.apt-surface { border-left: 4px solid var(--turf); }
+.ed-grid .ed-row.apt-distance { border-left: 4px solid var(--sakura); }
+.ed-grid .ed-row.apt-style { border-left: 4px solid var(--gold); }
+@media (max-width: 460px) { .ed-grid { grid-template-columns: 1fr; } }
 .ed-white { display: flex; align-items: center; gap: 6px; margin-bottom: 6px; }
 /* white-spark picker trigger: looks like the input, opens the catalog picker */
 .ed-wpick { flex: 1; min-width: 0; height: 30px; display: flex; align-items: center; gap: 6px;
