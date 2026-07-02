@@ -470,6 +470,8 @@ body.scrubbing .numc-val::selection { background: transparent; }
 
 /* affinity breakdown: image-forward, shows where the total comes from */
 .bd-affinity { padding: 4px 12px 6px; }
+.bd-affinity .sect-h { display: flex; align-items: center; gap: 8px; }
+.bd-affinity .sect-h .ftop-rate { text-transform: none; letter-spacing: 0; }
 .bd-affinity:empty { display: none; }
 .bd-aff-head { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
 .bd-aff-score { display: flex; align-items: center; gap: 7px; flex: none; }
