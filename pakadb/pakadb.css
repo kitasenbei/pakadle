@@ -247,7 +247,7 @@ body.scrubbing .numc-val::selection { background: transparent; }
 .dh > * { position: relative; z-index: 1; }
 /* portrait: a flush square spanning the full header height (top to the fits band) */
 .dh-img { flex: none; align-self: stretch; width: 152px; height: 152px; border-radius: 0; border: none;
-  box-shadow: none; margin: 0; object-fit: cover; object-position: top center; background: var(--bg); }
+  box-shadow: none; margin: 0; object-fit: cover; object-position: top center; background: var(--turf); }
 .dh-meta { min-width: 0; flex: 1; color: #fff; display: flex; flex-direction: column; justify-content: center;
   padding: 14px 46px 14px 16px; }
 .dh-name { font-size: 20px; font-weight: 800; line-height: 1.1; }
