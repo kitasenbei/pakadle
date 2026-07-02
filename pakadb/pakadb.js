@@ -803,6 +803,49 @@
   // ---- saved-uma roster ----
   function openRoster() { showEl($("cp-roster")); showEl($("cp-scrim")); renderRoster(); }
   function closeRoster() { hideEl($("cp-roster")); hideEl($("cp-scrim")); }
+
+  // ---- tree profiles: save / load the whole pedigree (slots + sparks + outfits) ----
+  var savedTrees = [];
+  function loadTrees() { try { savedTrees = JSON.parse(localStorage.getItem("pakadb_trees") || "[]"); } catch (e) { savedTrees = []; } }
+  function persistTrees() { try { localStorage.setItem("pakadb_trees", JSON.stringify(savedTrees)); } catch (e) {} }
+  function openTrees() { showEl($("cp-trees")); showEl($("cp-scrim")); renderTrees(); }
+  function closeTrees() { hideEl($("cp-trees")); hideEl($("cp-scrim")); }
+  function treeSnapshot(name) {
+    var slots = {}, sparks = {}, cards = {};
+    SLOTS.forEach(function (s) {
+      if (bstate[s] != null) slots[s] = bstate[s];
+      if (slotSpark[s]) sparks[s] = slotSpark[s];
+      if (slotCard[s] != null) cards[s] = slotCard[s];
+    });
+    return { name: name, slots: slots, sparks: sparks, cards: cards };
+  }
+  function loadTree(idx) {
+    var t = savedTrees[idx]; if (!t) return;
+    SLOTS.forEach(function (s) { bstate[s] = null; slotSpark[s] = null; slotCard[s] = null; });
+    Object.keys(t.slots || {}).forEach(function (s) { bstate[s] = t.slots[s]; });
+    Object.keys(t.sparks || {}).forEach(function (s) { slotSpark[s] = t.sparks[s]; });
+    Object.keys(t.cards || {}).forEach(function (s) { slotCard[s] = t.cards[s]; });
+    renderBreeding(); closeTrees();
+  }
+  function renderTrees() {
+    var host = $("cp-trees-body");
+    var save = '<div class="tree-save">' +
+      '<input id="tree-name" class="cp-input" placeholder="Name this tree…" autocomplete="off" spellcheck="false" />' +
+      '<button class="cp-ghost" id="tree-save-btn">SAVE CURRENT</button></div>';
+    var list = savedTrees.length ? savedTrees.map(function (t, i) {
+      var foal = t.slots && t.slots.foal ? BYID[t.slots.foal] : null;
+      var anc = ["p1", "p2", "gp11", "gp12", "gp21", "gp22"].filter(function (s) { return t.slots && t.slots[s]; }).length;
+      var sparks = t.sparks ? Object.keys(t.sparks).length : 0;
+      return '<div class="pk-row" data-load="' + i + '">' +
+        '<img class="pk-img" loading="lazy" src="/pakadb/' + esc(foal ? foal.thumb : "") + '" alt="" />' +
+        '<div class="pk-meta"><div class="pk-name">' + esc(t.name || "Tree") + "</div>" +
+        '<div class="pk-sub">' + (foal ? esc(foal.name) : "no foal") + " · " + anc + " ancestor" + (anc === 1 ? "" : "s") +
+          (sparks ? " · " + sparks + " with sparks" : "") + "</div></div>" +
+        '<button class="cp-ghost rost-edit" data-load="' + i + '">LOAD</button>' +
+        '<button class="cp-ghost rost-del" data-deltree="' + i + '">✕</button></div>';
+    }).join("") : '<div class="cov-empty">No saved trees yet. Build a pedigree, name it, and hit SAVE CURRENT.</div>';
+    host.innerHTML = save + list;
+  }
   function renderRoster() {
     var host = $("cp-roster-list");
     if (!savedUmas.length) { host.innerHTML = '<div class="cov-empty">No saved umas yet. Hit + NEW UMA to add one with its sparks.</div>'; return; }
@@ -1131,7 +1174,7 @@
     openDrawer(u);
   });
   $("cp-scrim").addEventListener("click", function () { closeDrawer(); closePicker(); });
-  document.addEventListener("keydown", function (e) { if (e.key === "Escape") { if (!$("bd-ctx").hidden) return closeCtx(); if (!$("white-picker").hidden) return closeWhitePicker(); closeDrawer(); closePicker(); closeRoster(); closeEditor(); closeSkillPicker(); closeSlotPicker(); } });
+  document.addEventListener("keydown", function (e) { if (e.key === "Escape") { if (!$("bd-ctx").hidden) return closeCtx(); if (!$("white-picker").hidden) return closeWhitePicker(); closeDrawer(); closePicker(); closeRoster(); closeTrees(); closeEditor(); closeSkillPicker(); closeSlotPicker(); } });
 
   // ---- pakadle tooltip: one floating bubble driven by [data-tip], clip-proof ----
   (function () {
@@ -1413,6 +1456,23 @@
     }
   });
 
+  // ---- tree-profile wiring ----
+  $("cp-trees-open").addEventListener("click", openTrees);
+  $("cp-trees-x").addEventListener("click", closeTrees);
+  $("cp-trees-body").addEventListener("click", function (e) {
+    var del = e.target.closest("[data-deltree]");
+    if (del) { savedTrees.splice(Number(del.getAttribute("data-deltree")), 1); persistTrees(); renderTrees(); return; }
+    if (e.target.id === "tree-save-btn") {
+      var nm = (($("tree-name") || {}).value || "").trim() || ("Tree " + (savedTrees.length + 1));
+      savedTrees.push(treeSnapshot(nm)); persistTrees(); renderTrees(); return;
+    }
+    var row = e.target.closest("[data-load]");
+    if (row) loadTree(Number(row.getAttribute("data-load")));
+  });
+  $("cp-trees-body").addEventListener("keydown", function (e) {
+    if (e.key === "Enter" && e.target.id === "tree-name") { e.preventDefault(); $("tree-save-btn").click(); }
+  });
+
   // ---- editor wiring ----
   $("cp-editor-x").addEventListener("click", closeEditor);
   $("cp-editor-body").addEventListener("click", function (e) {
@@ -1462,8 +1522,9 @@
     persistRoster(); closeEditor(); openRoster();
   });
 
-  $("cp-scrim").addEventListener("click", function () { closeRoster(); closeEditor(); });
+  $("cp-scrim").addEventListener("click", function () { closeRoster(); closeEditor(); closeTrees(); });
 
   loadRoster();
+  loadTrees();
   load();
 })();

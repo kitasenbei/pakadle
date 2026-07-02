@@ -455,6 +455,9 @@ body.scrubbing .numc-val::selection { background: transparent; }
 .cp-modal-title { font-size: 15px; font-weight: 800; color: var(--ink); margin-right: auto; }
 .pk-tag { font-size: 8px; font-weight: 800; letter-spacing: .3px; color: #fff; background: var(--sakura); padding: 1px 5px; border-radius: 999px; vertical-align: middle; }
 .rost-edit, .rost-del { height: 26px; padding: 0 9px; font-size: 10px; }
+/* tree profiles: save-current row */
+.tree-save { display: flex; gap: 6px; align-items: center; padding: 4px 4px 10px; margin-bottom: 4px; border-bottom: 2px solid var(--divider); }
+.tree-save .cp-input { flex: 1; min-width: 0; }
 .bd-spark-tag { font-size: 7.5px; font-weight: 800; color: #fff; background: var(--sakura); padding: 0 4px; border-radius: 999px; vertical-align: middle; }
 
 .ed-sect { padding: 10px 4px; border-bottom: 2px solid var(--divider); }
