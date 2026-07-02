@@ -509,16 +509,22 @@
       "</div></div>";
   }
 
+  // in-game succession affinity: the parent triangle plus, for each grandparent,
+  // BOTH its relation with the foal and with its own parent.
+  //   total = c(F,P1)+c(F,P2)+c(P1,P2)
+  //         + c(F,GP11)+c(P1,GP11) + c(F,GP12)+c(P1,GP12)
+  //         + c(F,GP21)+c(P2,GP21) + c(F,GP22)+c(P2,GP22)
   function affinity() {
-    var f = bstate.foal;
-    var dP1 = compatDetail(f, bstate.p1), dP2 = compatDetail(f, bstate.p2), d12 = compatDetail(bstate.p1, bstate.p2);
-    var gps = [bstate.gp11, bstate.gp12, bstate.gp21, bstate.gp22];
-    var gpP = 0, gpB = 0;
-    gps.forEach(function (g) { var d = compatDetail(f, g); gpP += d.pts; gpB += d.bonds; });
+    var f = bstate.foal, p1 = bstate.p1, p2 = bstate.p2;
+    var cP1 = compat(f, p1), cP2 = compat(f, p2), p12 = compat(p1, p2);
+    // each grandparent's contribution: relation to foal + relation to its parent
+    var g11 = compat(f, bstate.gp11) + compat(p1, bstate.gp11);
+    var g12 = compat(f, bstate.gp12) + compat(p1, bstate.gp12);
+    var g21 = compat(f, bstate.gp21) + compat(p2, bstate.gp21);
+    var g22 = compat(f, bstate.gp22) + compat(p2, bstate.gp22);
     return {
-      cP1: dP1.pts, cP2: dP2.pts, p12: d12.pts, cGP: gpP,
-      bP1: dP1.bonds, bP2: dP2.bonds, b12: d12.bonds, bGP: gpB,
-      total: dP1.pts + dP2.pts + d12.pts + gpP,
+      cP1: cP1, cP2: cP2, p12: p12, cGP: g11 + g12 + g21 + g22,
+      total: cP1 + cP2 + p12 + g11 + g12 + g21 + g22,
     };
   }
   // total affinity if `id` were placed in `slot` (for recommendations)
@@ -599,9 +605,10 @@
   function lmEdge(x1, y1, r1, x2, y2, r2, opts) {
     opts = opts || {};
     var dx = x2 - x1, dy = y2 - y1, d = Math.sqrt(dx * dx + dy * dy) || 1, ux = dx / d, uy = dy / d;
-    var sx = x1 + ux * r1, sy = y1 + uy * r1, ex = x2 - ux * (r2 + 4), ey = y2 - uy * (r2 + 4);
+    var sx = x1 + ux * r1, sy = y1 + uy * r1, ex = x2 - ux * (r2 + (opts.noArrow ? 0 : 4)), ey = y2 - uy * (r2 + (opts.noArrow ? 0 : 4));
     var line = '<line x1="' + sx.toFixed(1) + '" y1="' + sy.toFixed(1) + '" x2="' + ex.toFixed(1) + '" y2="' + ey.toFixed(1) +
-      '" stroke="' + (opts.color || "#ddd2c0") + '" stroke-width="' + (opts.width || 1.5) + '" marker-end="url(#lmarrow)"/>';
+      '" stroke="' + (opts.color || "#ddd2c0") + '" stroke-width="' + (opts.width || 1.5) + '"' +
+      (opts.dashed ? ' stroke-dasharray="4 4"' : "") + (opts.noArrow ? "" : ' marker-end="url(#lmarrow)"') + "/>";
     if (opts.label == null) return line;
     var lx = sx + (ex - sx) * 0.34, ly = sy + (ey - sy) * 0.34, c = opts.labelColor || "#9A8FA0";
     return line + '<g class="lm-elabel"><rect x="' + (lx - 12) + '" y="' + (ly - 9) + '" width="24" height="18" rx="9" fill="#fff" stroke="' + c + '" stroke-width="1.5"/>' +
@@ -624,6 +631,46 @@
     return '<g class="lm-node" data-tip="' + esc(lf.label + (lf.lvl ? " ★" + lf.lvl : "")) + '">' +
       '<circle cx="' + x + '" cy="' + y + '" r="' + r + '" fill="' + col + '"/>' + inner +
       '<circle cx="' + x + '" cy="' + y + '" r="' + r + '" fill="none" stroke="#fff" stroke-width="2"/>' + badge + "</g>";
+  }
+  function lmSparkChild(lf) { return { nkind: "spark", leaf: lf, children: [] }; }
+  // build the lineage tree: foal -> parents -> grandparents, sparks hang off each ancestor
+  function lineageTree() {
+    var f = bstate.foal;
+    function ancNode(slot, parentSlot) {
+      if (!bstate[slot]) return null;
+      var id = bstate[slot], pId = parentSlot ? bstate[parentSlot] : null;
+      var toFoal = compat(f, id), toParent = pId ? compat(pId, id) : 0;
+      var contrib = toFoal + toParent;
+      var tip = BYID[id].name + " — " + contrib + " affinity";
+      tip += parentSlot ? " (" + toFoal + " with foal + " + toParent + " with its parent)" : " with the foal";
+      return {
+        nkind: "anc", slot: slot, thumb: slotThumb(slot), name: BYID[id].name,
+        contrib: contrib, tip: tip, children: sparkLeaves(slot).map(lmSparkChild),
+      };
+    }
+    function branch(pSlot, gA, gB) {
+      var pn = ancNode(pSlot, null);
+      if (pn) { [gA, gB].forEach(function (g) { var gn = ancNode(g, pSlot); if (gn) pn.children.push(gn); }); return [pn]; }
+      // parent empty -> surface its filled grandparents directly under the foal
+      return [ancNode(gA, null), ancNode(gB, null)].filter(Boolean);
+    }
+    return {
+      nkind: "foal", slot: "foal", thumb: slotThumb("foal"), name: (BYID[f] || {}).name, big: true,
+      children: branch("p1", "gp11", "gp12").concat(branch("p2", "gp21", "gp22")),
+    };
+  }
+  function lmNodeR(n) { return n.nkind === "foal" ? 38 : n.nkind === "spark" ? 14 : n.depth <= 1 ? 24 : 20; }
+  // radial tidy-tree layout: angular span by leaf weight, radius by depth
+  function lmLayout(root, cx, cy, rings) {
+    (function count(n) { n.leaves = n.children.length ? n.children.reduce(function (s, c) { return s + count(c); }, 0) : 1; return n.leaves; })(root);
+    (function assign(n, a0, a1, depth) {
+      n.depth = depth;
+      var rad = rings[Math.min(depth, rings.length - 1)];
+      n.angle = (a0 + a1) / 2;
+      n.x = cx + rad * Math.cos(n.angle); n.y = cy + rad * Math.sin(n.angle);
+      var a = a0;
+      n.children.forEach(function (c) { var span = (a1 - a0) * (c.leaves / n.leaves); assign(c, a, a + span, depth + 1); a += span; });
+    })(root, -Math.PI / 2, Math.PI * 1.5, 0);
   }
   // portrait (chosen outfit if any) for a slot, or null when empty
   function slotThumb(slot) {
@@ -656,45 +703,44 @@
         '<div class="bd-aff-prog"><span class="bd-aff-track big"><span class="bd-aff-fill" style="width:' + pct + '%;background:' + affColor(a.total >= 150 ? 20 : a.total >= 100 ? 10 : 0) + '"></span></span>' + goal + "</div>" +
       "</div>";
 
-    // ancestors currently in the tree (each may carry sparks)
-    var ancestors = ANCESTORS.map(function (slot) {
-      var id = bstate[slot]; if (!id) return null;
-      return { slot: slot, uma: BYID[id], thumb: slotThumb(slot), leaves: sparkLeaves(slot) };
-    }).filter(Boolean);
-    if (!ancestors.length) {
+    // build the lineage tree; bail out if no ancestors are placed
+    var tree = lineageTree();
+    if (!tree.children.length) {
       host.innerHTML = header + '<div class="bd-aff-cap">Place parents and grandparents to grow the lineage map. Saved umas add each of their sparks as a spoke.</div>';
       return;
     }
 
-    // radial layout: foal at the center, ancestors on an inner ring, their sparks fanned outward
-    var W = 700, H = 560, cx = 350, cy = 282, R1 = 138, R2 = 248, foalR = 38, ancR = 24, leafR = 15;
-    var totalW = ancestors.reduce(function (s, an) { return s + Math.max(1, an.leaves.length); }, 0);
-    var ang = -Math.PI / 2, edges = "", nodes = "";
-    ancestors.forEach(function (an) {
-      var wgt = Math.max(1, an.leaves.length), slice = 2 * Math.PI * wgt / totalW, mid = ang + slice / 2;
-      var ax = cx + R1 * Math.cos(mid), ay = cy + R1 * Math.sin(mid);
-      // inner spoke carries this ancestor's affinity contribution toward the foal
-      var cpt = compatDetail(bstate.foal, an.uma.id).pts;
-      edges += lmEdge(ax, ay, ancR, cx, cy, foalR, { label: cpt, labelColor: affColor(cpt), width: 1.5 + Math.min(cpt, 40) / 40 * 3 });
-      var n = an.leaves.length, pad = Math.min(slice * 0.14, 0.14);
-      an.leaves.forEach(function (lf, i) {
-        var t = n === 1 ? mid : (ang + pad) + (slice - 2 * pad) * (i / (n - 1));
-        var lx = cx + R2 * Math.cos(t), ly = cy + R2 * Math.sin(t);
-        // spark spoke thickens with its star level (stronger inherited factor)
-        edges += lmEdge(lx, ly, leafR, ax, ay, ancR, { width: 1 + (lf.lvl || 1) * 0.5, color: "#e2d8c7" });
-        nodes += lmLeaf(lx, ly, leafR, lf);
-      });
-      nodes += lmPortrait(ax, ay, ancR, an.thumb, "#4CA62E", an.uma.name);
-      ang += slice;
-    });
-    nodes += lmPortrait(cx, cy, foalR, slotThumb("foal"), "#3C8523", (BYID[bstate.foal] || {}).name, true);
+    // radial hierarchy: foal center, parents on ring 1, grandparents on ring 2, sparks fanned outward
+    var W = 760, H = 680, cx = 380, cy = 340;
+    lmLayout(tree, cx, cy, [0, 120, 205, 268]);
+
+    var edges = "", nodes = "";
+    (function walk(n, parent) {
+      if (parent) {
+        var opts = n.nkind === "spark"
+          ? { width: 1 + (n.leaf.lvl || 1) * 0.5, color: "#e2d8c7" }
+          : { label: n.contrib, labelColor: affColor(n.contrib), width: 1.5 + Math.min(n.contrib, 40) / 40 * 3 };
+        edges += lmEdge(n.x, n.y, lmNodeR(n), parent.x, parent.y, lmNodeR(parent), opts);
+      }
+      n.children.forEach(function (c) { walk(c, n); });
+      // draw nodes after their edges; foal (root) ends up on top since it renders last below
+      if (n.nkind === "spark") nodes += lmLeaf(n.x, n.y, lmNodeR(n), n.leaf);
+      else nodes += lmPortrait(n.x, n.y, lmNodeR(n), n.thumb, n.nkind === "foal" ? "#3C8523" : "#4CA62E", n.tip || n.name, n.big);
+    })(tree, null);
+    // the P1 x P2 relation isn't a tree edge; draw it as a dashed link between the two parents
+    var pn = {}; tree.children.forEach(function (c) { if (c.slot === "p1" || c.slot === "p2") pn[c.slot] = c; });
+    if (pn.p1 && pn.p2) {
+      var pc = compat(bstate.p1, bstate.p2);
+      edges = lmEdge(pn.p1.x, pn.p1.y, lmNodeR(pn.p1), pn.p2.x, pn.p2.y, lmNodeR(pn.p2),
+        { dashed: true, noArrow: true, label: pc, labelColor: affColor(pc), color: "#e2d8c7" }) + edges;
+    }
 
     var defs = '<defs><clipPath id="lmclip" clipPathUnits="objectBoundingBox"><circle cx=".5" cy=".5" r=".5"/></clipPath>' +
       '<marker id="lmarrow" markerWidth="7" markerHeight="7" refX="6" refY="3.5" orient="auto"><path d="M0 0L7 3.5L0 7z" fill="#cabfae"/></marker></defs>';
     var svg = '<svg class="lm-svg" viewBox="0 0 ' + W + " " + H + '" width="100%" preserveAspectRatio="xMidYMid meet">' + defs + edges + nodes + "</svg>";
 
     host.innerHTML = header +
-      '<div class="bd-aff-cap">Ancestors pass their sparks (stats, aptitudes, skills, races) toward the foal. The number on each inner spoke is that ancestor’s affinity with the foal, higher is better.</div>' +
+      '<div class="bd-aff-cap">Foal ◂ parents ◂ grandparents, with each ancestor’s sparks fanned around it. The number on each spoke is its affinity contribution: a grandparent’s counts both its bond with the foal and with its own parent. The dashed link is the two parents’ compatibility.</div>' +
       '<div class="lm-wrap">' + svg + "</div>";
   }
 
