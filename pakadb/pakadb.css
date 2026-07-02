@@ -608,9 +608,9 @@ body.bd-dragging, body.bd-dragging .bd-node { cursor: grabbing; user-select: non
 @keyframes box-in  { from { opacity: 0; transform: translateY(-40px); } to { opacity: 1; transform: translateY(0); } }
 @keyframes box-out { from { opacity: 1; transform: translateY(0); } to { opacity: 0; transform: translateY(-40px); } }
 
-/* slot picker popup (anchored menu) */
-.bd-picker:not([hidden]) { animation: pop-in .22s cubic-bezier(.2,.7,.3,1) both; }
-.bd-picker.anim-out      { animation: pop-out .16s ease-in forwards; }
+/* slot picker popup + its filter panel (anchored menus, animate in/out together) */
+.bd-picker:not([hidden]), .bd-filter:not([hidden]) { animation: pop-in .22s cubic-bezier(.2,.7,.3,1) both; }
+.bd-picker.anim-out, .bd-filter.anim-out           { animation: pop-out .16s ease-in forwards; }
 
 /* modal overlays (roster / editor / legacy picker) */
 .cp-picker:not([hidden])                  { animation: ov-in .16s ease both; }
@@ -624,6 +624,7 @@ body.bd-dragging, body.bd-dragging .bd-node { cursor: grabbing; user-select: non
 
 @media (prefers-reduced-motion: reduce) {
   .bd-picker:not([hidden]), .bd-picker.anim-out,
+  .bd-filter:not([hidden]), .bd-filter.anim-out,
   .cp-picker:not([hidden]), .cp-picker:not([hidden]) .cp-picker-box,
   .cp-picker.anim-out, .cp-picker.anim-out .cp-picker-box,
   .cp-scrim:not([hidden]), .cp-scrim.anim-out { animation: none; }
