@@ -616,7 +616,7 @@
   }
   function lmPortrait(x, y, r, thumb, color, name, big, slot) {
     var img = thumb ? '<image href="/pakadb/' + esc(thumb.thumb) + '" x="' + (x - r) + '" y="' + (y - r) + '" width="' + (2 * r) + '" height="' + (2 * r) + '" clip-path="url(#lmclip)" preserveAspectRatio="xMidYMid slice"/>' : "";
-    return '<g class="lm-node" data-slot="' + esc(slot || "") + '" data-tip="' + esc((name || "") + " — click to change") + '">' +
+    return '<g class="lm-node" data-slot="' + esc(slot || "") + '" data-tip="' + esc(name || "") + '">' +
       '<circle cx="' + x + '" cy="' + y + '" r="' + r + '" fill="#FBF5EA"/>' + img +
       '<circle cx="' + x + '" cy="' + y + '" r="' + r + '" fill="none" stroke="' + color + '" stroke-width="' + (big ? 4 : 3) + '"/></g>';
   }
@@ -628,21 +628,22 @@
     else if (lf.kind === "race") inner = '<image href="/pakadb/assets/races/' + lf.banner + '.png" x="' + (x - r) + '" y="' + (y - r) + '" width="' + (2 * r) + '" height="' + (2 * r) + '" clip-path="url(#lmclip)" preserveAspectRatio="xMidYMid slice"/>';
     var badge = lf.lvl ? '<circle cx="' + (x + r * 0.82) + '" cy="' + (y - r * 0.82) + '" r="6" fill="#fff" stroke="' + col + '" stroke-width="1.5"/>' +
       '<text x="' + (x + r * 0.82) + '" y="' + (y - r * 0.82 + 3) + '" text-anchor="middle" font-size="8" font-weight="800" fill="' + col + '">' + lf.lvl + "</text>" : "";
-    return '<g class="lm-node" data-slot="' + esc(slot || "") + '" data-spark="1" data-tip="' + esc(lf.label + (lf.lvl ? " ★" + lf.lvl : "") + " — click to edit sparks") + '">' +
+    return '<g class="lm-node" data-slot="' + esc(slot || "") + '" data-spark="1" data-tip="' + esc(lf.label + (lf.lvl ? " ★" + lf.lvl : "") + ". Tap to edit.") + '">' +
       '<circle cx="' + x + '" cy="' + y + '" r="' + r + '" fill="' + col + '"/>' + inner +
       '<circle cx="' + x + '" cy="' + y + '" r="' + r + '" fill="none" stroke="#fff" stroke-width="2"/>' + badge + "</g>";
   }
   function lmSparkChild(lf) { return { nkind: "spark", leaf: lf, children: [] }; }
   // build the lineage tree: foal -> parents -> grandparents, sparks hang off each ancestor
   function lineageTree() {
-    var f = bstate.foal;
+    var f = bstate.foal, foalName = (BYID[f] || {}).name || "your trainee";
     function ancNode(slot, parentSlot) {
       if (!bstate[slot]) return null;
       var id = bstate[slot], pId = parentSlot ? bstate[parentSlot] : null;
       var toFoal = compat(f, id), toParent = pId ? compat(pId, id) : 0;
       var contrib = toFoal + toParent;
-      var tip = BYID[id].name + " — " + contrib + " affinity";
-      tip += parentSlot ? " (" + toFoal + " with foal + " + toParent + " with its parent)" : " with the foal";
+      var tip = BYID[id].name + ", " + contrib + " compatibility";
+      tip += parentSlot ? " (" + toFoal + " with " + foalName + ", " + toParent + " with its parent). Tap to swap her."
+                        : " with " + foalName + ". Tap to swap her.";
       return {
         nkind: "anc", slot: slot, thumb: slotThumb(slot), name: BYID[id].name,
         contrib: contrib, tip: tip, children: sparkLeaves(slot).map(lmSparkChild),
@@ -655,7 +656,8 @@
       return [ancNode(gA, null), ancNode(gB, null)].filter(Boolean);
     }
     return {
-      nkind: "foal", slot: "foal", thumb: slotThumb("foal"), name: (BYID[f] || {}).name, big: true,
+      nkind: "foal", slot: "foal", thumb: slotThumb("foal"), name: foalName,
+      tip: foalName + ", your trainee. Tap to change her.", big: true,
       children: branch("p1", "gp11", "gp12").concat(branch("p2", "gp21", "gp22")),
     };
   }
