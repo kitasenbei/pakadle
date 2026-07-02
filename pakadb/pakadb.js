@@ -794,6 +794,37 @@
   }
   function closeSlotPicker() { hideEl($("bd-picker")); bstate.active = null; }
 
+  // ---- breeding tree right-click context menu ----
+  var ctxSlot = null, ctxAnchor = null;
+  // assign the uma that maximises this slot's affinity given the rest of the tree
+  function autoPickSlot(slot) {
+    var best = null, bestT = -Infinity;
+    UMAS.forEach(function (u) { var t = affinityWith(slot, u.id); if (t > bestT) { bestT = t; best = u.id; } });
+    if (best != null) { bstate[slot] = best; slotSpark[slot] = null; slotCard[slot] = null; renderBreeding(); }
+  }
+  function ctxItem(act, glyph, label, cls) {
+    return '<button type="button" class="bd-ctx-item' + (cls ? " " + cls : "") + '" data-act="' + act + '">' +
+      '<span class="bd-ctx-ico">' + glyph + "</span>" + label + "</button>";
+  }
+  function openCtx(slot, anchor, x, y) {
+    ctxSlot = slot; ctxAnchor = anchor;
+    var filled = !!bstate[slot];
+    var canRank = SLOTS.some(function (k) { return k !== slot && bstate[k]; });
+    var items = ctxItem("pick", "🔍", filled ? "Change uma" : "Pick uma");
+    if (canRank) items += ctxItem("auto", "✨", "Auto-pick best match");
+    if (filled) {
+      var u = BYID[bstate[slot]];
+      if (u && u.alts && u.alts.length > 1) items += ctxItem("outfit", "👗", "Change outfit");
+      items += ctxItem("view", "📖", "View in database");
+      items += '<div class="bd-ctx-sep"></div>' + ctxItem("clear", "✕", "Clear slot", "danger");
+    }
+    var el = $("bd-ctx"); el.innerHTML = items; showEl(el);
+    var w = el.offsetWidth || 190, h = el.offsetHeight || 160;
+    el.style.left = Math.max(8, Math.min(x, window.innerWidth - w - 8)) + "px";
+    el.style.top = Math.max(8, Math.min(y, window.innerHeight - h - 8)) + "px";
+  }
+  function closeCtx() { hideEl($("bd-ctx")); ctxSlot = null; ctxAnchor = null; }
+
   // ---- skill filter picker (mare-picker style, for the advanced SKILL filter) ----
   function openSkillPicker(anchor) {
     var el = $("skill-picker");
@@ -986,7 +1017,7 @@
     openDrawer(u);
   });
   $("cp-scrim").addEventListener("click", function () { closeDrawer(); closePicker(); });
-  document.addEventListener("keydown", function (e) { if (e.key === "Escape") { if (!$("white-picker").hidden) return closeWhitePicker(); closeDrawer(); closePicker(); closeRoster(); closeEditor(); closeSkillPicker(); closeSlotPicker(); } });
+  document.addEventListener("keydown", function (e) { if (e.key === "Escape") { if (!$("bd-ctx").hidden) return closeCtx(); if (!$("white-picker").hidden) return closeWhitePicker(); closeDrawer(); closePicker(); closeRoster(); closeEditor(); closeSkillPicker(); closeSlotPicker(); } });
 
   // ---- pakadle tooltip: one floating bubble driven by [data-tip], clip-proof ----
   (function () {
@@ -1138,6 +1169,27 @@
   $("bd-stage").addEventListener("click", function (e) {
     var n = e.target.closest(".bd-node"); if (n) openSlotPicker(n.getAttribute("data-slot"), n);
   });
+  $("bd-stage").addEventListener("contextmenu", function (e) {
+    var n = e.target.closest(".bd-node"); if (!n) return;
+    e.preventDefault(); closeSlotPicker();
+    openCtx(n.getAttribute("data-slot"), n, e.clientX, e.clientY);
+  });
+  $("bd-ctx").addEventListener("click", function (e) {
+    var it = e.target.closest(".bd-ctx-item"); if (!it || !ctxSlot) return;
+    var act = it.getAttribute("data-act"), slot = ctxSlot, anchor = ctxAnchor;
+    closeCtx();
+    if (act === "pick") openSlotPicker(slot, anchor);
+    else if (act === "auto") autoPickSlot(slot);
+    else if (act === "view") { var u = BYID[bstate[slot]]; if (u) openDrawer(u); }
+    else if (act === "outfit") { var uo = BYID[bstate[slot]]; openSlotPicker(slot, anchor); if (uo) { $("bd-picker-search").value = uo.name; renderSlotList(uo.name); } }
+    else if (act === "clear") { bstate[slot] = null; slotSpark[slot] = null; slotCard[slot] = null; renderBreeding(); }
+  });
+  document.addEventListener("click", function (e) {
+    if ($("bd-ctx").hidden) return;
+    if (e.target.closest("#bd-ctx")) return;
+    closeCtx();
+  });
+  window.addEventListener("scroll", function () { if (!$("bd-ctx").hidden) closeCtx(); }, true);
   // close the popup when clicking outside it (but not when opening from a slot)
   document.addEventListener("click", function (e) {
     if ($("bd-picker").hidden) return;

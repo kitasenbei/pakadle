@@ -221,6 +221,19 @@ body.scrubbing .numc-val::selection { background: transparent; }
 .cp-empty { text-align: center; color: var(--ink2); font-weight: 800;
   font-size: 13px; letter-spacing: .5px; padding: 60px 0; }
 
+/* ---- breeding tree right-click context menu ---- */
+.bd-ctx { position: fixed; z-index: 55; min-width: 178px; padding: 5px;
+  background: var(--panel); border: 2px solid var(--turf-dark); border-radius: 12px;
+  box-shadow: 0 12px 28px rgba(58,46,57,.28); }
+.bd-ctx-item { display: flex; align-items: center; gap: 9px; width: 100%; padding: 7px 9px;
+  border: none; background: transparent; border-radius: 8px; cursor: pointer;
+  font-family: inherit; font-size: 12.5px; font-weight: 800; color: var(--ink); text-align: left; }
+.bd-ctx-item:hover { background: var(--bg); }
+.bd-ctx-ico { flex: none; width: 18px; text-align: center; font-size: 14px; }
+.bd-ctx-item.danger { color: var(--sakura); }
+.bd-ctx-item.danger:hover { background: #fff2f6; }
+.bd-ctx-sep { height: 2px; margin: 4px 6px; background: var(--divider); border-radius: 2px; }
+
 /* ---- pakadle tooltip: one floating bubble, positioned in JS (clip-proof) ---- */
 .pk-tip {
   position: fixed; z-index: 60; pointer-events: none;
