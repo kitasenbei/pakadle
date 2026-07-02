@@ -114,10 +114,11 @@ async function main() {
       iconId: s.iconid,
     });
   }
-  const resolve = (ids) => (ids || []).map((id) => skillById.get(id) || { id, name: `#${id}`, desc: "" });
+  // gametora occasionally stores an id as a string ("201352"); coerce so the numeric-keyed map hits
+  const resolve = (ids) => (ids || []).map((id) => skillById.get(Number(id)) || { id: Number(id), name: `#${id}`, desc: "" });
   const resolveEvo = (arr) => (arr || []).map((e) => ({
-    old: skillById.get(e.old) || { id: e.old },
-    new: skillById.get(e.new) || { id: e.new },
+    old: skillById.get(Number(e.old)) || { id: Number(e.old) },
+    new: skillById.get(Number(e.new)) || { id: Number(e.new) },
   }));
 
   // representative (original) card per char_id = smallest card_id

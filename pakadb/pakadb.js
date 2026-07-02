@@ -8,6 +8,7 @@
   var GRANK = {}; GRADES.forEach(function (g, i) { GRANK[g] = GRADES.length - i; });
   var STAT_KEYS = ["speed", "stamina", "power", "guts", "wit"];
   var STAT_ABBR = { speed: "SPD", stamina: "STA", power: "PWR", guts: "GUT", wit: "WIT" };
+  var STAT_NAME = { speed: "Speed", stamina: "Stamina", power: "Power", guts: "Guts", wit: "Wit" };
 
   var $ = function (id) { return document.getElementById(id); };
   // show/hide with CSS animations: opening plays the element's own keyframe;
@@ -29,12 +30,13 @@
   function gradeTxt(g) { return g && GRANK[g] ? g : "-"; }
 
   var UMAS = [];
+  var SKILL_INDEX = [];   // unique skills across the roster, for the skill filter picker
   var BYID = {};
   var BREED = { relationPoints: {}, members: {} };
   var STATMAX = { speed: 1, stamina: 1, power: 1, guts: 1, wit: 1 };
   // filter state: aptMin[key]=grade (require >=), rarity[] set, growth[] stats,
   // statMin{stat:n}, skill substring.
-  var state = { q: "", sort: "name", advOpen: false, aptMin: {}, rarity: [], growth: [], statMin: {}, skill: "" };
+  var state = { q: "", sort: "name", advOpen: false, aptMin: {}, rarity: [], growth: [], statMin: {}, skills: [] };
 
   // aptitude groups (cat + [key,label]); keys are unique across groups.
   var APT_DEFS = [
@@ -46,6 +48,16 @@
   var KEY_LABEL = {}; APT_DEFS.forEach(function (g) { g.keys.forEach(function (k) { KEY_LABEL[k[0]] = k[1]; }); });
   var GRADE_OPTS = ["S", "A", "B", "C", "D"]; // selectable minimum grades
   function aptGrade(u, key) { var c = KEY_CAT[key]; return u.aptitude && u.aptitude[c] && u.aptitude[c][key]; }
+  function buildSkillIndex() {
+    var seen = {};
+    function add(sk) { if (!sk || !sk.name || seen[sk.name]) return; seen[sk.name] = 1; SKILL_INDEX.push({ name: sk.name, iconId: sk.iconId }); }
+    UMAS.forEach(function (u) {
+      var s = u.skills || {};
+      ["unique", "innate", "awakening", "event"].forEach(function (g) { (s[g] || []).forEach(add); });
+      (s.evo || []).forEach(function (e) { if (e.new) add(e.new); if (e.old) add(e.old); });
+    });
+    SKILL_INDEX.sort(function (a, b) { return a.name.localeCompare(b.name); });
+  }
   function umaSkillNames(u) {
     var s = u.skills || {}, out = [];
     ["unique", "innate", "awakening", "event"].forEach(function (g) { (s[g] || []).forEach(function (x) { out.push(x.name); }); });
@@ -63,6 +75,7 @@
       STAT_KEYS.forEach(function (k) {
         STATMAX[k] = UMAS.reduce(function (m, u) { return Math.max(m, (u.statsMax && u.statsMax[k]) || 0); }, 1);
       });
+      buildSkillIndex();
       buildFilters();
       render();
     }).catch(function (e) {
@@ -103,19 +116,25 @@
       return '<button class="chip" data-rarity="' + r + '">' + "★".repeat(r) + "</button>";
     }).join("");
     var growth = STAT_KEYS.map(function (k) {
-      return '<button class="chip" data-growth="' + k + '">' + STAT_ABBR[k] + " +</button>";
+      return '<button class="chip" data-growth="' + k + '">' + STAT_NAME[k] + " +</button>";
     }).join("");
     var statMin = STAT_KEYS.map(function (k) {
-      return '<label class="adv-num"><span>' + STAT_ABBR[k] + " ≥</span><input type=\"number\" min=\"0\" step=\"1\" data-statmin=\"" + k + "\" placeholder=\"" + STATMAX[k] + "\" /></label>";
+      var v = state.statMin[k] || "";
+      return '<div class="adv-num"><span>' + STAT_NAME[k] + " ≥</span>" +
+        '<div class="numc">' +
+          '<button class="numc-btn" type="button" data-step="-5" data-stat="' + k + '" aria-label="decrease">−</button>' +
+          '<input class="numc-val" type="text" inputmode="numeric" data-statmin="' + k + '" value="' + v + '" placeholder="' + STATMAX[k] + '" />' +
+          '<button class="numc-btn" type="button" data-step="5" data-stat="' + k + '" aria-label="increase">+</button>' +
+        "</div></div>";
     }).join("");
     $("cp-adv").innerHTML =
-      '<div class="adv-col adv-apt">' + apt + "</div>" +
-      '<div class="adv-col">' +
-        '<div class="adv-sub"><div class="adv-sub-h">RARITY</div><div class="adv-chips">' + rarity + "</div></div>" +
-        '<div class="adv-sub"><div class="adv-sub-h">GROWTH BONUS</div><div class="adv-chips">' + growth + "</div></div>" +
-        '<div class="adv-sub"><div class="adv-sub-h">MIN STAT (5★ base)</div><div class="adv-nums">' + statMin + "</div></div>" +
-        '<div class="adv-sub"><div class="adv-sub-h">SKILL NAME CONTAINS</div><input id="cp-adv-skill" class="cp-input" style="width:100%" type="search" placeholder="e.g. corner, straightaway, speed…" autocomplete="off" /></div>' +
-      "</div>";
+      apt +
+      '<div class="adv-sub"><div class="adv-sub-h">RARITY</div><div class="adv-chips">' + rarity + "</div></div>" +
+      '<div class="adv-sub"><div class="adv-sub-h">GROWTH BONUS</div><div class="adv-chips">' + growth + "</div></div>" +
+      '<div class="adv-sub"><div class="adv-sub-h">MIN STAT (5★ base)</div><div class="adv-nums">' + statMin + "</div></div>" +
+      '<div class="adv-sub"><div class="adv-sub-h">SKILL</div>' +
+        '<button id="cp-skill-trigger" class="skill-trigger' + (state.skills.length ? " on" : "") + '">' +
+          esc(skillTriggerLabel()) + "</button></div>";
   }
 
   // reflect state onto controls (on/off + selected grade)
@@ -138,9 +157,9 @@
   }
 
   function clearFilters() {
-    state.aptMin = {}; state.rarity = []; state.growth = []; state.statMin = {}; state.skill = "";
+    state.aptMin = {}; state.rarity = []; state.growth = []; state.statMin = {}; state.skills = [];
     Array.prototype.forEach.call(document.querySelectorAll("[data-statmin]"), function (i) { i.value = ""; });
-    var sk = document.getElementById("cp-adv-skill"); if (sk) sk.value = "";
+    updateSkillTrigger();
     syncFilterUI(); render();
   }
 
@@ -156,7 +175,9 @@
     for (var s in state.statMin) {
       if (!((u.statsMax && u.statsMax[s]) >= state.statMin[s])) return false;
     }
-    if (state.skill && umaSkillNames(u).indexOf(state.skill) === -1) return false;
+    for (var si = 0; si < state.skills.length; si++) {
+      if (umaSkillNames(u).indexOf(state.skills[si].toLowerCase()) === -1) return false;
+    }
     return true;
   }
 
@@ -216,9 +237,24 @@
       '<span class="stat-n">' + v + "</span></div>";
   }
 
-  function aptCell(k, g) {
-    return '<div class="apt-cell"><div class="apt-k">' + k + '</div><div class="apt-v v-' +
-      (g && GRANK[g] ? g : "null") + '">' + gradeTxt(g) + "</div></div>";
+  // grouped aptitude (Surface / Distance / Strategy)
+  var APT_ROWS = [
+    { cat: "Surface", items: [["turf", "Turf"], ["dirt", "Dirt"]] },
+    { cat: "Distance", items: [["short", "Sprint"], ["mile", "Mile"], ["medium", "Medium"], ["long", "Long"]] },
+    { cat: "Strategy", items: [["front", "Front"], ["pace", "Pace"], ["late", "Late"], ["end", "End"]] },
+  ];
+  function aptRows(ap) {
+    return APT_ROWS.map(function (row) {
+      var items = row.items.map(function (it) {
+        var key = it[0], label = it[1];
+        var g = ap[KEY_CAT[key]] && ap[KEY_CAT[key]][key];
+        return '<div class="apt2-item">' +
+          '<span class="apt2-k">' + label + "</span>" +
+          '<span class="apt2-g ' + gradeCls(g) + '">' + gradeTxt(g) + "</span></div>";
+      }).join("");
+      return '<div class="apt2-row"><span class="apt2-cat">' + row.cat + "</span>" +
+        '<div class="apt2-items">' + items + "</div></div>";
+    }).join("");
   }
 
   function skillIcon(s) {
@@ -290,13 +326,7 @@
       "</div>" +
       outfitHtml +
       '<div class="sect"><div class="sect-h">Aptitude</div>' +
-        '<div class="apt-grid">' +
-          aptCell("TURF", ap.surface.turf) + aptCell("DIRT", ap.surface.dirt) +
-          aptCell("SPRINT", ap.distance.short) + aptCell("MILE", ap.distance.mile) +
-          aptCell("MED", ap.distance.medium) + aptCell("LONG", ap.distance.long) +
-          aptCell("FRONT", ap.style.front) + aptCell("PACE", ap.style.pace) +
-          aptCell("LATE", ap.style.late) + aptCell("END", ap.style.end) +
-        "</div></div>" +
+        '<div class="apt2">' + aptRows(ap) + "</div></div>" +
       '<div class="sect"><div class="sect-h">Stats (5★ base) + growth</div>' +
         STAT_KEYS.map(function (k) { return statBar(cur, k); }).join("") + "</div>" +
       '<div class="sect"><div class="sect-h">Skills</div>' + (skillsHtml || '<div class="skill-d">None listed.</div>') + "</div>" +
@@ -609,24 +639,60 @@
     });
     return OUTFITS;
   }
+  // position a fixed popup right under an anchor element, clamped to the viewport
+  function anchorUnder(el, anchor) {
+    if (!anchor || !anchor.getBoundingClientRect) return;
+    var r = anchor.getBoundingClientRect();
+    var w = el.offsetWidth || 290, hh = el.offsetHeight || 320;
+    var left = Math.max(8, Math.min(r.left, window.innerWidth - w - 8));
+    var top = r.bottom + 6;
+    if (top + hh > window.innerHeight - 8) top = Math.max(8, r.top - hh - 6);
+    el.style.left = left + "px"; el.style.top = top + "px";
+  }
   function openSlotPicker(slot, anchor) {
     bstate.active = slot;
     var el = $("bd-picker");
     showEl(el);
     $("bd-picker-title").textContent = "Assign " + (ROLE_LABEL[slot] || slot);
     var s = $("bd-picker-search"); s.value = ""; renderSlotList("");
-    // anchor the popup right under the tapped slot (menu-style), clamped to viewport
-    if (anchor && anchor.getBoundingClientRect) {
-      var r = anchor.getBoundingClientRect();
-      var w = el.offsetWidth || 290, hh = el.offsetHeight || 320;
-      var left = Math.max(8, Math.min(r.left, window.innerWidth - w - 8));
-      var top = r.bottom + 6;
-      if (top + hh > window.innerHeight - 8) top = Math.max(8, r.top - hh - 6);
-      el.style.left = left + "px"; el.style.top = top + "px";
-    }
+    anchorUnder(el, anchor);
     s.focus();
   }
   function closeSlotPicker() { hideEl($("bd-picker")); bstate.active = null; }
+
+  // ---- skill filter picker (mare-picker style, for the advanced SKILL filter) ----
+  function openSkillPicker(anchor) {
+    var el = $("skill-picker");
+    showEl(el);
+    var s = $("skill-search"); s.value = ""; renderSkillList("");
+    anchorUnder(el, anchor);
+    s.focus();
+  }
+  function closeSkillPicker() { hideEl($("skill-picker")); }
+  function skillTriggerLabel() {
+    var n = state.skills.length;
+    return n === 0 ? "Any skill — tap to pick" : n === 1 ? state.skills[0] : n + " skills selected";
+  }
+  function updateSkillTrigger() {
+    var t = $("cp-skill-trigger"); if (!t) return;
+    t.textContent = skillTriggerLabel();
+    t.classList.toggle("on", state.skills.length > 0);
+  }
+  function renderSkillList(q) {
+    q = (q || "").trim().toLowerCase();
+    var list = SKILL_INDEX.filter(function (s) { return !q || s.name.toLowerCase().indexOf(q) !== -1; });
+    $("skill-list").innerHTML =
+      '<div class="bp-row" data-skill=""><span class="bp-img sk-img sk-any">✕</span><div class="bp-meta"><div class="bp-name">Clear all</div></div></div>' +
+      list.map(function (s) {
+        var on = state.skills.indexOf(s.name) >= 0;
+        var ico = s.iconId
+          ? '<img class="bp-img sk-img" loading="lazy" src="/pakadb/assets/skill_icons/' + esc(s.iconId) + '.png" onerror="this.style.visibility=\'hidden\'" alt="" />'
+          : '<span class="bp-img sk-img"></span>';
+        return '<div class="bp-row' + (on ? " on" : "") + '" data-skill="' + esc(s.name) + '">' + ico +
+          '<div class="bp-meta"><div class="bp-name">' + esc(s.name) + "</div></div>" +
+          (on ? '<span class="sk-check">✓</span>' : "") + "</div>";
+      }).join("");
+  }
   function renderSlotList(q) {
     q = (q || "").trim().toLowerCase();
     var slot = bstate.active;
@@ -757,7 +823,7 @@
     openDrawer(u);
   });
   $("cp-scrim").addEventListener("click", function () { closeDrawer(); closePicker(); });
-  document.addEventListener("keydown", function (e) { if (e.key === "Escape") { closeDrawer(); closePicker(); closeRoster(); closeEditor(); } });
+  document.addEventListener("keydown", function (e) { if (e.key === "Escape") { closeDrawer(); closePicker(); closeRoster(); closeEditor(); closeSkillPicker(); closeSlotPicker(); } });
   $("cp-search").addEventListener("input", function (e) { state.q = e.target.value.trim().toLowerCase(); render(); });
   initDropdown($("cp-sort"), function (v) { state.sort = v; render(); });
 
@@ -775,6 +841,17 @@
   // advanced panel (grade buttons, rarity, growth, stat mins, skill)
   $("cp-adv").addEventListener("click", function (e) {
     var b = e.target.closest("button"); if (!b) return;
+    if (b.id === "cp-skill-trigger") return openSkillPicker(b);
+    var step = b.getAttribute("data-step");
+    if (step) {
+      var stat = b.getAttribute("data-stat");
+      var input = b.parentNode.querySelector(".numc-val");
+      var cur = parseInt(input.value, 10); if (isNaN(cur)) cur = 0;
+      var nv = Math.max(0, cur + Number(step));
+      input.value = nv || "";
+      if (nv > 0) state.statMin[stat] = nv; else delete state.statMin[stat];
+      return render();
+    }
     var apt = b.getAttribute("data-apt");
     if (apt) {
       var g = b.getAttribute("data-grade");
@@ -787,11 +864,40 @@
   $("cp-adv").addEventListener("input", function (e) {
     var s = e.target.getAttribute("data-statmin");
     if (s) {
-      var v = parseInt(e.target.value, 10);
+      var digits = e.target.value.replace(/[^0-9]/g, "");
+      if (digits !== e.target.value) e.target.value = digits;
+      var v = parseInt(digits, 10);
       if (v > 0) state.statMin[s] = v; else delete state.statMin[s];
       return render();
     }
-    if (e.target.id === "cp-adv-skill") { state.skill = e.target.value.trim().toLowerCase(); render(); }
+  });
+
+  // skill filter picker
+  $("skill-search").addEventListener("input", function (e) { renderSkillList(e.target.value); });
+  $("skill-x").addEventListener("click", closeSkillPicker);
+  $("skill-clear").addEventListener("click", function () { state.skills = []; updateSkillTrigger(); render(); renderSkillList($("skill-search").value); });
+  $("skill-list").addEventListener("click", function (e) {
+    var row = e.target.closest(".bp-row"); if (!row) return;
+    var name = row.getAttribute("data-skill") || "";
+    if (name === "") {                                  // "Clear all" row: full re-render
+      state.skills = [];
+      updateSkillTrigger(); render(); renderSkillList($("skill-search").value);
+      return;
+    }
+    // toggle in place so the list keeps its scroll position (no jump), stays open
+    var i = state.skills.indexOf(name);
+    var check = row.querySelector(".sk-check");
+    if (i >= 0) { state.skills.splice(i, 1); row.classList.remove("on"); if (check) check.remove(); }
+    else {
+      state.skills.push(name); row.classList.add("on");
+      if (!check) { var sp = document.createElement("span"); sp.className = "sk-check"; sp.textContent = "✓"; row.appendChild(sp); }
+    }
+    updateSkillTrigger(); render();
+  });
+  document.addEventListener("click", function (e) {
+    if ($("skill-picker").hidden) return;
+    if (e.target.closest("#skill-picker") || e.target.closest("#cp-skill-trigger")) return;
+    closeSkillPicker();
   });
 
   // view toggle
@@ -840,7 +946,7 @@
       slotSpark[slot] = null;
     }
     renderBreeding();
-    closeSlotPicker();
+    renderSlotList($("bd-picker-search").value);   // keep the picker open (re-rank after the pick)
   });
   $("cp-breed-reset").addEventListener("click", resetTree);
   $("cp-picker-search").addEventListener("input", function (e) { renderPickerList(e.target.value); });

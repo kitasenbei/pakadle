@@ -77,6 +77,17 @@
     <div class="bd-factors" id="bd-factors"></div>
   </div>
 
+  <!-- skill filter picker (advanced filters) -->
+  <div class="bd-picker" id="skill-picker" hidden>
+    <div class="bd-picker-head">
+      <span class="bd-picker-title">Filter by skill</span>
+      <button class="cp-ghost bd-picker-clear" id="skill-clear">ANY</button>
+      <button class="dh-x" id="skill-x">✕</button>
+    </div>
+    <input id="skill-search" class="cp-input bd-picker-search" type="search" placeholder="SEARCH SKILL…" autocomplete="off" spellcheck="false" />
+    <div class="bd-picker-list" id="skill-list"></div>
+  </div>
+
   <!-- detail drawer (database) -->
   <aside class="cp-drawer" id="cp-drawer" aria-hidden="true">
     <div class="cp-drawer-inner" id="cp-drawer-inner"></div>

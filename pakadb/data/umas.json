@@ -88421,9 +88421,15 @@
           "iconId": 20021
         },
         {
-          "id": "201352",
-          "name": "#201352",
-          "desc": ""
+          "id": 201352,
+          "name": "Hydrate",
+          "desc": "Leader・At a random point during the Middle Leg, your stamina will slightly recover",
+          "rarity": 1,
+          "type": [
+            "ldr",
+            "l_1"
+          ],
+          "iconId": 20021
         },
         {
           "id": 200582,
@@ -88665,9 +88671,15 @@
               "iconId": 20021
             },
             {
-              "id": "201352",
-              "name": "#201352",
-              "desc": ""
+              "id": 201352,
+              "name": "Hydrate",
+              "desc": "Leader・At a random point during the Middle Leg, your stamina will slightly recover",
+              "rarity": 1,
+              "type": [
+                "ldr",
+                "l_1"
+              ],
+              "iconId": 20021
             },
             {
               "id": 200582,
@@ -88894,9 +88906,15 @@
               "iconId": 20021
             },
             {
-              "id": "201352",
-              "name": "#201352",
-              "desc": ""
+              "id": 201352,
+              "name": "Hydrate",
+              "desc": "Leader・At a random point during the Middle Leg, your stamina will slightly recover",
+              "rarity": 1,
+              "type": [
+                "ldr",
+                "l_1"
+              ],
+              "iconId": 20021
             },
             {
               "id": 201432,
@@ -89149,9 +89167,15 @@
               "iconId": 20021
             },
             {
-              "id": "201352",
-              "name": "#201352",
-              "desc": ""
+              "id": 201352,
+              "name": "Hydrate",
+              "desc": "Leader・At a random point during the Middle Leg, your stamina will slightly recover",
+              "rarity": 1,
+              "type": [
+                "ldr",
+                "l_1"
+              ],
+              "iconId": 20021
             },
             {
               "id": 201312,
