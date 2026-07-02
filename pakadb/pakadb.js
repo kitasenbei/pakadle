@@ -748,6 +748,8 @@
   // ---- wiring ----
   $("cp-grid").addEventListener("click", function (e) {
     var el = e.target.closest(".unit"); if (!el) return;
+    // clicking the already-open mare toggles the drawer shut
+    if (el.classList.contains("sel") && $("cp-drawer").classList.contains("open")) { closeDrawer(); return; }
     var u = UMAS.find(function (x) { return String(x.id) === el.getAttribute("data-id"); });
     if (!u) return;
     var prev = document.querySelector(".unit.sel"); if (prev) prev.classList.remove("sel");
