@@ -950,10 +950,50 @@
     showEl(el);
     $("bd-picker-title").textContent = "Assign " + (ROLE_LABEL[slot] || slot);
     var s = $("bd-picker-search"); s.value = ""; renderSlotList("");
+    $("bd-picker-list").scrollTop = 0;                 // always start at the top
+    showEl($("bd-filter")); renderPickerFilters();
     anchorUnder(el, anchor);
+    positionFilter();
     s.focus();
   }
-  function closeSlotPicker() { hideEl($("bd-picker")); bstate.active = null; }
+  function closeSlotPicker() { hideEl($("bd-picker")); hideEl($("bd-filter")); closeSkillPicker(); bstate.active = null; }
+
+  // ---- mare-picker filters (aptitude + skills), shown beside the picker ----
+  var pickerApt = {}, pickerSkills = [];
+  function pickerFiltersActive() { return pickerSkills.length > 0 || Object.keys(pickerApt).some(function (k) { return pickerApt[k]; }); }
+  function pickerMatch(umaId) {
+    var u = BYID[umaId]; if (!u) return true;
+    for (var k in pickerApt) { if (pickerApt[k] && GRANK[aptGrade(u, k)] < GRANK.A) return false; }
+    if (pickerSkills.length) {
+      var names = umaSkillNames(u);
+      for (var i = 0; i < pickerSkills.length; i++) { if (names.indexOf(pickerSkills[i].toLowerCase()) === -1) return false; }
+    }
+    return true;
+  }
+  function renderPickerFilters() {
+    var host = $("bd-filter-body"); if (!host) return;
+    var apt = APT_DEFS.map(function (g) {
+      var chips = g.keys.map(function (k) {
+        return '<button class="bdf-chip' + (pickerApt[k[0]] ? " on" : "") + '" data-apt="' + k[0] + '">' + k[1] + "</button>";
+      }).join("");
+      return '<div class="bdf-grp"><div class="bdf-h">' + g.label + " (A+)</div><div class=\"bdf-chips\">" + chips + "</div></div>";
+    }).join("");
+    var skillChips = pickerSkills.map(function (n) { return '<button class="bdf-chip sk on" data-rmskill="' + esc(n) + '">' + esc(n) + " ✕</button>"; }).join("");
+    var skills = '<div class="bdf-grp"><div class="bdf-h">Skills</div><div class="bdf-chips">' + skillChips +
+      '<button class="bdf-chip add" id="bdf-add-skill">+ skill</button></div></div>';
+    host.innerHTML = apt + skills +
+      (pickerFiltersActive() ? '<button class="cp-ghost bdf-clear" id="bdf-clear">CLEAR FILTERS</button>' : "");
+  }
+  function positionFilter() {
+    var pk = $("bd-picker"), fl = $("bd-filter");
+    if (pk.hidden || fl.hidden) return;
+    var pr = pk.getBoundingClientRect(), fw = fl.offsetWidth || 210, fh = fl.offsetHeight || 220, gap = 8, left;
+    if (pr.left - fw - gap >= 8) left = pr.left - fw - gap;                                   // room on the left
+    else if (pr.right + gap + fw <= window.innerWidth - 8) left = pr.right + gap;             // else the right
+    else left = Math.max(8, Math.min(pr.left, window.innerWidth - fw - 8));                   // fallback
+    var top = Math.max(8, Math.min(pr.top, window.innerHeight - fh - 8));
+    fl.style.left = left + "px"; fl.style.top = top + "px";
+  }
 
   // ---- breeding tree right-click context menu ----
   var ctxSlot = null, ctxAnchor = null;
@@ -998,14 +1038,21 @@
   function closeCtx() { hideEl($("bd-ctx")); ctxSlot = null; ctxAnchor = null; }
 
   // ---- skill filter picker (mare-picker style, for the advanced SKILL filter) ----
-  function openSkillPicker(anchor) {
+  var skillCtx = null;   // null = database filter (state.skills); "picker" = mare-picker filter
+  function activeSkillList() { return skillCtx === "picker" ? pickerSkills : state.skills; }
+  function skillChanged() {
+    if (skillCtx === "picker") { renderSlotList($("bd-picker-search").value); renderPickerFilters(); }
+    else { render(); updateSkillTrigger(); }
+  }
+  function openSkillPicker(anchor, ctx) {
+    skillCtx = ctx || null;
     var el = $("skill-picker");
     showEl(el);
     var s = $("skill-search"); s.value = ""; renderSkillList("");
     anchorUnder(el, anchor);
     s.focus();
   }
-  function closeSkillPicker() { hideEl($("skill-picker")); }
+  function closeSkillPicker() { hideEl($("skill-picker")); skillCtx = null; }
 
   // ---- white-spark picker: catalog-backed (skills + fixed G1 races) ----
   var whitePickIdx = -1;
@@ -1046,11 +1093,12 @@
   }
   function renderSkillList(q) {
     q = (q || "").trim().toLowerCase();
+    var sel = activeSkillList();
     var list = SKILL_INDEX.filter(function (s) { return !q || s.name.toLowerCase().indexOf(q) !== -1; });
     $("skill-list").innerHTML =
       '<div class="bp-row" data-skill=""><span class="bp-img sk-img sk-any">✕</span><div class="bp-meta"><div class="bp-name">Clear all</div></div></div>' +
       list.map(function (s) {
-        var on = state.skills.indexOf(s.name) >= 0;
+        var on = sel.indexOf(s.name) >= 0;
         var ico = s.iconId
           ? '<img class="bp-img sk-img" loading="lazy" src="/pakadb/assets/skill_icons/' + esc(s.iconId) + '.png" onerror="this.style.visibility=\'hidden\'" alt="" />'
           : '<span class="bp-img sk-img"></span>';
@@ -1066,7 +1114,7 @@
 
     // saved umas first (carry sparks)
     var savedHtml = savedUmas.map(function (s, i) { return { s: s, i: i }; })
-      .filter(function (x) { return !q || (x.s.name || "").toLowerCase().indexOf(q) !== -1; })
+      .filter(function (x) { return (!q || (x.s.name || "").toLowerCase().indexOf(q) !== -1) && pickerMatch(x.s.charId); })
       .map(function (x) {
         var u = BYID[x.s.charId];
         return '<div class="bp-row" data-saved="' + x.i + '">' +
@@ -1079,7 +1127,7 @@
 
     // all outfits (base + alts) with photos
     var rows = outfitRows().filter(function (r) {
-      return !q || r.name.toLowerCase().indexOf(q) !== -1 || (r.title && r.title.toLowerCase().indexOf(q) !== -1);
+      return (!q || r.name.toLowerCase().indexOf(q) !== -1 || (r.title && r.title.toLowerCase().indexOf(q) !== -1)) && pickerMatch(r.id);
     }).map(function (r) { return { r: r, proj: rank ? affinityWith(slot, r.id) : 0 }; });
     if (rank) rows.sort(function (a, b) { return b.proj - a.proj || a.r.name.localeCompare(b.r.name); });
     else rows.sort(function (a, b) { return a.r.name.localeCompare(b.r.name) || (a.r.cardId - b.r.cardId); });
@@ -1295,24 +1343,25 @@
   // skill filter picker
   $("skill-search").addEventListener("input", function (e) { renderSkillList(e.target.value); });
   $("skill-x").addEventListener("click", closeSkillPicker);
-  $("skill-clear").addEventListener("click", function () { state.skills = []; updateSkillTrigger(); render(); renderSkillList($("skill-search").value); });
+  $("skill-clear").addEventListener("click", function () { activeSkillList().length = 0; skillChanged(); renderSkillList($("skill-search").value); });
   $("skill-list").addEventListener("click", function (e) {
     var row = e.target.closest(".bp-row"); if (!row) return;
+    var sel = activeSkillList();
     var name = row.getAttribute("data-skill") || "";
     if (name === "") {                                  // "Clear all" row: full re-render
-      state.skills = [];
-      updateSkillTrigger(); render(); renderSkillList($("skill-search").value);
+      sel.length = 0;
+      skillChanged(); renderSkillList($("skill-search").value);
       return;
     }
     // toggle in place so the list keeps its scroll position (no jump), stays open
-    var i = state.skills.indexOf(name);
+    var i = sel.indexOf(name);
     var check = row.querySelector(".sk-check");
-    if (i >= 0) { state.skills.splice(i, 1); row.classList.remove("on"); if (check) check.remove(); }
+    if (i >= 0) { sel.splice(i, 1); row.classList.remove("on"); if (check) check.remove(); }
     else {
-      state.skills.push(name); row.classList.add("on");
+      sel.push(name); row.classList.add("on");
       if (!check) { var sp = document.createElement("span"); sp.className = "sk-check"; sp.textContent = "✓"; row.appendChild(sp); }
     }
-    updateSkillTrigger(); render();
+    skillChanged();
   });
   document.addEventListener("click", function (e) {
     if ($("skill-picker").hidden) return;
@@ -1418,13 +1467,23 @@
     closeCtx();
   });
   window.addEventListener("scroll", function () { if (!$("bd-ctx").hidden) closeCtx(); }, true);
-  // close the popup when clicking outside it (but not when opening from a slot)
+  // close the popup when clicking outside it (but not when opening from a slot or using the filters)
   document.addEventListener("click", function (e) {
     if ($("bd-picker").hidden) return;
-    if (e.target.closest("#bd-picker") || e.target.closest(".bd-node")) return;
+    if (e.target.closest("#bd-picker") || e.target.closest("#bd-filter") || e.target.closest("#skill-picker") ||
+        e.target.closest(".bd-node") || e.target.closest(".lm-node")) return;
     closeSlotPicker();
   });
-  $("bd-picker-search").addEventListener("input", function (e) { renderSlotList(e.target.value); });
+  // mare-picker filter panel
+  $("bd-filter").addEventListener("click", function (e) {
+    var apt = e.target.closest("[data-apt]");
+    if (apt) { var k = apt.getAttribute("data-apt"); pickerApt[k] = !pickerApt[k]; renderPickerFilters(); renderSlotList($("bd-picker-search").value); $("bd-picker-list").scrollTop = 0; return; }
+    var rm = e.target.closest("[data-rmskill]");
+    if (rm) { var n = rm.getAttribute("data-rmskill"), i = pickerSkills.indexOf(n); if (i >= 0) pickerSkills.splice(i, 1); renderPickerFilters(); renderSlotList($("bd-picker-search").value); return; }
+    if (e.target.id === "bdf-add-skill") { return openSkillPicker(e.target, "picker"); }
+    if (e.target.id === "bdf-clear") { pickerApt = {}; pickerSkills.length = 0; renderPickerFilters(); renderSlotList($("bd-picker-search").value); $("bd-picker-list").scrollTop = 0; return; }
+  });
+  $("bd-picker-search").addEventListener("input", function (e) { renderSlotList(e.target.value); $("bd-picker-list").scrollTop = 0; });
   $("bd-picker-close").addEventListener("click", closeSlotPicker);
   $("bd-picker-clear").addEventListener("click", function () {
     if (bstate.active) { bstate[bstate.active] = null; slotSpark[bstate.active] = null; slotCard[bstate.active] = null; renderBreeding(); }
