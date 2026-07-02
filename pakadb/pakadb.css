@@ -500,6 +500,14 @@ body.scrubbing .numc-val::selection { background: transparent; }
 }
 .bd-node:hover { border-color: var(--sakura); transform: translateY(-1px); }
 .bd-node.empty { border-style: dashed; box-shadow: none; justify-content: center; color: var(--ink3); font-weight: 800; font-size: 12px; }
+/* drag a filled node onto another slot to move/swap */
+.bd-node.drag-src { opacity: .35; }
+.bd-node.drop-hi { border-color: var(--sakura); box-shadow: 0 0 0 3px var(--sakura); transform: translateY(-1px); }
+body.bd-dragging, body.bd-dragging .bd-node { cursor: grabbing; user-select: none; }
+.bd-drag-ghost { position: fixed; z-index: 60; pointer-events: none; transform: translate(-50%, -50%);
+  width: 52px; height: 52px; border-radius: 30%; overflow: hidden; border: 3px solid var(--sakura);
+  box-shadow: 0 8px 20px rgba(58,46,57,.35); background: var(--bg); }
+.bd-drag-ghost img { width: 100%; height: 100%; object-fit: cover; object-position: top center; display: block; }
 .bd-node-img { width: 40px; height: 40px; flex: none; border-radius: 30%; object-fit: cover; object-position: top center;
   background: var(--bg); border: 2px solid var(--divider); }
 .bd-node-meta { min-width: 0; }

@@ -1235,12 +1235,59 @@
 
   // breeding interactions: tree slots open the popup anchored under the slot
   $("bd-stage").addEventListener("click", function (e) {
+    if (suppressNodeClick) { suppressNodeClick = false; return; }
     var n = e.target.closest(".bd-node"); if (n) openSlotPicker(n.getAttribute("data-slot"), n);
   });
   $("bd-stage").addEventListener("contextmenu", function (e) {
     var n = e.target.closest(".bd-node"); if (!n) return;
     e.preventDefault(); closeSlotPicker();
     openCtx(n.getAttribute("data-slot"), n, e.clientX, e.clientY);
+  });
+
+  // ---- drag a filled tree node onto another slot to move / swap it ----
+  var drag = null, suppressNodeClick = false;
+  function swapSlots(a, b) {
+    var t;
+    t = bstate[a]; bstate[a] = bstate[b]; bstate[b] = t;
+    t = slotSpark[a]; slotSpark[a] = slotSpark[b]; slotSpark[b] = t;
+    t = slotCard[a]; slotCard[a] = slotCard[b]; slotCard[b] = t;
+  }
+  function clearDropHi() { Array.prototype.forEach.call($("bd-stage").querySelectorAll(".drop-hi"), function (x) { x.classList.remove("drop-hi"); }); }
+  $("bd-stage").addEventListener("dragstart", function (e) { e.preventDefault(); }); // kill native image drag
+  $("bd-stage").addEventListener("mousedown", function (e) {
+    if (e.button !== 0) return;
+    var n = e.target.closest(".bd-node"); if (!n) return;
+    var slot = n.getAttribute("data-slot"); if (!bstate[slot]) return;   // only filled nodes drag
+    drag = { slot: slot, node: n, sx: e.clientX, sy: e.clientY, moved: false, ghost: null };
+  });
+  document.addEventListener("mousemove", function (e) {
+    if (!drag) return;
+    if (!drag.moved) {
+      if (Math.abs(e.clientX - drag.sx) + Math.abs(e.clientY - drag.sy) < 6) return;   // click, not a drag
+      drag.moved = true;
+      var th = slotThumb(drag.slot), g = document.createElement("div");
+      g.className = "bd-drag-ghost"; g.innerHTML = th ? '<img src="/pakadb/' + esc(th.thumb) + '" alt="" />' : "";
+      document.body.appendChild(g); drag.ghost = g;
+      drag.node.classList.add("drag-src");
+      document.body.classList.add("bd-dragging");
+    }
+    drag.ghost.style.left = e.clientX + "px";
+    drag.ghost.style.top = e.clientY + "px";
+    clearDropHi();
+    var hit = document.elementFromPoint(e.clientX, e.clientY), tgt = hit && hit.closest ? hit.closest(".bd-node") : null;
+    if (tgt && tgt.getAttribute("data-slot") !== drag.slot) tgt.classList.add("drop-hi");
+  });
+  document.addEventListener("mouseup", function (e) {
+    if (!drag) return;
+    var d = drag; drag = null;
+    document.body.classList.remove("bd-dragging");
+    if (d.ghost) d.ghost.remove();
+    if (d.node) d.node.classList.remove("drag-src");
+    clearDropHi();
+    if (!d.moved) return;   // was a plain click; leave it for the click handler
+    suppressNodeClick = true; setTimeout(function () { suppressNodeClick = false; }, 0);
+    var hit = document.elementFromPoint(e.clientX, e.clientY), tgt = hit && hit.closest ? hit.closest(".bd-node") : null;
+    if (tgt) { var to = tgt.getAttribute("data-slot"); if (to && to !== d.slot) { swapSlots(d.slot, to); renderBreeding(); } }
   });
   $("bd-ctx").addEventListener("click", function (e) {
     var it = e.target.closest(".bd-ctx-item"); if (!it || !ctxSlot) return;
