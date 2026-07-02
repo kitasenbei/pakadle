@@ -210,8 +210,8 @@
           'onerror="this.src=\'/pakadb/' + esc(u.image) + "'\" />" +
         '<div class="unit-id">' +
           '<div class="unit-name">' + esc(u.name) + "</div>" +
-          '<div class="unit-sub"><span class="unit-star">' + "★".repeat(u.rarity || 0) + "</span> #" + u.id +
-            (u.alts && u.alts.length > 1 ? ' <span class="unit-alts">+' + (u.alts.length - 1) + " fits</span>" : "") +
+          '<div class="unit-sub"><span class="unit-star">' + "★".repeat(u.rarity || 0) + "</span>" +
+            (u.alts && u.alts.length > 1 ? ' <span class="unit-alts">+' + (u.alts.length - 1) + " Alts</span>" : "") +
           "</div>" +
         "</div>" +
       "</div>" + row1 + row2 + "</div>";
@@ -517,7 +517,77 @@
     svg += "</svg>";
     $("bd-stage").innerHTML = svg;
 
+    renderAffinity();
     renderFactors();
+  }
+
+  // the seven pairings that make up the in-game succession affinity total
+  var AFF_LINKS = [
+    { a: "foal", b: "p1", tier: 1 }, { a: "foal", b: "p2", tier: 1 },
+    { a: "p1", b: "p2", tier: 1 },
+    { a: "foal", b: "gp11", tier: 2 }, { a: "foal", b: "gp12", tier: 2 },
+    { a: "foal", b: "gp21", tier: 2 }, { a: "foal", b: "gp22", tier: 2 },
+  ];
+  // portrait (chosen outfit if any) for a slot, or null when empty
+  function slotThumb(slot) {
+    var u = bstate[slot] ? BYID[bstate[slot]] : null;
+    if (!u) return null;
+    var thumb = u.thumb, cid = slotCard[slot];
+    if (cid && u.alts) { var alt = u.alts.filter(function (x) { return x.cardId === cid; })[0]; if (alt) thumb = alt.thumb; }
+    return { thumb: thumb, img: u.image, name: u.name };
+  }
+  function affColor(pts) { return pts >= 20 ? "var(--sakura)" : pts >= 10 ? "var(--turf)" : "var(--slate)"; }
+
+  // visual affinity breakdown: each contributing pairing as portrait-pair + bar,
+  // plus a progress bar toward the next rating tier.
+  function renderAffinity() {
+    var host = $("bd-affinity"); if (!host) return;
+    if (!bstate.foal) { host.innerHTML = ""; return; }
+    var a = affinity(), r = rating(a.total);
+    var links = AFF_LINKS.map(function (L) {
+      var A = slotThumb(L.a), B = slotThumb(L.b);
+      if (!A || !B) return null;
+      var d = compatDetail(bstate[L.a], bstate[L.b]);
+      return { A: A, B: B, pts: d.pts, bonds: d.bonds, tier: L.tier };
+    }).filter(Boolean);
+
+    if (!links.length) {
+      host.innerHTML = '<div class="sect-h">Affinity</div>' +
+        '<div class="cov-empty">Fill parent and grandparent slots to see where the affinity comes from.</div>';
+      return;
+    }
+
+    // progress toward the next tier (50 / 100 / 150), else already maxed
+    var TIERS = [{ t: 50, sym: "○", label: "OK" }, { t: 100, sym: "◎", label: "GOOD" }, { t: 150, sym: "◎", label: "GREAT" }];
+    var next = null; for (var i = 0; i < TIERS.length; i++) { if (a.total < TIERS[i].t) { next = TIERS[i]; break; } }
+    var prevT = 0; if (next) { for (var j = 0; j < TIERS.length; j++) { if (TIERS[j].t < next.t && a.total >= 0 && TIERS[j].t <= a.total) prevT = TIERS[j].t; } }
+    var pct = next ? Math.round(Math.max(0, Math.min(1, (a.total - prevT) / (next.t - prevT))) * 100) : 100;
+    var goal = next ? '<span class="bd-aff-goal">' + (next.t - a.total) + " to " + next.sym + " " + next.label + "</span>"
+                    : '<span class="bd-aff-goal maxed">' + r.sym + " MAX TIER</span>";
+
+    var maxPts = Math.max(12, links.reduce(function (m, l) { return Math.max(m, l.pts); }, 0));
+    var rows = links.map(function (l) {
+      var w = Math.round(l.pts / maxPts * 100);
+      var bonds = ""; for (var k = 0; k < Math.min(l.bonds, 6); k++) bonds += '<i class="bd-aff-pip"></i>';
+      if (l.bonds > 6) bonds += '<i class="bd-aff-pip more"></i>';
+      return '<div class="bd-aff-row' + (l.tier === 2 ? " gp" : "") + '" title="' + esc(l.A.name) + " × " + esc(l.B.name) + ": " + l.pts + " pts, " + l.bonds + ' shared">' +
+        '<span class="bd-aff-pair">' +
+          '<img class="bd-aff-pic" loading="lazy" src="/pakadb/' + esc(l.A.thumb) + '" onerror="this.src=\'/pakadb/' + esc(l.A.img) + "'\" alt=\"\" />" +
+          '<img class="bd-aff-pic" loading="lazy" src="/pakadb/' + esc(l.B.thumb) + '" onerror="this.src=\'/pakadb/' + esc(l.B.img) + "'\" alt=\"\" />" +
+        "</span>" +
+        '<span class="bd-aff-track"><span class="bd-aff-fill" style="width:' + w + "%;background:" + affColor(l.pts) + '"></span>' +
+          '<span class="bd-aff-bonds">' + bonds + "</span></span>" +
+        '<span class="bd-aff-pts">' + l.pts + "</span>" +
+      "</div>";
+    }).join("");
+
+    host.innerHTML =
+      '<div class="bd-aff-head">' +
+        '<div class="bd-aff-score"><span class="bd-aff-n">' + a.total + '</span>' +
+          '<span class="ftop-rate bd-r-' + r.cls + '">' + r.sym + " " + r.label + "</span></div>" +
+        '<div class="bd-aff-prog"><span class="bd-aff-track big"><span class="bd-aff-fill" style="width:' + pct + '%;background:' + affColor(a.total >= 150 ? 20 : a.total >= 100 ? 10 : 0) + '"></span></span>' + goal + "</div>" +
+      "</div>" +
+      '<div class="bd-aff-links">' + rows + "</div>";
   }
 
   // the block that floats above the foal card: total affinity + rating + aptitude mini
