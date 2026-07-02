@@ -760,14 +760,14 @@
     var host = $("bd-factors");
     var f = inheritableFactors();
     var starsBlue = STAT_KEYS.filter(function (k) { return f.blue[k]; })
-      .map(function (k) { return '<span class="fac-chip fac-blue" data-tip="' + STAT_NAME[k] + '"><img class="fac-ico" src="/pakadb/assets/stat_icons/' + k + '.png" alt="' + STAT_NAME[k] + '" />★' + f.blue[k] + "</span>"; }).join("");
+      .map(function (k) { return '<span class="fac-chip fac-blue"><img class="fac-ico" src="/pakadb/assets/stat_icons/' + k + '.png" alt="" />' + STAT_NAME[k] + " ★" + f.blue[k] + "</span>"; }).join("");
     var starsPink = APT_KEYS.filter(function (k) { return f.pink[k]; })
       .map(function (k) { return '<span class="fac-chip fac-pink">' + KEY_LABEL[k] + " ★" + f.pink[k] + "</span>"; }).join("");
-    var green = Object.keys(f.green).map(function (n) { var ic = iconByName(n); return '<span class="fac-chip fac-green" data-tip="' + esc(n) + '">' + (ic ? skillIconImg(ic) : esc(n) + " ") + "★" + f.green[n] + "</span>"; }).join("");
+    var green = Object.keys(f.green).map(function (n) { var ic = iconByName(n); return '<span class="fac-chip fac-green">' + (ic ? skillIconImg(ic) + " " : "") + esc(n) + " ★" + f.green[n] + "</span>"; }).join("");
     var white = Object.keys(f.white).map(function (n) {
       var bid = RACE_BANNER[n];
-      if (bid) return '<span class="fac-chip fac-white fac-race" data-tip="' + esc(n) + '">' + raceBannerImg(bid, "fac-banner") + "★" + f.white[n] + "</span>";
-      var ic = iconByName(n); return '<span class="fac-chip fac-white" data-tip="' + esc(n) + '">' + (ic ? skillIconImg(ic) : esc(n) + " ") + "★" + f.white[n] + "</span>";
+      if (bid) return '<span class="fac-chip fac-white fac-race">' + raceBannerImg(bid, "fac-banner") + " " + esc(n) + " ★" + f.white[n] + "</span>";
+      var ic = iconByName(n); return '<span class="fac-chip fac-white">' + (ic ? skillIconImg(ic) + " " : "") + esc(n) + " ★" + f.white[n] + "</span>";
     }).join("");
     if (!starsBlue && !starsPink && !green && !white) {
       host.innerHTML = '<div class="fac-h">Inheritable factors</div><div class="cov-empty">Place saved umas (with sparks) in the parent/grandparent slots to pool their factors here.</div>';
