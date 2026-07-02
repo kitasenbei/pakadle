@@ -543,10 +543,14 @@
 
   function renderBreeding() {
     var root = pedigree();
-    var h = layout(root) + NODE_H + PAD * 2;
+    var span = layout(root);
     var fl = flatten(root);
+    var foalNode = fl.nodes.filter(function (n) { return n.key === "foal"; })[0];
     var depth = Math.max.apply(null, fl.nodes.map(function (n) { return n.x / COL_W; }));
     var w = depth * COL_W + NODE_W + PAD * 2;
+    var APT_H = 138, h = span + NODE_H + PAD * 2;
+    // grow the canvas so the aptitude block fits below the foal card
+    if (bstate.foal && foalNode) h = Math.max(h, foalNode.y + PAD + NODE_H + 8 + APT_H + PAD);
 
     var svg = '<svg class="bd-tree-svg" width="' + w + '" height="' + h + '" viewBox="0 0 ' + w + " " + h + '" preserveAspectRatio="xMidYMid meet" style="display:inline-block">';
     fl.edges.forEach(function (pair) {
@@ -564,12 +568,18 @@
       svg += '<foreignObject x="' + (n.x + PAD) + '" y="' + (n.y + PAD) + '" width="' + NODE_W + '" height="' + NODE_H + '">' +
         nodeCard(n) + "</foreignObject>";
     });
-    // affinity total + rating + aptitude coverage, floated above the foal card
-    var foalNode = fl.nodes.filter(function (n) { return n.key === "foal"; })[0];
-    var topHtml = foalTop();
-    if (foalNode && topHtml) {
-      var COV_H = 120, covY = Math.max(0, foalNode.y + PAD - COV_H - 6);
-      svg += '<foreignObject x="' + (foalNode.x + PAD) + '" y="' + covY + '" width="' + NODE_W + '" height="' + COV_H + '">' + topHtml + "</foreignObject>";
+    // affinity chip above the foal card, aptitude coverage below it
+    if (foalNode) {
+      var aff = foalTop();
+      if (aff) {
+        var AFF_H = 40, affY = Math.max(0, foalNode.y + PAD - AFF_H - 6);
+        svg += '<foreignObject x="' + (foalNode.x + PAD) + '" y="' + affY + '" width="' + NODE_W + '" height="' + AFF_H + '">' + aff + "</foreignObject>";
+      }
+      var cov = foalCov();
+      if (cov) {
+        var aptY = foalNode.y + PAD + NODE_H + 8;
+        svg += '<foreignObject x="' + (foalNode.x + PAD) + '" y="' + aptY + '" width="' + NODE_W + '" height="' + APT_H + '">' + cov + "</foreignObject>";
+      }
     }
     svg += "</svg>";
     $("bd-stage").innerHTML = svg;
@@ -752,10 +762,9 @@
     var foal = bstate.foal ? BYID[bstate.foal] : null;
     if (!foal) return "";
     var a = affinity(), r = rating(a.total);
-    var aff = '<div class="ftop-aff"><span class="ftop-n">' + a.total + '</span>' +
+    return '<div class="ftop"><div class="ftop-aff"><span class="ftop-n">' + a.total + '</span>' +
       '<span class="ftop-l">affinity</span>' +
-      '<span class="ftop-rate bd-r-' + r.cls + '">' + r.sym + " " + r.label + "</span></div>";
-    return '<div class="ftop">' + aff + foalCovMini() + "</div>";
+      '<span class="ftop-rate bd-r-' + r.cls + '">' + r.sym + " " + r.label + "</span></div></div>";
   }
 
   // inheritable factor pool from the ancestors' sparks
@@ -784,13 +793,13 @@
   // compact aptitude coverage that floats above the foal card: one tiny cell per
   // aptitude (grade-colored), weak spots (C or worse) ringed pink.
   var APT_ABBR = { turf: "TRF", dirt: "DRT", short: "SPR", mile: "MIL", medium: "MED", long: "LNG", front: "FRN", pace: "PCE", late: "LAT", end: "END" };
-  function foalCovMini() {
+  function foalCov() {
     var foal = bstate.foal ? BYID[bstate.foal] : null;
     if (!foal) return "";
     var pink = inheritableFactors().pink;  // aptitude sparks pooled from ancestors
     var weak = 0;
-    // grouped by surface / distance / style, with dividers between them
-    var groups = APT_DEFS.map(function (grp) {
+    // one row per category (surface / distance / style)
+    var rows = APT_DEFS.map(function (grp) {
       var cells = grp.keys.map(function (kk) {
         var k = kk[0], g = aptGrade(foal, k), gr = g && GRANK[g] ? g : "null";
         var isWeak = GRANK[g] < GRANK.B; if (isWeak) weak++;
@@ -801,10 +810,9 @@
           '<b class="fcov-g g-' + gr + '">' + gradeTxt(g) + "</b>" +
           (boost ? '<i class="fcov-boost">▲' + boost + "</i>" : "") + "</span>";
       }).join("");
-      return '<div class="fcov-grp" style="flex:' + grp.keys.length + '">' + cells + "</div>";
-    }).join('<i class="fcov-sep"></i>');
-    return '<div class="fcov"><div class="fcov-h">APTITUDE' + (weak ? ' <span class="fcov-w">' + weak + " weak</span>" : "") + "</div>" +
-      '<div class="fcov-cells">' + groups + "</div></div>";
+      return '<div class="fcov-row"><span class="fcov-cat">' + grp.label + '</span><div class="fcov-cells">' + cells + "</div></div>";
+    }).join("");
+    return '<div class="fcov"><div class="fcov-h">APTITUDE' + (weak ? ' <span class="fcov-w">' + weak + " weak</span>" : "") + "</div>" + rows + "</div>";
   }
 
   // ---- saved-uma roster ----
