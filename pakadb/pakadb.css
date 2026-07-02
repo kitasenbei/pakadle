@@ -376,28 +376,29 @@ body.scrubbing .numc-val::selection { background: transparent; }
 .bd-r-great{background:var(--sakura)} .bd-r-good{background:var(--turf)}
 .bd-r-ok{background:var(--gold)} .bd-r-low{background:var(--slate)}
 
-/* breeding layout: lineage map (left) beside the pedigree tree (right), filling the width */
+/* breeding layout: lineage map (left) beside a tree + factors column (right) */
 .bd-main { display: flex; align-items: flex-start; gap: 16px; }
 .bd-main > .bd-affinity { flex: 1 1 56%; min-width: 360px; }
-.bd-main > .bd-stage { flex: 1 1 44%; min-width: 0; }
+.bd-right { flex: 1 1 44%; min-width: 0; display: flex; flex-direction: column; }
 .bd-stage { overflow-x: auto; padding: 14px 12px; text-align: left; }
 .bd-stage svg { display: inline-block; }
 
-/* wide screens: the whole breeding view fits one viewport, factors always visible,
-   and both the map + tree scale to fit (no scrolling / zoom overflow) */
+/* wide screens: the whole breeding view fits one viewport. the map (left) takes the
+   full height for breathing room; the tree + factors stack in the right column. */
 @media (min-width: 861px) {
   #view-breed:not([hidden]) { display: flex; flex-direction: column; height: calc(100dvh - 52px); overflow: hidden; }
   .bd-main { flex: 1 1 auto; min-height: 0; align-items: stretch; }
-  .bd-factors { flex: 0 0 auto; }
   .bd-main > .bd-affinity:not(:empty) { display: flex; flex-direction: column; min-height: 0; }
   .bd-main > .bd-affinity .lm-wrap { flex: 1 1 auto; min-height: 0; }
   .bd-main > .bd-affinity .lm-svg { width: 100%; height: 100%; max-height: 100%; }
-  .bd-main > .bd-stage { overflow: hidden; display: flex; align-items: center; }
-  .bd-main > .bd-stage .bd-tree-svg { width: 100%; height: 100%; max-width: 100%; max-height: 100%; }
+  .bd-right { min-height: 0; }
+  .bd-right > .bd-stage { flex: 1 1 auto; min-height: 0; overflow: hidden; display: flex; align-items: center; justify-content: flex-start; }
+  .bd-right > .bd-stage .bd-tree-svg { width: 100%; height: 100%; max-width: 100%; max-height: 100%; }
+  .bd-right > .bd-factors { flex: 0 0 auto; }
 }
 @media (max-width: 860px) {
   .bd-main { flex-direction: column; }
-  .bd-main > .bd-affinity, .bd-main > .bd-stage { flex: none; width: 100%; }
+  .bd-main > .bd-affinity, .bd-right { flex: none; width: 100%; }
 }
 .bd-hint { color: var(--ink3); font-size: 11.5px; font-weight: 700; padding: 0 12px 24px; }
 
