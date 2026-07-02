@@ -548,7 +548,7 @@
     var foalNode = fl.nodes.filter(function (n) { return n.key === "foal"; })[0];
     var depth = Math.max.apply(null, fl.nodes.map(function (n) { return n.x / COL_W; }));
     var w = depth * COL_W + NODE_W + PAD * 2;
-    var APT_H = 196, h = span + NODE_H + PAD * 2;
+    var APT_H = 220, h = span + NODE_H + PAD * 2;
     // grow the canvas so the aptitude block fits below the foal card
     if (bstate.foal && foalNode) h = Math.max(h, foalNode.y + PAD + NODE_H + 8 + APT_H + PAD);
 
