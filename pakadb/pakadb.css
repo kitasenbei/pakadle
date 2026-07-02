@@ -528,9 +528,9 @@ body.scrubbing .numc-val::selection { background: transparent; }
 .ed-grid .ed-row { margin-bottom: 0; background: var(--bg); border: 2px solid var(--divider);
   border-radius: 10px; padding: 4px 6px 4px 9px; }
 .ed-grid .star { width: 21px; height: 21px; font-size: 12px; }
-.ed-grid .ed-row.apt-surface { border-left: 4px solid var(--turf); }
-.ed-grid .ed-row.apt-distance { border-left: 4px solid var(--sakura); }
-.ed-grid .ed-row.apt-style { border-left: 4px solid var(--gold); }
+.ed-grid .ed-row.apt-surface .ed-k { color: var(--turf); }
+.ed-grid .ed-row.apt-distance .ed-k { color: var(--sakura); }
+.ed-grid .ed-row.apt-style .ed-k { color: var(--gold); }
 @media (max-width: 460px) { .ed-grid { grid-template-columns: 1fr; } }
 .ed-white { display: flex; align-items: center; gap: 6px; margin-bottom: 6px; }
 /* white-spark picker trigger: looks like the input, opens the catalog picker */
