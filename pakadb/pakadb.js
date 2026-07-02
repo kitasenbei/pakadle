@@ -957,15 +957,22 @@
     var s = $("bd-picker-search"); s.value = ""; renderSlotList("");
     $("bd-picker-list").scrollTop = 0;                 // always start at the top
     anchorUnder(el, anchor);
-    openFilterFor({ pickerId: "bd-picker", searchId: "bd-picker-search", listId: "bd-picker-list", render: function () { renderSlotList($("bd-picker-search").value); } });
     s.focus();
   }
   function closeSlotPicker() { hideEl($("bd-picker")); closeFilter(); bstate.active = null; }
 
   // ---- uma filters (aptitude + skills), shared by the mare picker and the uma picker ----
+  // shown only when the FILTERS button is pressed
   var pickerApt = {}, pickerSkills = [], filterCtx = null;
+  function mareFilterCtx() { return { pickerId: "bd-picker", searchId: "bd-picker-search", listId: "bd-picker-list", render: function () { renderSlotList($("bd-picker-search").value); } }; }
+  function charFilterCtx() {
+    var box = $("cp-editor").querySelector(".cp-picker-box"), side = "left";
+    if (box) side = $("char-picker").getBoundingClientRect().left >= box.getBoundingClientRect().right ? "right" : "left";
+    return { pickerId: "char-picker", searchId: "char-search", listId: "char-list", side: side, render: function () { renderCharList($("char-search").value); } };
+  }
   function openFilterFor(ctx) { filterCtx = ctx; showEl($("bd-filter")); renderPickerFilters(); positionFilter(); }
   function closeFilter() { hideEl($("bd-filter")); closeSkillPicker(); filterCtx = null; }
+  function toggleFilter(ctx) { if ($("bd-filter").hidden) openFilterFor(ctx); else closeFilter(); }
   function filterRender() { if (!filterCtx) return; filterCtx.render(); var l = $(filterCtx.listId); if (l) l.scrollTop = 0; }
   function pickerFiltersActive() { return pickerSkills.length > 0 || Object.keys(pickerApt).some(function (k) { return pickerApt[k]; }); }
   function pickerMatch(umaId) {
@@ -1089,10 +1096,6 @@
     var el = $("char-picker"); showEl(el);
     var s = $("char-search"); s.value = ""; renderCharList("");
     positionCharPicker();
-    // dock the filter on the outer side of the picker (away from the editor)
-    var box = $("cp-editor").querySelector(".cp-picker-box"), side = "left";
-    if (box) side = el.getBoundingClientRect().left >= box.getBoundingClientRect().right ? "right" : "left";
-    openFilterFor({ pickerId: "char-picker", searchId: "char-search", listId: "char-list", side: side, render: function () { renderCharList($("char-search").value); } });
     s.focus();
   }
   function closeCharPicker() { hideEl($("char-picker")); closeFilter(); }
@@ -1532,6 +1535,7 @@
   });
   $("bd-picker-search").addEventListener("input", function (e) { renderSlotList(e.target.value); $("bd-picker-list").scrollTop = 0; });
   $("bd-picker-close").addEventListener("click", closeSlotPicker);
+  $("bd-filter-toggle").addEventListener("click", function (e) { e.stopPropagation(); toggleFilter(mareFilterCtx()); });
   $("bd-picker-clear").addEventListener("click", function () {
     if (bstate.active) { bstate[bstate.active] = null; slotSpark[bstate.active] = null; slotCard[bstate.active] = null; renderBreeding(); }
     closeSlotPicker();
@@ -1627,6 +1631,7 @@
   // uma picker wiring (spark editor character selector)
   $("char-search").addEventListener("input", function (e) { renderCharList(e.target.value); });
   $("char-close").addEventListener("click", closeCharPicker);
+  $("char-filter-toggle").addEventListener("click", function (e) { e.stopPropagation(); toggleFilter(charFilterCtx()); });
   $("char-list").addEventListener("click", function (e) {
     var row = e.target.closest(".bp-row"); if (!row || !editing) return;
     editing.charId = Number(row.getAttribute("data-charid"));
