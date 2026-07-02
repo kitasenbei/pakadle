@@ -872,6 +872,37 @@
     }
   });
 
+  // drag-scrub the min-stat fields left/right to lower/raise the value (click still types).
+  // The value updates live while dragging, but the filter only runs on release.
+  (function () {
+    var drag = null;
+    document.addEventListener("pointerdown", function (e) {
+      var val = e.target.closest ? e.target.closest(".numc-val") : null; if (!val) return;
+      drag = { el: val, startX: e.clientX, startVal: parseInt(val.value, 10) || 0, cur: parseInt(val.value, 10) || 0, moved: false, stat: val.getAttribute("data-statmin") };
+      if (val.setPointerCapture) val.setPointerCapture(e.pointerId);
+    });
+    document.addEventListener("pointermove", function (e) {
+      if (!drag) return;
+      var dx = e.clientX - drag.startX;
+      if (!drag.moved && Math.abs(dx) < 4) return;      // small move = still a click (type)
+      if (!drag.moved) { var sel = window.getSelection && window.getSelection(); if (sel) sel.removeAllRanges(); }
+      drag.moved = true; e.preventDefault();
+      document.body.classList.add("scrubbing");
+      drag.cur = Math.max(0, drag.startVal + Math.round(dx / 3));  // ~3px per unit
+      drag.el.value = drag.cur || "";                             // live display only, no filtering yet
+    });
+    document.addEventListener("pointerup", function (e) {
+      if (!drag) return;
+      if (drag.moved) {                                           // commit the filter on release
+        if (drag.el.blur) drag.el.blur();
+        if (drag.cur > 0) state.statMin[drag.stat] = drag.cur; else delete state.statMin[drag.stat];
+        render();
+      }
+      if (drag.el.releasePointerCapture) try { drag.el.releasePointerCapture(e.pointerId); } catch (_) {}
+      drag = null; document.body.classList.remove("scrubbing");
+    });
+  })();
+
   // skill filter picker
   $("skill-search").addEventListener("input", function (e) { renderSkillList(e.target.value); });
   $("skill-x").addEventListener("click", closeSkillPicker);

@@ -162,8 +162,11 @@ body.drawer-open { margin-left: var(--dw); }
 .numc-btn:hover { background: var(--bg); color: var(--turf-dark); }
 .numc-btn:active { background: var(--divider); }
 .numc-val { width: 48px; height: 100%; flex: none; text-align: center; border: none; background: transparent;
-  outline: none; font-family: inherit; font-weight: 800; font-size: 13px; color: var(--ink); }
+  outline: none; font-family: inherit; font-weight: 800; font-size: 13px; color: var(--ink); cursor: ew-resize; }
 .numc-val::placeholder { color: var(--ink3); font-weight: 700; }
+body.scrubbing, body.scrubbing * { cursor: ew-resize !important; user-select: none; }
+body.scrubbing .numc-val { caret-color: transparent; }
+body.scrubbing .numc-val::selection { background: transparent; }
 /* skill filter trigger (opens the skill picker) */
 .skill-trigger { width: 100%; text-align: left; height: 34px; padding: 0 14px; cursor: pointer;
   font-family: inherit; font-size: 12px; font-weight: 700; color: var(--ink3);
@@ -196,7 +199,7 @@ body.drawer-open { margin-left: var(--dw); }
 .unit-img {
   width: 50px; height: 50px; flex: none; border-radius: 30%; object-fit: cover;
   object-position: top center; background: var(--bg);
-  border: 2px solid var(--sakura); box-shadow: 0 0 0 2px var(--panel), 0 0 0 3px var(--divider);
+  border: 2px solid var(--divider); box-shadow: 0 0 0 2px var(--panel), 0 0 0 3px var(--divider);
 }
 .unit-id { min-width: 0; }
 .unit-name { font-size: 13px; font-weight: 800; line-height: 1.1; color: var(--ink);
@@ -362,7 +365,7 @@ body.drawer-open { margin-left: var(--dw); }
 .bp-row { display: flex; align-items: center; gap: 10px; padding: 6px 8px; border-radius: 10px; cursor: pointer; }
 .bp-row:hover { background: var(--bg); }
 .bp-img { width: 40px; height: 40px; flex: none; border-radius: 30%; object-fit: cover; object-position: top center;
-  background: var(--bg); border: 2px solid var(--sakura); }
+  background: var(--bg); border: 2px solid var(--divider); }
 .bp-meta { flex: 1; min-width: 0; }
 .bp-name { font-size: 13px; font-weight: 800; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .bp-sub { font-size: 10.5px; font-weight: 700; color: var(--ink3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -388,7 +391,7 @@ body.drawer-open { margin-left: var(--dw); }
 .ed-sect { padding: 10px 4px; border-bottom: 2px solid var(--divider); }
 .ed-h { font-size: 11px; font-weight: 800; letter-spacing: .3px; color: var(--turf); text-transform: uppercase; margin-bottom: 8px; }
 .ed-portrait { width: 56px; height: 56px; border-radius: 30%; object-fit: cover; object-position: top center;
-  border: 2px solid var(--sakura); float: right; margin: -30px 0 0 8px; }
+  border: 2px solid var(--divider); float: right; margin: -30px 0 0 8px; }
 .ed-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 5px; }
 .ed-k { font-size: 11.5px; font-weight: 800; color: var(--ink2); }
 .ed-stars { display: flex; gap: 3px; }
@@ -417,7 +420,7 @@ body.drawer-open { margin-left: var(--dw); }
 .bd-node:hover { border-color: var(--sakura); transform: translateY(-1px); }
 .bd-node.empty { border-style: dashed; box-shadow: none; justify-content: center; color: var(--ink3); font-weight: 800; font-size: 12px; }
 .bd-node-img { width: 40px; height: 40px; flex: none; border-radius: 30%; object-fit: cover; object-position: top center;
-  background: var(--bg); border: 2px solid var(--sakura); }
+  background: var(--bg); border: 2px solid var(--divider); }
 .bd-node-meta { min-width: 0; }
 .bd-node-name { font-size: 12.5px; font-weight: 800; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .bd-node-role { font-size: 9.5px; font-weight: 800; letter-spacing: .4px; color: var(--ink3); text-transform: uppercase; }
@@ -436,7 +439,7 @@ body.drawer-open { margin-left: var(--dw); }
 .pk-row { display: flex; align-items: center; gap: 10px; padding: 7px 8px; border-radius: 10px; cursor: pointer; }
 .pk-row:hover { background: var(--panel); }
 .pk-img { width: 38px; height: 38px; flex: none; border-radius: 30%; object-fit: cover; object-position: top center;
-  background: var(--bg); border: 2px solid var(--sakura); }
+  background: var(--bg); border: 2px solid var(--divider); }
 .pk-name { font-size: 13px; font-weight: 800; color: var(--ink); }
 .pk-sub { font-size: 10.5px; font-weight: 700; color: var(--ink3); }
 
