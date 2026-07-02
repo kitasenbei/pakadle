@@ -433,8 +433,8 @@ body.scrubbing .numc-val::selection { background: transparent; }
 /* lineage map: radial hub-and-spoke of ancestors + their inherited sparks */
 .lm-wrap { width: 100%; overflow: hidden; }
 .lm-svg { display: block; width: 100%; height: auto; max-height: 70vh; }
-.lm-node { cursor: default; }
-.lm-node:hover { filter: drop-shadow(0 1px 4px rgba(58,46,57,.4)); }
+.lm-node { cursor: pointer; }
+.lm-node:hover { filter: drop-shadow(0 2px 5px rgba(58,46,57,.45)); }
 .lm-elabel { pointer-events: none; }
 
 /* inheritable factors */

@@ -614,13 +614,13 @@
     return line + '<g class="lm-elabel"><rect x="' + (lx - 12) + '" y="' + (ly - 9) + '" width="24" height="18" rx="9" fill="#fff" stroke="' + c + '" stroke-width="1.5"/>' +
       '<text x="' + lx + '" y="' + (ly + 3.5) + '" text-anchor="middle" font-size="10" font-weight="800" fill="' + c + '">' + opts.label + "</text></g>";
   }
-  function lmPortrait(x, y, r, thumb, color, name, big) {
+  function lmPortrait(x, y, r, thumb, color, name, big, slot) {
     var img = thumb ? '<image href="/pakadb/' + esc(thumb.thumb) + '" x="' + (x - r) + '" y="' + (y - r) + '" width="' + (2 * r) + '" height="' + (2 * r) + '" clip-path="url(#lmclip)" preserveAspectRatio="xMidYMid slice"/>' : "";
-    return '<g class="lm-node" data-tip="' + esc(name || "") + '">' +
+    return '<g class="lm-node" data-slot="' + esc(slot || "") + '" data-tip="' + esc((name || "") + " — click to change") + '">' +
       '<circle cx="' + x + '" cy="' + y + '" r="' + r + '" fill="#FBF5EA"/>' + img +
       '<circle cx="' + x + '" cy="' + y + '" r="' + r + '" fill="none" stroke="' + color + '" stroke-width="' + (big ? 4 : 3) + '"/></g>';
   }
-  function lmLeaf(x, y, r, lf) {
+  function lmLeaf(x, y, r, lf, slot) {
     var col = leafColor(lf.kind), inner = "";
     if (lf.kind === "blue") inner = '<image href="/pakadb/assets/stat_icons/' + lf.statk + '.png" x="' + (x - r * 0.7) + '" y="' + (y - r * 0.7) + '" width="' + (r * 1.4) + '" height="' + (r * 1.4) + '"/>';
     else if (lf.kind === "pink") inner = '<text x="' + x + '" y="' + (y + 3) + '" text-anchor="middle" font-size="8" font-weight="800" fill="#fff">' + esc(lf.abbr) + "</text>";
@@ -628,7 +628,7 @@
     else if (lf.kind === "race") inner = '<image href="/pakadb/assets/races/' + lf.banner + '.png" x="' + (x - r) + '" y="' + (y - r) + '" width="' + (2 * r) + '" height="' + (2 * r) + '" clip-path="url(#lmclip)" preserveAspectRatio="xMidYMid slice"/>';
     var badge = lf.lvl ? '<circle cx="' + (x + r * 0.82) + '" cy="' + (y - r * 0.82) + '" r="6" fill="#fff" stroke="' + col + '" stroke-width="1.5"/>' +
       '<text x="' + (x + r * 0.82) + '" y="' + (y - r * 0.82 + 3) + '" text-anchor="middle" font-size="8" font-weight="800" fill="' + col + '">' + lf.lvl + "</text>" : "";
-    return '<g class="lm-node" data-tip="' + esc(lf.label + (lf.lvl ? " ★" + lf.lvl : "")) + '">' +
+    return '<g class="lm-node" data-slot="' + esc(slot || "") + '" data-spark="1" data-tip="' + esc(lf.label + (lf.lvl ? " ★" + lf.lvl : "") + " — click to edit sparks") + '">' +
       '<circle cx="' + x + '" cy="' + y + '" r="' + r + '" fill="' + col + '"/>' + inner +
       '<circle cx="' + x + '" cy="' + y + '" r="' + r + '" fill="none" stroke="#fff" stroke-width="2"/>' + badge + "</g>";
   }
@@ -724,8 +724,8 @@
       }
       n.children.forEach(function (c) { walk(c, n); });
       // draw nodes after their edges; foal (root) ends up on top since it renders last below
-      if (n.nkind === "spark") nodes += lmLeaf(n.x, n.y, lmNodeR(n), n.leaf);
-      else nodes += lmPortrait(n.x, n.y, lmNodeR(n), n.thumb, n.nkind === "foal" ? "#3C8523" : "#4CA62E", n.tip || n.name, n.big);
+      if (n.nkind === "spark") nodes += lmLeaf(n.x, n.y, lmNodeR(n), n.leaf, parent ? parent.slot : "");
+      else nodes += lmPortrait(n.x, n.y, lmNodeR(n), n.thumb, n.nkind === "foal" ? "#3C8523" : "#4CA62E", n.tip || n.name, n.big, n.slot);
     })(tree, null);
     // the P1 x P2 relation isn't a tree edge; draw it as a dashed link between the two parents
     var pn = {}; tree.children.forEach(function (c) { if (c.slot === "p1" || c.slot === "p2") pn[c.slot] = c; });
@@ -740,7 +740,7 @@
     var svg = '<svg class="lm-svg" viewBox="0 0 ' + W + " " + H + '" width="100%" preserveAspectRatio="xMidYMid meet">' + defs + edges + nodes + "</svg>";
 
     host.innerHTML = header +
-      '<div class="bd-aff-cap">Foal ◂ parents ◂ grandparents, with each ancestor’s sparks fanned around it. The number on each spoke is its affinity contribution: a grandparent’s counts both its bond with the foal and with its own parent. The dashed link is the two parents’ compatibility.</div>' +
+      '<div class="bd-aff-cap">Foal ◂ parents ◂ grandparents, sparks fanned around each. Numbers on the spokes are affinity contributions (a grandparent’s counts its bond with the foal and with its parent); the dashed link is the two parents’ compatibility. <b>Click a portrait to change the uma, or a spark to edit its sparks.</b></div>' +
       '<div class="lm-wrap">' + svg + "</div>";
   }
 
@@ -877,6 +877,17 @@
     renderEditor();
   }
   function closeEditor() { hideEl($("cp-editor")); hideEl($("cp-scrim")); editing = null; }
+  // edit a tree slot's sparks in place (from the lineage map), not the roster
+  function openSlotSparkEditor(slot) {
+    if (!bstate[slot]) return;
+    var ex = slotSpark[slot];
+    editing = ex ? JSON.parse(JSON.stringify(ex)) : emptySparks();
+    editing.charId = bstate[slot];
+    editing.name = (BYID[bstate[slot]] || {}).name || editing.name || "";
+    editing._idx = null; editing._slot = slot;
+    showEl($("cp-editor")); showEl($("cp-scrim"));
+    renderEditor();
+  }
   function renderEditor() {
     var e = editing; if (!e) return;
     var u = BYID[e.charId];
@@ -1332,6 +1343,14 @@
     e.preventDefault(); closeSlotPicker();
     openCtx(n.getAttribute("data-slot"), n, e.clientX, e.clientY);
   });
+  // the lineage map is editable: click a portrait to change the uma, a spark to edit its sparks
+  $("bd-affinity").addEventListener("click", function (e) {
+    var g = e.target.closest(".lm-node"); if (!g) return;
+    var slot = g.getAttribute("data-slot"); if (!slot) return;
+    e.stopPropagation();
+    if (g.getAttribute("data-spark") != null) openSlotSparkEditor(slot);
+    else openSlotPicker(slot, g);
+  });
 
   // ---- drag a filled tree node onto another slot to move / swap it ----
   var drag = null, suppressNodeClick = false;
@@ -1517,7 +1536,11 @@
   });
   $("cp-editor-save").addEventListener("click", function () {
     if (!editing) return;
-    var rec = JSON.parse(JSON.stringify(editing)); var idx = rec._idx; delete rec._idx;
+    var rec = JSON.parse(JSON.stringify(editing)); var idx = rec._idx, slot = rec._slot; delete rec._idx; delete rec._slot;
+    if (slot) {   // slot mode: write straight back to the tree slot (from the lineage map)
+      slotSpark[slot] = rec; bstate[slot] = rec.charId; slotCard[slot] = null;
+      closeEditor(); renderBreeding(); return;
+    }
     if (idx != null) savedUmas[idx] = rec; else savedUmas.push(rec);
     persistRoster(); closeEditor(); openRoster();
   });
