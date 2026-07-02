@@ -574,10 +574,13 @@
 
   // the seven pairings that make up the in-game succession affinity total
   var AFF_LINKS = [
-    { a: "foal", b: "p1", tier: 1 }, { a: "foal", b: "p2", tier: 1 },
-    { a: "p1", b: "p2", tier: 1 },
-    { a: "foal", b: "gp11", tier: 2 }, { a: "foal", b: "gp12", tier: 2 },
-    { a: "foal", b: "gp21", tier: 2 }, { a: "foal", b: "gp22", tier: 2 },
+    { a: "foal", b: "p1", tier: 1, label: "Foal &amp; Parent 1" },
+    { a: "foal", b: "p2", tier: 1, label: "Foal &amp; Parent 2" },
+    { a: "p1", b: "p2", tier: 1, label: "Parent 1 &amp; Parent 2" },
+    { a: "foal", b: "gp11", tier: 2, label: "Foal &amp; Grandparent", sub: "Parent 1 line" },
+    { a: "foal", b: "gp12", tier: 2, label: "Foal &amp; Grandparent", sub: "Parent 1 line" },
+    { a: "foal", b: "gp21", tier: 2, label: "Foal &amp; Grandparent", sub: "Parent 2 line" },
+    { a: "foal", b: "gp22", tier: 2, label: "Foal &amp; Grandparent", sub: "Parent 2 line" },
   ];
   // portrait (chosen outfit if any) for a slot, or null when empty
   function slotThumb(slot) {
@@ -599,11 +602,11 @@
       var A = slotThumb(L.a), B = slotThumb(L.b);
       if (!A || !B) return null;
       var d = compatDetail(bstate[L.a], bstate[L.b]);
-      return { A: A, B: B, pts: d.pts, bonds: d.bonds, tier: L.tier };
+      return { A: A, B: B, pts: d.pts, bonds: d.bonds, tier: L.tier, label: L.label, sub: L.sub };
     }).filter(Boolean);
 
     if (!links.length) {
-      host.innerHTML = '<div class="sect-h">Affinity</div>' +
+      host.innerHTML = '<div class="sect-h">Affinity breakdown</div>' +
         '<div class="cov-empty">Fill parent and grandparent slots to see where the affinity comes from.</div>';
       return;
     }
@@ -616,28 +619,34 @@
     var goal = next ? '<span class="bd-aff-goal">' + (next.t - a.total) + " to " + next.sym + " " + next.label + "</span>"
                     : '<span class="bd-aff-goal maxed">' + r.sym + " MAX TIER</span>";
 
-    var maxPts = Math.max(12, links.reduce(function (m, l) { return Math.max(m, l.pts); }, 0));
+    // bar reference: a strong single pairing is ~30 pts, so weaker links read shorter
+    var maxPts = Math.max(30, links.reduce(function (m, l) { return Math.max(m, l.pts); }, 0));
+    var strength = function (p) { return p >= 20 ? "Strong" : p >= 10 ? "Good" : "Weak"; };
     var rows = links.map(function (l) {
-      var w = Math.round(l.pts / maxPts * 100);
-      var bonds = ""; for (var k = 0; k < Math.min(l.bonds, 6); k++) bonds += '<i class="bd-aff-pip"></i>';
-      if (l.bonds > 6) bonds += '<i class="bd-aff-pip more"></i>';
-      return '<div class="bd-aff-row' + (l.tier === 2 ? " gp" : "") + '" data-tip="' + esc(l.A.name) + " × " + esc(l.B.name) + ": " + l.pts + " pts, " + l.bonds + ' shared">' +
+      var w = Math.max(4, Math.round(l.pts / maxPts * 100));
+      var tip = l.A.name + " and " + l.B.name + ": " + l.pts + " affinity points, from " +
+        l.bonds + " shared connection" + (l.bonds === 1 ? "" : "s") + " (races won, lineage, aptitudes)";
+      return '<div class="bd-aff-row' + (l.tier === 2 ? " gp" : "") + '" data-tip="' + esc(tip) + '">' +
         '<span class="bd-aff-pair">' +
           '<img class="bd-aff-pic" loading="lazy" src="/pakadb/' + esc(l.A.thumb) + '" onerror="this.src=\'/pakadb/' + esc(l.A.img) + "'\" alt=\"\" />" +
           '<img class="bd-aff-pic" loading="lazy" src="/pakadb/' + esc(l.B.thumb) + '" onerror="this.src=\'/pakadb/' + esc(l.B.img) + "'\" alt=\"\" />" +
         "</span>" +
-        '<span class="bd-aff-track"><span class="bd-aff-fill" style="width:' + w + "%;background:" + affColor(l.pts) + '"></span>' +
-          '<span class="bd-aff-bonds">' + bonds + "</span></span>" +
-        '<span class="bd-aff-pts">' + l.pts + "</span>" +
+        '<div class="bd-aff-mid">' +
+          '<div class="bd-aff-label">' + l.label + (l.sub ? ' <span class="bd-aff-sub">' + l.sub + "</span>" : "") + "</div>" +
+          '<span class="bd-aff-track"><span class="bd-aff-fill" style="width:' + w + "%;background:" + affColor(l.pts) + '"></span></span>' +
+        "</div>" +
+        '<span class="bd-aff-pts"><b style="color:' + affColor(l.pts) + '">' + l.pts + "</b><small>" + strength(l.pts) + "</small></span>" +
       "</div>";
     }).join("");
 
     host.innerHTML =
+      '<div class="sect-h">Affinity breakdown</div>' +
       '<div class="bd-aff-head">' +
         '<div class="bd-aff-score"><span class="bd-aff-n">' + a.total + '</span>' +
           '<span class="ftop-rate bd-r-' + r.cls + '">' + r.sym + " " + r.label + "</span></div>" +
         '<div class="bd-aff-prog"><span class="bd-aff-track big"><span class="bd-aff-fill" style="width:' + pct + '%;background:' + affColor(a.total >= 150 ? 20 : a.total >= 100 ? 10 : 0) + '"></span></span>' + goal + "</div>" +
       "</div>" +
+      '<div class="bd-aff-cap">Each row is one pairing’s compatibility. They add up to the total above — higher is better.</div>' +
       '<div class="bd-aff-links">' + rows + "</div>";
   }
 
