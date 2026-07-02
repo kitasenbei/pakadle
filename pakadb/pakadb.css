@@ -232,7 +232,7 @@ body.scrubbing .numc-val::selection { background: transparent; }
 .cp-drawer.open { transform: translateX(0); }
 .cp-drawer-inner { padding: 0 0 40px; }
 
-.dh { display: flex; gap: 12px; padding: 14px; border-bottom: 2px solid var(--divider);
+.dh { display: flex; align-items: stretch; gap: 0; padding: 0; border-bottom: 2px solid var(--divider);
   position: sticky; top: 0; background: var(--turf); z-index: 2; overflow: hidden; }
 /* fading checkerboard of translucent squares behind the header content */
 .dh::before {
@@ -245,9 +245,11 @@ body.scrubbing .numc-val::selection { background: transparent; }
   mask-image: linear-gradient(105deg, transparent 30%, #000);
 }
 .dh > * { position: relative; z-index: 1; }
-.dh-img { width: 88px; height: 88px; flex: none; border-radius: 26px; object-fit: cover;
-  object-position: top center; background: var(--bg); border: 3px solid #fff; box-shadow: 0 3px 0 rgba(0,0,0,.12); }
-.dh-meta { min-width: 0; flex: 1; color: #fff; }
+/* portrait: a flush square spanning the full header height (top to the fits band) */
+.dh-img { flex: none; align-self: stretch; width: 152px; height: 152px; border-radius: 0; border: none;
+  box-shadow: none; margin: 0; object-fit: cover; object-position: top center; background: var(--bg); }
+.dh-meta { min-width: 0; flex: 1; color: #fff; display: flex; flex-direction: column; justify-content: center;
+  padding: 14px 46px 14px 16px; }
 .dh-name { font-size: 20px; font-weight: 800; line-height: 1.1; }
 .dh-jp { font-size: 12px; color: rgba(255,255,255,.9); margin-top: 3px; font-weight: 700; }
 .dh-jp .unit-star { color: #FFE7B3; }
