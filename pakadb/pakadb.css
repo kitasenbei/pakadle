@@ -378,7 +378,7 @@ body.scrubbing .numc-val::selection { background: transparent; }
 .bd-r-ok{background:var(--gold)} .bd-r-low{background:var(--slate)}
 
 /* breeding layout: lineage map (left) beside a tree + factors column (right) */
-.bd-main { display: flex; align-items: flex-start; gap: 16px; }
+.bd-main { display: flex; align-items: flex-start; gap: 20px; padding-right: 32px; }
 .bd-main > .bd-affinity { flex: 1 1 56%; min-width: 360px; }
 .bd-right { flex: 1 1 44%; min-width: 0; display: flex; flex-direction: column; }
 .bd-stage { overflow-x: auto; padding: 14px 12px; text-align: left; }
