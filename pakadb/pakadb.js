@@ -568,7 +568,7 @@
     var foalNode = fl.nodes.filter(function (n) { return n.key === "foal"; })[0];
     var topHtml = foalTop();
     if (foalNode && topHtml) {
-      var COV_H = 108, covY = Math.max(0, foalNode.y + PAD - COV_H - 6);
+      var COV_H = 120, covY = Math.max(0, foalNode.y + PAD - COV_H - 6);
       svg += '<foreignObject x="' + (foalNode.x + PAD) + '" y="' + covY + '" width="' + NODE_W + '" height="' + COV_H + '">' + topHtml + "</foreignObject>";
     }
     svg += "</svg>";
@@ -789,18 +789,22 @@
     if (!foal) return "";
     var pink = inheritableFactors().pink;  // aptitude sparks pooled from ancestors
     var weak = 0;
-    var cells = APT_KEYS.map(function (k) {
-      var g = aptGrade(foal, k);
-      var isWeak = GRANK[g] < GRANK.B;
-      if (isWeak) weak++;
-      var boost = pink[k] || 0;
-      return '<span class="fcov-c v-' + (g && GRANK[g] ? g : "null") + (isWeak ? " weak" : "") + (boost ? " backed" : "") +
-        '" data-tip="' + esc(KEY_LABEL[k]) + (boost ? " (pink ★" + boost + " incoming)" : "") + '">' +
-        (boost ? '<i class="fcov-boost">▲' + boost + "</i>" : "") +
-        '<small class="fcov-k">' + APT_ABBR[k] + "</small>" + gradeTxt(g) + "</span>";
-    }).join("");
+    // grouped by surface / distance / style, with dividers between them
+    var groups = APT_DEFS.map(function (grp) {
+      var cells = grp.keys.map(function (kk) {
+        var k = kk[0], g = aptGrade(foal, k), gr = g && GRANK[g] ? g : "null";
+        var isWeak = GRANK[g] < GRANK.B; if (isWeak) weak++;
+        var boost = pink[k] || 0;
+        return '<span class="fcov-c' + (isWeak ? " weak" : "") + (boost ? " backed" : "") +
+          '" data-tip="' + esc(KEY_LABEL[k]) + ": " + gradeTxt(g) + (boost ? " (pink ★" + boost + " incoming)" : "") + '">' +
+          '<small class="fcov-k">' + APT_ABBR[k] + "</small>" +
+          '<b class="fcov-g g-' + gr + '">' + gradeTxt(g) + "</b>" +
+          (boost ? '<i class="fcov-boost">▲' + boost + "</i>" : "") + "</span>";
+      }).join("");
+      return '<div class="fcov-grp" style="flex:' + grp.keys.length + '">' + cells + "</div>";
+    }).join('<i class="fcov-sep"></i>');
     return '<div class="fcov"><div class="fcov-h">APTITUDE' + (weak ? ' <span class="fcov-w">' + weak + " weak</span>" : "") + "</div>" +
-      '<div class="fcov-cells">' + cells + "</div></div>";
+      '<div class="fcov-cells">' + groups + "</div></div>";
   }
 
   // ---- saved-uma roster ----
@@ -948,6 +952,7 @@
     var top = r.bottom + 6;
     if (top + hh > window.innerHeight - 8) top = Math.max(8, r.top - hh - 6);
     el.style.left = left + "px"; el.style.top = top + "px";
+    el.style.maxHeight = (window.innerHeight - top - 8) + "px";   // never past the viewport; list scrolls
   }
   function openSlotPicker(slot, anchor) {
     bstate.active = slot;
@@ -1090,7 +1095,9 @@
     if (br.right + gap + w <= window.innerWidth - 8) left = br.right + gap;       // right of the modal
     else if (br.left - gap - w >= 8) left = br.left - gap - w;                    // else its left
     else left = Math.max(8, window.innerWidth - w - 8);                           // fallback: right edge
-    el.style.left = left + "px"; el.style.top = Math.max(8, br.top) + "px";
+    var top = Math.max(8, br.top);
+    el.style.left = left + "px"; el.style.top = top + "px";
+    el.style.maxHeight = (window.innerHeight - top - 8) + "px";
   }
   function openCharPicker() {
     var el = $("char-picker"); showEl(el);

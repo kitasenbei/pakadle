@@ -407,21 +407,28 @@ body.scrubbing .numc-val::selection { background: transparent; }
 
 /* compact aptitude coverage floated above the foal card */
 .fcov { background: var(--panel); border: 2px solid var(--divider); border-radius: 10px; padding: 4px 6px 5px; box-shadow: 0 2px 0 var(--shadow); }
-.fcov-h { display: flex; justify-content: space-between; align-items: center; font-size: 8px; font-weight: 800; letter-spacing: .5px; color: var(--ink3); text-transform: uppercase; margin-bottom: 3px; }
+.fcov-h { display: flex; justify-content: space-between; align-items: center; font-size: 8px; font-weight: 800; letter-spacing: .5px; color: var(--ink3); text-transform: uppercase; margin-bottom: 4px; }
 .fcov-w { color: var(--sakura); }
-.fcov-cells { display: flex; gap: 2px; }
-.fcov-c { position: relative; flex: 1; display: flex; flex-direction: column; align-items: center; gap: 1px;
-  text-align: center; font-size: 11px; font-weight: 800; padding: 3px 0 2px; border-radius: 4px; background: var(--bg); }
-.fcov-c.backed { box-shadow: inset 0 0 0 1.5px var(--turf); }
-.fcov-boost { position: absolute; top: -5px; right: -3px; font-style: normal; font-size: 7px; font-weight: 800;
-  color: #fff; background: var(--turf); border-radius: 999px; padding: 0 3px; line-height: 1.5; }
-.fcov-c.weak.backed { box-shadow: inset 0 0 0 1.5px var(--sakura); }
+.fcov-cells { display: flex; align-items: stretch; gap: 4px; }
+.fcov-grp { display: flex; gap: 2px; }
+.fcov-sep { flex: none; width: 2px; align-self: stretch; background: var(--divider); border-radius: 2px; }
+.fcov-c { position: relative; flex: 1; display: flex; flex-direction: column; align-items: center; gap: 2px;
+  padding: 3px 1px; border-radius: 6px; background: var(--bg); }
 .fcov-k { font-size: 6.5px; font-weight: 800; letter-spacing: .2px; color: var(--ink3); }
+.fcov-g { display: block; width: 100%; text-align: center; font-size: 11px; font-weight: 800; color: #fff;
+  border-radius: 5px; padding: 1px 0; }
+.g-S{background:var(--gS)} .g-A{background:var(--gA)} .g-B{background:var(--gB)} .g-C{background:var(--gC)}
+.g-D{background:var(--gD)} .g-E{background:var(--gE)} .g-F{background:var(--gF)} .g-G{background:var(--gG)} .g-null{background:var(--ink3)}
+.fcov-c.backed { box-shadow: inset 0 0 0 1.5px var(--turf); }
 .fcov-c.weak { background: #fff2f6; box-shadow: inset 0 0 0 1.5px var(--sakura); }
 .fcov-c.weak .fcov-k { color: var(--sakura); }
+.fcov-c.weak.backed { box-shadow: inset 0 0 0 1.5px var(--sakura); }
+.fcov-boost { position: absolute; top: -5px; right: -4px; font-style: normal; font-size: 7px; font-weight: 800;
+  color: #fff; background: var(--turf); border-radius: 999px; padding: 0 3px; line-height: 1.5; }
 
 /* slot picker: a compact popup anchored under the tapped slot (menu-style) */
 .bd-picker { position: fixed; z-index: 25; width: 290px; max-width: calc(100vw - 16px);
+  display: flex; flex-direction: column; max-height: calc(100vh - 16px);
   background: var(--panel); border: 2px solid var(--turf-dark); border-radius: 12px; overflow: hidden;
   box-shadow: 0 12px 28px rgba(58,46,57,.28); }
 
@@ -448,7 +455,7 @@ body.scrubbing .numc-val::selection { background: transparent; }
 .bd-picker-clear { height: 26px; padding: 0 9px; font-size: 10px; }
 .bd-picker-head .dh-x { position: static; flex: none; width: 26px; height: 26px; font-size: 13px; box-shadow: 0 2px 0 rgba(58,46,57,.15); }
 .bd-picker-search { width: calc(100% - 16px); margin: 0 8px 8px; height: 32px; }
-.bd-picker-list { max-height: 300px; overflow-y: auto; padding: 0 6px 6px; }
+.bd-picker-list { flex: 1 1 auto; min-height: 0; overflow-y: auto; padding: 0 6px 6px; }
 .bp-note { font-size: 10px; font-weight: 800; letter-spacing: .3px; color: var(--ink3); text-transform: uppercase; padding: 6px 8px 4px; position: sticky; top: 0; background: var(--panel); }
 .bp-row { display: flex; align-items: center; gap: 10px; padding: 6px 8px; border-radius: 10px; cursor: pointer; }
 .bp-row:hover { background: var(--bg); }
