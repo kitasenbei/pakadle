@@ -1187,6 +1187,7 @@
   });
   $("bd-ctx").addEventListener("click", function (e) {
     var it = e.target.closest(".bd-ctx-item"); if (!it || !ctxSlot) return;
+    e.stopPropagation();   // don't let this click reach the picker's outside-click closer
     var act = it.getAttribute("data-act"), slot = ctxSlot, anchor = ctxAnchor;
     closeCtx();
     if (act === "pick") openSlotPicker(slot, anchor);
