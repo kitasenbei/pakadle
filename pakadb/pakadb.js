@@ -548,7 +548,7 @@
     var foalNode = fl.nodes.filter(function (n) { return n.key === "foal"; })[0];
     var depth = Math.max.apply(null, fl.nodes.map(function (n) { return n.x / COL_W; }));
     var w = depth * COL_W + NODE_W + PAD * 2;
-    var APT_H = 138, h = span + NODE_H + PAD * 2;
+    var APT_H = 164, h = span + NODE_H + PAD * 2;
     // grow the canvas so the aptitude block fits below the foal card
     if (bstate.foal && foalNode) h = Math.max(h, foalNode.y + PAD + NODE_H + 8 + APT_H + PAD);
 
@@ -1079,7 +1079,8 @@
     var el = $("skill-picker");
     showEl(el);
     var s = $("skill-search"); s.value = ""; renderSkillList("");
-    anchorUnder(el, anchor);
+    // from the filter panel: dock below/above the panel (never over it); else anchor to the trigger
+    anchorUnder(el, skillCtx === "picker" ? $("bd-filter") : anchor);
     s.focus();
   }
   function closeSkillPicker() { hideEl($("skill-picker")); skillCtx = null; }
