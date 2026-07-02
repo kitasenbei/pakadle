@@ -62,9 +62,13 @@
 
   <!-- ===== BREEDING view ===== -->
   <div id="view-breed" hidden>
-    <div class="bd-stage" id="bd-stage"></div>
+    <!-- lineage map (left) beside the pedigree tree (right) -->
+    <div class="bd-main">
+      <div class="bd-affinity" id="bd-affinity"></div>
+      <div class="bd-stage" id="bd-stage"></div>
+    </div>
 
-    <!-- inline slot picker (appears under the tree when a slot is tapped) -->
+    <!-- inline slot picker (appears under the tapped slot) -->
     <div class="bd-picker" id="bd-picker" hidden>
       <div class="bd-picker-head">
         <span class="bd-picker-title" id="bd-picker-title">Assign</span>
@@ -74,8 +78,6 @@
       <input id="bd-picker-search" class="cp-input bd-picker-search" type="search" placeholder="SEARCH MARE…" autocomplete="off" spellcheck="false" />
       <div class="bd-picker-list" id="bd-picker-list"></div>
     </div>
-
-    <div class="bd-affinity" id="bd-affinity"></div>
 
     <div class="bd-factors" id="bd-factors"></div>
   </div>
