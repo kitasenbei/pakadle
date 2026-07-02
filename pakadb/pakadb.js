@@ -548,7 +548,7 @@
     var foalNode = fl.nodes.filter(function (n) { return n.key === "foal"; })[0];
     var depth = Math.max.apply(null, fl.nodes.map(function (n) { return n.x / COL_W; }));
     var w = depth * COL_W + NODE_W + PAD * 2;
-    var APT_H = 164, h = span + NODE_H + PAD * 2;
+    var APT_H = 196, h = span + NODE_H + PAD * 2;
     // grow the canvas so the aptitude block fits below the foal card
     if (bstate.foal && foalNode) h = Math.max(h, foalNode.y + PAD + NODE_H + 8 + APT_H + PAD);
 
@@ -795,7 +795,8 @@
           '" data-tip="' + esc(KEY_LABEL[k]) + ": " + gradeTxt(g) + (boost ? " (pink ★" + boost + " incoming)" : "") + '">' +
           '<small class="fcov-k">' + APT_ABBR[k] + "</small>" +
           '<b class="fcov-g g-' + gr + '">' + gradeTxt(g) + "</b>" +
-          (boost ? '<i class="fcov-boost"><svg viewBox="0 0 10 9" fill="currentColor" aria-hidden="true"><path d="M5 0L10 9H0z"/></svg>' + boost + "</i>" : "") + "</span>";
+          '<i class="fcov-boost' + (boost ? "" : " zero") + '">' +
+            (boost ? '<svg viewBox="0 0 10 9" fill="currentColor" aria-hidden="true"><path d="M5 0L10 9H0z"/></svg>' + boost : "0") + "</i></span>";
       }).join("");
       return '<div class="fcov-row"><span class="fcov-cat">' + grp.label + '</span><div class="fcov-cells">' + cells + "</div></div>";
     }).join("");
