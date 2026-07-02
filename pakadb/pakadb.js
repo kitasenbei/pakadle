@@ -978,7 +978,7 @@
       }).join("");
       return '<div class="bdf-grp"><div class="bdf-h">' + g.label + " (A+)</div><div class=\"bdf-chips\">" + chips + "</div></div>";
     }).join("");
-    var skillChips = pickerSkills.map(function (n) { return '<button class="bdf-chip sk on" data-rmskill="' + esc(n) + '">' + esc(n) + " ✕</button>"; }).join("");
+    var skillChips = pickerSkills.map(function (n) { var ic = iconByName(n); return '<button class="bdf-chip sk on" data-rmskill="' + esc(n) + '">' + (ic ? skillIconImg(ic) : "") + esc(n) + " ✕</button>"; }).join("");
     var skills = '<div class="bdf-grp"><div class="bdf-h">Skills</div><div class="bdf-chips">' + skillChips +
       '<button class="bdf-chip add" id="bdf-add-skill">+ skill</button></div></div>';
     host.innerHTML = apt + skills +
@@ -987,12 +987,13 @@
   function positionFilter() {
     var pk = $("bd-picker"), fl = $("bd-filter");
     if (pk.hidden || fl.hidden) return;
-    var pr = pk.getBoundingClientRect(), fw = fl.offsetWidth || 210, fh = fl.offsetHeight || 220, gap = 8, left;
+    var pr = pk.getBoundingClientRect(), fw = fl.offsetWidth || 210, gap = 8, left;
     if (pr.left - fw - gap >= 8) left = pr.left - fw - gap;                                   // room on the left
     else if (pr.right + gap + fw <= window.innerWidth - 8) left = pr.right + gap;             // else the right
     else left = Math.max(8, Math.min(pr.left, window.innerWidth - fw - 8));                   // fallback
-    var top = Math.max(8, Math.min(pr.top, window.innerHeight - fh - 8));
+    var top = Math.max(8, pr.top);
     fl.style.left = left + "px"; fl.style.top = top + "px";
+    fl.style.maxHeight = (window.innerHeight - top - 8) + "px";                               // clamp to viewport, scroll inside
   }
 
   // ---- breeding tree right-click context menu ----
