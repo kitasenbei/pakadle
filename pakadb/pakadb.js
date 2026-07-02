@@ -636,12 +636,16 @@
   function foalCovMini() {
     var foal = bstate.foal ? BYID[bstate.foal] : null;
     if (!foal) return "";
+    var pink = inheritableFactors().pink;  // aptitude sparks pooled from ancestors
     var weak = 0;
     var cells = APT_KEYS.map(function (k) {
       var g = aptGrade(foal, k);
       var isWeak = GRANK[g] < GRANK.B;
       if (isWeak) weak++;
-      return '<span class="fcov-c v-' + (g && GRANK[g] ? g : "null") + (isWeak ? " weak" : "") + '" title="' + esc(KEY_LABEL[k]) + '">' +
+      var boost = pink[k] || 0;
+      return '<span class="fcov-c v-' + (g && GRANK[g] ? g : "null") + (isWeak ? " weak" : "") + (boost ? " backed" : "") +
+        '" title="' + esc(KEY_LABEL[k]) + (boost ? " (pink ★" + boost + " incoming)" : "") + '">' +
+        (boost ? '<i class="fcov-boost">▲' + boost + "</i>" : "") +
         '<small class="fcov-k">' + APT_ABBR[k] + "</small>" + gradeTxt(g) + "</span>";
     }).join("");
     return '<div class="fcov"><div class="fcov-h">APTITUDE' + (weak ? ' <span class="fcov-w">' + weak + " weak</span>" : "") + "</div>" +
