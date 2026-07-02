@@ -425,8 +425,8 @@ body.scrubbing .numc-val::selection { background: transparent; }
   background: var(--panel); border: 2px solid var(--turf-dark); border-radius: 12px; overflow: hidden;
   box-shadow: 0 12px 28px rgba(58,46,57,.28); }
 
-/* mare-picker filter panel (docked beside the picker) */
-.bd-filter { position: fixed; z-index: 24; width: 208px; max-height: calc(100vh - 16px); overflow-y: auto;
+/* mare-picker filter panel (docked beside the picker; above the editor modal too) */
+.bd-filter { position: fixed; z-index: 39; width: 208px; max-height: calc(100vh - 16px); overflow-y: auto;
   background: var(--panel); border: 2px solid var(--turf-dark); border-radius: 12px; padding: 8px;
   box-shadow: 0 12px 28px rgba(58,46,57,.28); }
 .bd-filter-head { font-size: 11px; font-weight: 800; letter-spacing: .3px; text-transform: uppercase;
@@ -514,6 +514,7 @@ body.scrubbing .numc-val::selection { background: transparent; }
 .ed-charbtn-name { flex: 1; text-align: left; font-size: 14px; font-weight: 800; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .ed-charbtn-caret { flex: none; color: var(--turf); font-weight: 800; font-size: 12px; }
 #char-picker { z-index: 40; }
+#skill-picker { z-index: 42; }   /* above the filter panel + editor modal in every context */
 .ed-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 5px; }
 .ed-k { font-size: 11.5px; font-weight: 800; color: var(--ink2); }
 .ed-stars { display: flex; gap: 3px; }
