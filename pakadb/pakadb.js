@@ -1476,6 +1476,7 @@
   });
   // mare-picker filter panel
   $("bd-filter").addEventListener("click", function (e) {
+    e.stopPropagation();   // don't let filter clicks reach the picker / skill-picker outside-closers
     var apt = e.target.closest("[data-apt]");
     if (apt) { var k = apt.getAttribute("data-apt"); pickerApt[k] = !pickerApt[k]; renderPickerFilters(); renderSlotList($("bd-picker-search").value); $("bd-picker-list").scrollTop = 0; return; }
     var rm = e.target.closest("[data-rmskill]");
