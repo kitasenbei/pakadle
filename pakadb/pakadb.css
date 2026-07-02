@@ -414,18 +414,20 @@ body.scrubbing .numc-val::selection { background: transparent; }
 .fcov-cat { flex: none; width: 42px; font-size: 8px; font-weight: 800; letter-spacing: .3px; text-transform: uppercase; color: var(--ink3); }
 .fcov-cells { flex: 1; display: flex; align-items: stretch; gap: 4px; justify-content: flex-start; }
 .fcov-c { position: relative; flex: none; width: 30px; display: flex; flex-direction: column; align-items: center; gap: 2px;
-  padding: 3px 1px; border-radius: 6px; background: var(--bg); }
+  padding: 3px 1px; border-radius: 7px; background: var(--bg); border: 2px solid transparent; }
 .fcov-k { font-size: 6.5px; font-weight: 800; letter-spacing: .2px; color: var(--ink3); }
 .fcov-g { display: block; width: 100%; text-align: center; font-size: 11px; font-weight: 800; color: #fff;
   border-radius: 5px; padding: 1px 0; }
 .g-S{background:var(--gS)} .g-A{background:var(--gA)} .g-B{background:var(--gB)} .g-C{background:var(--gC)}
 .g-D{background:var(--gD)} .g-E{background:var(--gE)} .g-F{background:var(--gF)} .g-G{background:var(--gG)} .g-null{background:var(--ink3)}
-.fcov-c.backed { box-shadow: inset 0 0 0 1.5px var(--turf); }
-.fcov-c.weak { background: #fff2f6; box-shadow: inset 0 0 0 1.5px var(--sakura); }
+.fcov-c.backed { border-color: var(--turf); }
+.fcov-c.weak { background: #fff2f6; border-color: var(--sakura); }
 .fcov-c.weak .fcov-k { color: var(--sakura); }
-.fcov-c.weak.backed { box-shadow: inset 0 0 0 1.5px var(--sakura); }
-.fcov-boost { position: absolute; top: -5px; right: -4px; font-style: normal; font-size: 7px; font-weight: 800;
-  color: #fff; background: var(--turf); border-radius: 999px; padding: 0 3px; line-height: 1.5; }
+.fcov-c.weak.backed { border-color: var(--sakura); }
+.fcov-boost { position: absolute; top: -8px; right: -7px; display: inline-flex; align-items: center; justify-content: center;
+  gap: 1px; min-width: 17px; height: 17px; padding: 0 3px; font-style: normal; font-size: 9.5px; font-weight: 800; line-height: 1;
+  color: #fff; background: var(--turf); border: 2px solid var(--bg); border-radius: 999px; }
+.fcov-boost svg { width: 7px; height: 7px; }
 
 /* slot picker: a compact popup anchored under the tapped slot (menu-style) */
 .bd-picker { position: fixed; z-index: 25; width: 290px; max-width: calc(100vw - 16px);

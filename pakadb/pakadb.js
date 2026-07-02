@@ -701,21 +701,8 @@
   function renderAffinity() {
     var host = $("bd-affinity"); if (!host) return;
     if (!bstate.foal) { host.innerHTML = ""; return; }
-    var a = affinity(), r = rating(a.total);
-
-    // progress toward the next tier (50 / 100 / 150), else already maxed
-    var TIERS = [{ t: 50, sym: "○", label: "OK" }, { t: 100, sym: "◎", label: "GOOD" }, { t: 150, sym: "◎", label: "GREAT" }];
-    var next = null; for (var i = 0; i < TIERS.length; i++) { if (a.total < TIERS[i].t) { next = TIERS[i]; break; } }
-    var prevT = 0; if (next) { for (var j = 0; j < TIERS.length; j++) { if (TIERS[j].t < next.t && TIERS[j].t <= a.total) prevT = TIERS[j].t; } }
-    var pct = next ? Math.round(Math.max(0, Math.min(1, (a.total - prevT) / (next.t - prevT))) * 100) : 100;
-    var goal = next ? '<span class="bd-aff-goal">' + (next.t - a.total) + " to " + next.sym + " " + next.label + "</span>"
-                    : '<span class="bd-aff-goal maxed">' + r.sym + " MAX TIER</span>";
-    var header = '<div class="sect-h">Lineage map</div>' +
-      '<div class="bd-aff-head">' +
-        '<div class="bd-aff-score"><span class="bd-aff-n">' + a.total + '</span>' +
-          '<span class="ftop-rate bd-r-' + r.cls + '">' + r.sym + " " + r.label + "</span></div>" +
-        '<div class="bd-aff-prog"><span class="bd-aff-track big"><span class="bd-aff-fill" style="width:' + pct + '%;background:' + affColor(a.total >= 150 ? 20 : a.total >= 100 ? 10 : 0) + '"></span></span>' + goal + "</div>" +
-      "</div>";
+    var r = rating(affinity().total);
+    var header = '<div class="sect-h">Lineage map <span class="ftop-rate bd-r-' + r.cls + '">' + r.sym + " " + r.label + "</span></div>";
 
     // build the lineage tree; bail out if no ancestors are placed
     var tree = lineageTree();
@@ -808,7 +795,7 @@
           '" data-tip="' + esc(KEY_LABEL[k]) + ": " + gradeTxt(g) + (boost ? " (pink ★" + boost + " incoming)" : "") + '">' +
           '<small class="fcov-k">' + APT_ABBR[k] + "</small>" +
           '<b class="fcov-g g-' + gr + '">' + gradeTxt(g) + "</b>" +
-          (boost ? '<i class="fcov-boost">▲' + boost + "</i>" : "") + "</span>";
+          (boost ? '<i class="fcov-boost"><svg viewBox="0 0 10 9" fill="currentColor" aria-hidden="true"><path d="M5 0L10 9H0z"/></svg>' + boost + "</i>" : "") + "</span>";
       }).join("");
       return '<div class="fcov-row"><span class="fcov-cat">' + grp.label + '</span><div class="fcov-cells">' + cells + "</div></div>";
     }).join("");
