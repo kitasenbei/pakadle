@@ -452,7 +452,16 @@ body.scrubbing .numc-val::selection { background: transparent; }
 .star.on { background: var(--gold); border-color: var(--gold); color: #fff; }
 .star0 { font-size: 11px; }
 .ed-white { display: flex; align-items: center; gap: 6px; margin-bottom: 6px; }
-.ed-wname { flex: 1; height: 30px; }
+/* white-spark picker trigger: looks like the input, opens the catalog picker */
+.ed-wpick { flex: 1; min-width: 0; height: 30px; display: flex; align-items: center; gap: 6px;
+  cursor: pointer; text-align: left; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.ed-wpick .fac-ico { width: 18px; height: 18px; flex: none; }
+.ed-wph { color: var(--ink3); font-weight: 800; }
+.ed-wtag, .wp-race { flex: none; display: inline-flex; align-items: center; justify-content: center;
+  font-size: 9px; font-weight: 800; color: #fff; background: var(--gold); border-radius: 5px; }
+.ed-wtag { padding: 1px 4px; margin-right: 2px; }
+.wp-race { width: 30px; height: 30px; border-radius: 8px; font-size: 11px; }
+#white-picker { z-index: 40; }
 
 /* picker recommendations */
 .pk-note { font-size: 10.5px; font-weight: 800; color: var(--turf); text-transform: uppercase; letter-spacing: .3px; padding: 4px 8px 8px; }

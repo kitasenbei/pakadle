@@ -31,8 +31,21 @@
 
   var UMAS = [];
   var SKILL_INDEX = [];   // unique skills across the roster, for the skill filter picker
+  var ALL_SKILLS = [];    // full skill catalog (skills.json) for the white-spark picker
+  var WHITE_CATALOG = []; // deduped {name, iconId} skill list, sorted
+  var WHITE_ICON = {};    // name -> iconId across the full catalog
   var BYID = {};
   var BREED = { relationPoints: {}, members: {} };
+  // white RACE sparks: the fixed G1 race catalog (source: gametora g1-race-factor-list)
+  var G1_RACES = [
+    "Asahi Hai Futurity Stakes", "Hanshin Juvenile Fillies", "Hopeful Stakes",
+    "Oka Sho", "Satsuki Sho", "NHK Mile Cup", "Japanese Oaks", "Tokyo Yushun (Japanese Derby)",
+    "Yasuda Kinen", "Takarazuka Kinen", "Japan Dirt Derby", "Sprinters Stakes",
+    "Kikuka Sho", "Shuka Sho", "Tenno Sho (Autumn)", "JBC Classic", "JBC Ladies' Classic",
+    "JBC Sprint", "Queen Elizabeth II Cup", "Japan Cup", "Mile Championship", "Champions Cup",
+    "Arima Kinen", "Tokyo Daishoten", "February Stakes", "Osaka Hai", "Takamatsunomiya Kinen",
+    "Tenno Sho (Spring)", "Victoria Mile", "Teio Sho",
+  ];
   var STATMAX = { speed: 1, stamina: 1, power: 1, guts: 1, wit: 1 };
   // filter state: aptMin[key]=grade (require >=), rarity[] set, growth[] stats,
   // statMin{stat:n}, skill substring.
@@ -58,6 +71,19 @@
     });
     SKILL_INDEX.sort(function (a, b) { return a.name.localeCompare(b.name); });
   }
+  // full skill catalog (skills.json, falling back to the uma-derived index) for white sparks
+  function buildWhiteCatalog() {
+    WHITE_CATALOG = []; WHITE_ICON = {};
+    var seen = {};
+    function add(name, iconId) {
+      if (!name || seen[name]) return; seen[name] = 1;
+      if (iconId) WHITE_ICON[name] = iconId;
+      WHITE_CATALOG.push({ name: name, iconId: iconId || null });
+    }
+    ALL_SKILLS.forEach(function (s) { add(s.name, s.iconId); });
+    SKILL_INDEX.forEach(function (s) { add(s.name, s.iconId); });   // safety net if skills.json failed
+    WHITE_CATALOG.sort(function (a, b) { return a.name.localeCompare(b.name); });
+  }
   function umaSkillNames(u) {
     var s = u.skills || {}, out = [];
     ["unique", "innate", "awakening", "event"].forEach(function (g) { (s[g] || []).forEach(function (x) { out.push(x.name); }); });
@@ -69,13 +95,15 @@
     Promise.all([
       fetch("/pakadb/data/umas.json").then(function (r) { if (!r.ok) throw new Error("umas " + r.status); return r.json(); }),
       fetch("/pakadb/data/breeding.json").then(function (r) { return r.ok ? r.json() : { relationPoints: {}, members: {} }; }),
+      fetch("/pakadb/data/skills.json").then(function (r) { return r.ok ? r.json() : []; }).catch(function () { return []; }),
     ]).then(function (res) {
-      UMAS = res[0]; BREED = res[1] || BREED;
+      UMAS = res[0]; BREED = res[1] || BREED; ALL_SKILLS = res[2] || [];
       BYID = {}; UMAS.forEach(function (u) { BYID[u.id] = u; });
       STAT_KEYS.forEach(function (k) {
         STATMAX[k] = UMAS.reduce(function (m, u) { return Math.max(m, (u.statsMax && u.statsMax[k]) || 0); }, 1);
       });
       buildSkillIndex();
+      buildWhiteCatalog();
       buildFilters();
       render();
     }).catch(function (e) {
@@ -260,6 +288,7 @@
   // name -> iconId, built lazily from the uma skill index (unique/innate/etc.)
   var SKILL_ICON_MAP = null;
   function iconByName(name) {
+    if (WHITE_ICON[name]) return WHITE_ICON[name];
     if (!SKILL_ICON_MAP) { SKILL_ICON_MAP = {}; SKILL_INDEX.forEach(function (s) { if (s.iconId && !SKILL_ICON_MAP[s.name]) SKILL_ICON_MAP[s.name] = s.iconId; }); }
     return SKILL_ICON_MAP[name] || null;
   }
@@ -695,7 +724,12 @@
     var blue = STAT_KEYS.map(function (k) { return '<div class="ed-row"><span class="ed-k">' + STAT_ABBR[k] + '</span><div class="ed-stars">' + starCtl("blue", k, e.blue[k] || 0) + "</div></div>"; }).join("");
     var pink = APT_KEYS.map(function (k) { return '<div class="ed-row"><span class="ed-k">' + KEY_LABEL[k] + '</span><div class="ed-stars">' + starCtl("pink", k, e.pink[k] || 0) + "</div></div>"; }).join("");
     var white = (e.white || []).map(function (w, i) {
-      return '<div class="ed-white"><input class="cp-input ed-wname" data-wi="' + i + '" value="' + esc(w.name || "") + '" placeholder="skill or race name" />' +
+      var ic = w.name ? iconByName(w.name) : null;
+      var isRace = w.name && !ic && G1_RACES.indexOf(w.name) !== -1;
+      var label = w.name
+        ? (ic ? skillIconImg(ic) : (isRace ? '<span class="ed-wtag">G1</span>' : "")) + esc(w.name)
+        : '<span class="ed-wph">Pick skill or race</span>';
+      return '<div class="ed-white"><button type="button" class="cp-input ed-wpick" data-wi="' + i + '">' + label + "</button>" +
         '<div class="ed-stars">' + starCtl("white", i, w.lvl || 0) + "</div>" +
         '<button class="cp-ghost ed-wdel" data-wdel="' + i + '">✕</button></div>';
     }).join("");
@@ -753,6 +787,35 @@
     s.focus();
   }
   function closeSkillPicker() { hideEl($("skill-picker")); }
+
+  // ---- white-spark picker: catalog-backed (skills + fixed G1 races) ----
+  var whitePickIdx = -1;
+  function openWhitePicker(idx, anchor) {
+    whitePickIdx = idx;
+    var el = $("white-picker"); showEl(el);
+    var s = $("white-search"); s.value = ""; renderWhiteList("");
+    anchorUnder(el, anchor); s.focus();
+  }
+  function closeWhitePicker() { hideEl($("white-picker")); whitePickIdx = -1; }
+  function whiteRow(name, iconId, kind) {
+    var ico = kind === "race" ? '<span class="bp-img sk-img wp-race">G1</span>'
+      : (iconId ? '<img class="bp-img sk-img" loading="lazy" src="/pakadb/assets/skill_icons/' + esc(iconId) + '.png" onerror="this.style.visibility=\'hidden\'" alt="" />'
+                : '<span class="bp-img sk-img"></span>');
+    return '<div class="bp-row" data-wpick="' + esc(name) + '">' + ico +
+      '<div class="bp-meta"><div class="bp-name">' + esc(name) + '</div>' +
+      '<div class="bp-sub">' + (kind === "race" ? "G1 race spark" : "skill") + "</div></div></div>";
+  }
+  function renderWhiteList(q) {
+    q = (q || "").trim().toLowerCase();
+    var races = G1_RACES.filter(function (n) { return !q || n.toLowerCase().indexOf(q) !== -1; });
+    var skills = WHITE_CATALOG.filter(function (s) { return !q || s.name.toLowerCase().indexOf(q) !== -1; });
+    var CAP = 80, shown = skills.slice(0, CAP);
+    var html = "";
+    if (races.length) html += '<div class="bp-note">G1 races</div>' + races.map(function (n) { return whiteRow(n, null, "race"); }).join("");
+    html += '<div class="bp-note">Skills' + (skills.length > CAP ? " (top " + CAP + ", refine search)" : "") + "</div>" +
+      shown.map(function (s) { return whiteRow(s.name, s.iconId, "skill"); }).join("");
+    $("white-list").innerHTML = html;
+  }
   function skillTriggerLabel() {
     var n = state.skills.length;
     return n === 0 ? "Any skill — tap to pick" : n === 1 ? state.skills[0] : n + " skills selected";
@@ -907,7 +970,7 @@
     openDrawer(u);
   });
   $("cp-scrim").addEventListener("click", function () { closeDrawer(); closePicker(); });
-  document.addEventListener("keydown", function (e) { if (e.key === "Escape") { closeDrawer(); closePicker(); closeRoster(); closeEditor(); closeSkillPicker(); closeSlotPicker(); } });
+  document.addEventListener("keydown", function (e) { if (e.key === "Escape") { if (!$("white-picker").hidden) return closeWhitePicker(); closeDrawer(); closePicker(); closeRoster(); closeEditor(); closeSkillPicker(); closeSlotPicker(); } });
 
   // ---- pakadle tooltip: one floating bubble driven by [data-tip], clip-proof ----
   (function () {
@@ -1134,6 +1197,8 @@
       return renderEditor();
     }
     if (e.target.id === "ed-add-white") { editing.white.push({ name: "", lvl: 1 }); return renderEditor(); }
+    var wpick = e.target.closest(".ed-wpick");
+    if (wpick) { return openWhitePicker(Number(wpick.getAttribute("data-wi")), wpick); }
     var wdel = e.target.closest(".ed-wdel");
     if (wdel) { editing.white.splice(Number(wdel.getAttribute("data-wdel")), 1); return renderEditor(); }
   });
@@ -1144,8 +1209,21 @@
       var u = BYID[editing.charId]; editing.name = u ? u.name : editing.name;
       return renderEditor();
     }
-    var wi = e.target.getAttribute("data-wi");
-    if (wi != null && editing.white[Number(wi)]) editing.white[Number(wi)].name = e.target.value;
+  });
+
+  // white-spark picker wiring
+  $("white-search").addEventListener("input", function (e) { renderWhiteList(e.target.value); });
+  $("white-close").addEventListener("click", closeWhitePicker);
+  $("white-list").addEventListener("click", function (e) {
+    var row = e.target.closest(".bp-row"); if (!row) return;
+    var name = row.getAttribute("data-wpick");
+    if (editing && editing.white[whitePickIdx]) editing.white[whitePickIdx].name = name;
+    closeWhitePicker(); renderEditor();
+  });
+  document.addEventListener("click", function (e) {
+    if ($("white-picker").hidden) return;
+    if (e.target.closest("#white-picker") || e.target.closest(".ed-wpick")) return;
+    closeWhitePicker();
   });
   $("cp-editor-save").addEventListener("click", function () {
     if (!editing) return;
