@@ -594,12 +594,18 @@
   function leafColor(kind) {
     return kind === "blue" ? "#2f7fc0" : kind === "pink" ? "#c23c74" : kind === "green" ? "#3C8523" : kind === "race" ? "#C79A2E" : "#8a7f88";
   }
-  // a line trimmed to both nodes' radii, arrowhead pointing at the inner (target) node
-  function lmEdge(x1, y1, r1, x2, y2, r2) {
+  // a line trimmed to both nodes' radii, arrowhead pointing at the inner (target) node.
+  // opts: { width, color, label, labelColor } — label rides near the source (outer) end.
+  function lmEdge(x1, y1, r1, x2, y2, r2, opts) {
+    opts = opts || {};
     var dx = x2 - x1, dy = y2 - y1, d = Math.sqrt(dx * dx + dy * dy) || 1, ux = dx / d, uy = dy / d;
-    return '<line x1="' + (x1 + ux * r1).toFixed(1) + '" y1="' + (y1 + uy * r1).toFixed(1) +
-      '" x2="' + (x2 - ux * (r2 + 4)).toFixed(1) + '" y2="' + (y2 - uy * (r2 + 4)).toFixed(1) +
-      '" stroke="#ddd2c0" stroke-width="1.5" marker-end="url(#lmarrow)"/>';
+    var sx = x1 + ux * r1, sy = y1 + uy * r1, ex = x2 - ux * (r2 + 4), ey = y2 - uy * (r2 + 4);
+    var line = '<line x1="' + sx.toFixed(1) + '" y1="' + sy.toFixed(1) + '" x2="' + ex.toFixed(1) + '" y2="' + ey.toFixed(1) +
+      '" stroke="' + (opts.color || "#ddd2c0") + '" stroke-width="' + (opts.width || 1.5) + '" marker-end="url(#lmarrow)"/>';
+    if (opts.label == null) return line;
+    var lx = sx + (ex - sx) * 0.34, ly = sy + (ey - sy) * 0.34, c = opts.labelColor || "#9A8FA0";
+    return line + '<g class="lm-elabel"><rect x="' + (lx - 12) + '" y="' + (ly - 9) + '" width="24" height="18" rx="9" fill="#fff" stroke="' + c + '" stroke-width="1.5"/>' +
+      '<text x="' + lx + '" y="' + (ly + 3.5) + '" text-anchor="middle" font-size="10" font-weight="800" fill="' + c + '">' + opts.label + "</text></g>";
   }
   function lmPortrait(x, y, r, thumb, color, name, big) {
     var img = thumb ? '<image href="/pakadb/' + esc(thumb.thumb) + '" x="' + (x - r) + '" y="' + (y - r) + '" width="' + (2 * r) + '" height="' + (2 * r) + '" clip-path="url(#lmclip)" preserveAspectRatio="xMidYMid slice"/>' : "";
@@ -667,12 +673,15 @@
     ancestors.forEach(function (an) {
       var wgt = Math.max(1, an.leaves.length), slice = 2 * Math.PI * wgt / totalW, mid = ang + slice / 2;
       var ax = cx + R1 * Math.cos(mid), ay = cy + R1 * Math.sin(mid);
-      edges += lmEdge(ax, ay, ancR, cx, cy, foalR);
+      // inner spoke carries this ancestor's affinity contribution toward the foal
+      var cpt = compatDetail(bstate.foal, an.uma.id).pts;
+      edges += lmEdge(ax, ay, ancR, cx, cy, foalR, { label: cpt, labelColor: affColor(cpt), width: 1.5 + Math.min(cpt, 40) / 40 * 3 });
       var n = an.leaves.length, pad = Math.min(slice * 0.14, 0.14);
       an.leaves.forEach(function (lf, i) {
         var t = n === 1 ? mid : (ang + pad) + (slice - 2 * pad) * (i / (n - 1));
         var lx = cx + R2 * Math.cos(t), ly = cy + R2 * Math.sin(t);
-        edges += lmEdge(lx, ly, leafR, ax, ay, ancR);
+        // spark spoke thickens with its star level (stronger inherited factor)
+        edges += lmEdge(lx, ly, leafR, ax, ay, ancR, { width: 1 + (lf.lvl || 1) * 0.5, color: "#e2d8c7" });
         nodes += lmLeaf(lx, ly, leafR, lf);
       });
       nodes += lmPortrait(ax, ay, ancR, an.thumb, "#4CA62E", an.uma.name);
@@ -685,7 +694,7 @@
     var svg = '<svg class="lm-svg" viewBox="0 0 ' + W + " " + H + '" width="100%" preserveAspectRatio="xMidYMid meet">' + defs + edges + nodes + "</svg>";
 
     host.innerHTML = header +
-      '<div class="bd-aff-cap">Every stat, aptitude, skill and race spark your ancestors pass toward the foal. Hover a node for details.</div>' +
+      '<div class="bd-aff-cap">Ancestors pass their sparks (stats, aptitudes, skills, races) toward the foal. The number on each inner spoke is that ancestor’s affinity with the foal, higher is better.</div>' +
       '<div class="lm-wrap">' + svg + "</div>";
   }
 

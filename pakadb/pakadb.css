@@ -435,6 +435,7 @@ body.scrubbing .numc-val::selection { background: transparent; }
 .lm-svg { display: block; width: 100%; height: auto; max-height: 70vh; }
 .lm-node { cursor: default; }
 .lm-node:hover { filter: drop-shadow(0 1px 4px rgba(58,46,57,.4)); }
+.lm-elabel { pointer-events: none; }
 
 /* inheritable factors */
 .bd-factors { padding: 4px 12px 18px; }
