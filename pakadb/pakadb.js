@@ -1074,13 +1074,22 @@
     if (skillCtx === "picker") { filterRender(); renderPickerFilters(); }
     else { render(); updateSkillTrigger(); }
   }
+  // dock a panel below or above an anchor, on whichever side has more room, clamped so it never overlaps
+  function dockPanel(el, anchorEl) {
+    var r = anchorEl.getBoundingClientRect(), w = el.offsetWidth || 290;
+    var left = Math.max(8, Math.min(r.left, window.innerWidth - w - 8));
+    var below = window.innerHeight - r.bottom - 14, above = r.top - 14, top, maxH;
+    if (below >= above) { top = r.bottom + 6; maxH = below; }
+    else { maxH = above; top = Math.max(8, r.top - 6 - Math.min(el.offsetHeight || 320, above)); }
+    el.style.left = left + "px"; el.style.top = top + "px"; el.style.maxHeight = maxH + "px";
+  }
   function openSkillPicker(anchor, ctx) {
     skillCtx = ctx || null;
     var el = $("skill-picker");
     showEl(el);
     var s = $("skill-search"); s.value = ""; renderSkillList("");
     // from the filter panel: dock below/above the panel (never over it); else anchor to the trigger
-    anchorUnder(el, skillCtx === "picker" ? $("bd-filter") : anchor);
+    if (skillCtx === "picker") dockPanel(el, $("bd-filter")); else anchorUnder(el, anchor);
     s.focus();
   }
   function closeSkillPicker() { hideEl($("skill-picker")); skillCtx = null; }
