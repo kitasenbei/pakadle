@@ -457,10 +457,13 @@ body.scrubbing .numc-val::selection { background: transparent; }
   cursor: pointer; text-align: left; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
 .ed-wpick .fac-ico { width: 18px; height: 18px; flex: none; }
 .ed-wph { color: var(--ink3); font-weight: 800; }
-.ed-wtag, .wp-race { flex: none; display: inline-flex; align-items: center; justify-content: center;
-  font-size: 9px; font-weight: 800; color: #fff; background: var(--gold); border-radius: 5px; }
-.ed-wtag { padding: 1px 4px; margin-right: 2px; }
-.wp-race { width: 30px; height: 30px; border-radius: 8px; font-size: 11px; }
+/* race banner art (self-hosted 2:1 thumbs) */
+.ed-wbanner { flex: none; width: 48px; height: 24px; object-fit: cover; border-radius: 5px; margin-right: 3px;
+  border: 1px solid var(--tile-line); }
+.bp-img.wp-banner { width: 56px !important; height: 28px; border-radius: 6px; object-fit: cover;
+  border: 1px solid var(--tile-line); background: var(--bg); }
+.fac-banner { width: 40px; height: 20px; object-fit: cover; border-radius: 4px; border: 1px solid var(--tile-line); }
+.fac-chip.fac-race { padding: 2px 7px 2px 3px; gap: 4px; }
 #white-picker { z-index: 40; }
 
 /* picker recommendations */

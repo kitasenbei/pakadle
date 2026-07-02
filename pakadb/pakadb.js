@@ -36,16 +36,28 @@
   var WHITE_ICON = {};    // name -> iconId across the full catalog
   var BYID = {};
   var BREED = { relationPoints: {}, members: {} };
-  // white RACE sparks: the fixed G1 race catalog (source: gametora g1-race-factor-list)
-  var G1_RACES = [
-    "Asahi Hai Futurity Stakes", "Hanshin Juvenile Fillies", "Hopeful Stakes",
-    "Oka Sho", "Satsuki Sho", "NHK Mile Cup", "Japanese Oaks", "Tokyo Yushun (Japanese Derby)",
-    "Yasuda Kinen", "Takarazuka Kinen", "Japan Dirt Derby", "Sprinters Stakes",
-    "Kikuka Sho", "Shuka Sho", "Tenno Sho (Autumn)", "JBC Classic", "JBC Ladies' Classic",
-    "JBC Sprint", "Queen Elizabeth II Cup", "Japan Cup", "Mile Championship", "Champions Cup",
-    "Arima Kinen", "Tokyo Daishoten", "February Stakes", "Osaka Hai", "Takamatsunomiya Kinen",
-    "Tenno Sho (Spring)", "Victoria Mile", "Teio Sho",
+  // white RACE sparks: fixed G1 catalog, each with its self-hosted banner id
+  // (banner art mirrored from gametora into assets/races/{id}.png)
+  var RACES = [
+    { name: "Asahi Hai Futurity Stakes", id: 1022 }, { name: "Hanshin Juvenile Fillies", id: 1021 },
+    { name: "Hopeful Stakes", id: 1024 }, { name: "Oka Sho", id: 1004 }, { name: "Satsuki Sho", id: 1005 },
+    { name: "NHK Mile Cup", id: 1007 }, { name: "Japanese Oaks", id: 1009 },
+    { name: "Tokyo Yushun (Japanese Derby)", id: 1010 }, { name: "Yasuda Kinen", id: 1011 },
+    { name: "Takarazuka Kinen", id: 1012 }, { name: "Japan Dirt Derby", id: 1102 },
+    { name: "Sprinters Stakes", id: 1013 }, { name: "Kikuka Sho", id: 1015 }, { name: "Shuka Sho", id: 1014 },
+    { name: "Tenno Sho (Autumn)", id: 1016 }, { name: "JBC Classic", id: 1105 },
+    { name: "JBC Ladies' Classic", id: 1103 }, { name: "JBC Sprint", id: 1104 },
+    { name: "Queen Elizabeth II Cup", id: 1017 }, { name: "Japan Cup", id: 1019 },
+    { name: "Mile Championship", id: 1018 }, { name: "Champions Cup", id: 1020 },
+    { name: "Arima Kinen", id: 1023 }, { name: "Tokyo Daishoten", id: 1106 },
+    { name: "February Stakes", id: 1001 }, { name: "Osaka Hai", id: 1003 },
+    { name: "Takamatsunomiya Kinen", id: 1002 }, { name: "Tenno Sho (Spring)", id: 1006 },
+    { name: "Victoria Mile", id: 1008 }, { name: "Teio Sho", id: 1101 },
   ];
+  var RACE_BANNER = {}; RACES.forEach(function (r) { RACE_BANNER[r.name] = r.id; });
+  function raceBannerImg(id, cls) {
+    return '<img class="' + (cls || "wp-banner") + '" loading="lazy" src="/pakadb/assets/races/' + id + '.png" alt="" />';
+  }
   var STATMAX = { speed: 1, stamina: 1, power: 1, guts: 1, wit: 1 };
   // filter state: aptMin[key]=grade (require >=), rarity[] set, growth[] stats,
   // statMin{stat:n}, skill substring.
@@ -649,7 +661,11 @@
     var starsPink = APT_KEYS.filter(function (k) { return f.pink[k]; })
       .map(function (k) { return '<span class="fac-chip fac-pink">' + KEY_LABEL[k] + " ★" + f.pink[k] + "</span>"; }).join("");
     var green = Object.keys(f.green).map(function (n) { var ic = iconByName(n); return '<span class="fac-chip fac-green" data-tip="' + esc(n) + '">' + (ic ? skillIconImg(ic) : esc(n) + " ") + "★" + f.green[n] + "</span>"; }).join("");
-    var white = Object.keys(f.white).map(function (n) { var ic = iconByName(n); return '<span class="fac-chip fac-white" data-tip="' + esc(n) + '">' + (ic ? skillIconImg(ic) : esc(n) + " ") + "★" + f.white[n] + "</span>"; }).join("");
+    var white = Object.keys(f.white).map(function (n) {
+      var bid = RACE_BANNER[n];
+      if (bid) return '<span class="fac-chip fac-white fac-race" data-tip="' + esc(n) + '">' + raceBannerImg(bid, "fac-banner") + "★" + f.white[n] + "</span>";
+      var ic = iconByName(n); return '<span class="fac-chip fac-white" data-tip="' + esc(n) + '">' + (ic ? skillIconImg(ic) : esc(n) + " ") + "★" + f.white[n] + "</span>";
+    }).join("");
     if (!starsBlue && !starsPink && !green && !white) {
       host.innerHTML = '<div class="fac-h">Inheritable factors</div><div class="cov-empty">Place saved umas (with sparks) in the parent/grandparent slots to pool their factors here.</div>';
       return;
@@ -724,10 +740,10 @@
     var blue = STAT_KEYS.map(function (k) { return '<div class="ed-row"><span class="ed-k">' + STAT_ABBR[k] + '</span><div class="ed-stars">' + starCtl("blue", k, e.blue[k] || 0) + "</div></div>"; }).join("");
     var pink = APT_KEYS.map(function (k) { return '<div class="ed-row"><span class="ed-k">' + KEY_LABEL[k] + '</span><div class="ed-stars">' + starCtl("pink", k, e.pink[k] || 0) + "</div></div>"; }).join("");
     var white = (e.white || []).map(function (w, i) {
-      var ic = w.name ? iconByName(w.name) : null;
-      var isRace = w.name && !ic && G1_RACES.indexOf(w.name) !== -1;
+      var bid = w.name ? RACE_BANNER[w.name] : null;
+      var ic = w.name && !bid ? iconByName(w.name) : null;
       var label = w.name
-        ? (ic ? skillIconImg(ic) : (isRace ? '<span class="ed-wtag">G1</span>' : "")) + esc(w.name)
+        ? (bid ? raceBannerImg(bid, "ed-wbanner") : (ic ? skillIconImg(ic) : "")) + esc(w.name)
         : '<span class="ed-wph">Pick skill or race</span>';
       return '<div class="ed-white"><button type="button" class="cp-input ed-wpick" data-wi="' + i + '">' + label + "</button>" +
         '<div class="ed-stars">' + starCtl("white", i, w.lvl || 0) + "</div>" +
@@ -798,7 +814,7 @@
   }
   function closeWhitePicker() { hideEl($("white-picker")); whitePickIdx = -1; }
   function whiteRow(name, iconId, kind) {
-    var ico = kind === "race" ? '<span class="bp-img sk-img wp-race">G1</span>'
+    var ico = kind === "race" ? raceBannerImg(RACE_BANNER[name], "bp-img wp-banner")
       : (iconId ? '<img class="bp-img sk-img" loading="lazy" src="/pakadb/assets/skill_icons/' + esc(iconId) + '.png" onerror="this.style.visibility=\'hidden\'" alt="" />'
                 : '<span class="bp-img sk-img"></span>');
     return '<div class="bp-row" data-wpick="' + esc(name) + '">' + ico +
@@ -807,11 +823,11 @@
   }
   function renderWhiteList(q) {
     q = (q || "").trim().toLowerCase();
-    var races = G1_RACES.filter(function (n) { return !q || n.toLowerCase().indexOf(q) !== -1; });
+    var races = RACES.filter(function (r) { return !q || r.name.toLowerCase().indexOf(q) !== -1; });
     var skills = WHITE_CATALOG.filter(function (s) { return !q || s.name.toLowerCase().indexOf(q) !== -1; });
     var CAP = 80, shown = skills.slice(0, CAP);
     var html = "";
-    if (races.length) html += '<div class="bp-note">G1 races</div>' + races.map(function (n) { return whiteRow(n, null, "race"); }).join("");
+    if (races.length) html += '<div class="bp-note">G1 races</div>' + races.map(function (r) { return whiteRow(r.name, null, "race"); }).join("");
     html += '<div class="bp-note">Skills' + (skills.length > CAP ? " (top " + CAP + ", refine search)" : "") + "</div>" +
       shown.map(function (s) { return whiteRow(s.name, s.iconId, "skill"); }).join("");
     $("white-list").innerHTML = html;
