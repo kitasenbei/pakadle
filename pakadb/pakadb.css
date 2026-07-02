@@ -376,10 +376,10 @@ body.scrubbing .numc-val::selection { background: transparent; }
 .bd-r-great{background:var(--sakura)} .bd-r-good{background:var(--turf)}
 .bd-r-ok{background:var(--gold)} .bd-r-low{background:var(--slate)}
 
-/* breeding layout: lineage map (left) beside the pedigree tree (right) */
+/* breeding layout: lineage map (left) beside the pedigree tree (right), filling the width */
 .bd-main { display: flex; align-items: flex-start; gap: 16px; }
-.bd-main > .bd-affinity { flex: 0 0 auto; width: clamp(340px, 42vw, 680px); }
-.bd-main > .bd-stage { flex: 1 1 auto; min-width: 0; }
+.bd-main > .bd-affinity { flex: 1 1 56%; min-width: 360px; }
+.bd-main > .bd-stage { flex: 1 1 44%; min-width: 0; }
 .bd-stage { overflow-x: auto; padding: 14px 12px; text-align: left; }
 .bd-stage svg { display: inline-block; }
 @media (max-width: 860px) {
