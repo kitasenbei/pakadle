@@ -952,15 +952,17 @@
     $("bd-picker-title").textContent = "Assign " + (ROLE_LABEL[slot] || slot);
     var s = $("bd-picker-search"); s.value = ""; renderSlotList("");
     $("bd-picker-list").scrollTop = 0;                 // always start at the top
-    showEl($("bd-filter")); renderPickerFilters();
     anchorUnder(el, anchor);
-    positionFilter();
+    openFilterFor({ pickerId: "bd-picker", searchId: "bd-picker-search", listId: "bd-picker-list", render: function () { renderSlotList($("bd-picker-search").value); } });
     s.focus();
   }
-  function closeSlotPicker() { hideEl($("bd-picker")); hideEl($("bd-filter")); closeSkillPicker(); bstate.active = null; }
+  function closeSlotPicker() { hideEl($("bd-picker")); closeFilter(); bstate.active = null; }
 
-  // ---- mare-picker filters (aptitude + skills), shown beside the picker ----
-  var pickerApt = {}, pickerSkills = [];
+  // ---- uma filters (aptitude + skills), shared by the mare picker and the uma picker ----
+  var pickerApt = {}, pickerSkills = [], filterCtx = null;
+  function openFilterFor(ctx) { filterCtx = ctx; showEl($("bd-filter")); renderPickerFilters(); positionFilter(); }
+  function closeFilter() { hideEl($("bd-filter")); closeSkillPicker(); filterCtx = null; }
+  function filterRender() { if (!filterCtx) return; filterCtx.render(); var l = $(filterCtx.listId); if (l) l.scrollTop = 0; }
   function pickerFiltersActive() { return pickerSkills.length > 0 || Object.keys(pickerApt).some(function (k) { return pickerApt[k]; }); }
   function pickerMatch(umaId) {
     var u = BYID[umaId]; if (!u) return true;
@@ -986,7 +988,8 @@
       (pickerFiltersActive() ? '<button class="cp-ghost bdf-clear" id="bdf-clear">CLEAR FILTERS</button>' : "");
   }
   function positionFilter() {
-    var pk = $("bd-picker"), fl = $("bd-filter");
+    if (!filterCtx) return;
+    var pk = $(filterCtx.pickerId), fl = $("bd-filter");
     if (pk.hidden || fl.hidden) return;
     var pr = pk.getBoundingClientRect(), fw = fl.offsetWidth || 210, gap = 8, left;
     if (pr.left - fw - gap >= 8) left = pr.left - fw - gap;                                   // room on the left
@@ -1043,7 +1046,7 @@
   var skillCtx = null;   // null = database filter (state.skills); "picker" = mare-picker filter
   function activeSkillList() { return skillCtx === "picker" ? pickerSkills : state.skills; }
   function skillChanged() {
-    if (skillCtx === "picker") { renderSlotList($("bd-picker-search").value); renderPickerFilters(); }
+    if (skillCtx === "picker") { filterRender(); renderPickerFilters(); }
     else { render(); updateSkillTrigger(); }
   }
   function openSkillPicker(anchor, ctx) {
@@ -1070,12 +1073,14 @@
   function openCharPicker(anchor) {
     var el = $("char-picker"); showEl(el);
     var s = $("char-search"); s.value = ""; renderCharList("");
-    anchorUnder(el, anchor); s.focus();
+    anchorUnder(el, anchor);
+    openFilterFor({ pickerId: "char-picker", searchId: "char-search", listId: "char-list", render: function () { renderCharList($("char-search").value); } });
+    s.focus();
   }
-  function closeCharPicker() { hideEl($("char-picker")); }
+  function closeCharPicker() { hideEl($("char-picker")); closeFilter(); }
   function renderCharList(q) {
     q = (q || "").trim().toLowerCase();
-    var list = UMAS.filter(function (u) { return !q || u.name.toLowerCase().indexOf(q) !== -1; });
+    var list = UMAS.filter(function (u) { return (!q || u.name.toLowerCase().indexOf(q) !== -1) && pickerMatch(u.id); });
     $("char-list").innerHTML = list.map(function (u) {
       var on = editing && editing.charId === u.id;
       return '<div class="bp-row' + (on ? " on" : "") + '" data-charid="' + u.id + '">' +
@@ -1501,11 +1506,11 @@
   $("bd-filter").addEventListener("click", function (e) {
     e.stopPropagation();   // don't let filter clicks reach the picker / skill-picker outside-closers
     var apt = e.target.closest("[data-apt]");
-    if (apt) { var k = apt.getAttribute("data-apt"); pickerApt[k] = !pickerApt[k]; renderPickerFilters(); renderSlotList($("bd-picker-search").value); $("bd-picker-list").scrollTop = 0; return; }
+    if (apt) { var k = apt.getAttribute("data-apt"); pickerApt[k] = !pickerApt[k]; renderPickerFilters(); filterRender(); return; }
     var rm = e.target.closest("[data-rmskill]");
-    if (rm) { var n = rm.getAttribute("data-rmskill"), i = pickerSkills.indexOf(n); if (i >= 0) pickerSkills.splice(i, 1); renderPickerFilters(); renderSlotList($("bd-picker-search").value); return; }
+    if (rm) { var n = rm.getAttribute("data-rmskill"), i = pickerSkills.indexOf(n); if (i >= 0) pickerSkills.splice(i, 1); renderPickerFilters(); filterRender(); return; }
     if (e.target.id === "bdf-add-skill") { return openSkillPicker(e.target, "picker"); }
-    if (e.target.id === "bdf-clear") { pickerApt = {}; pickerSkills.length = 0; renderPickerFilters(); renderSlotList($("bd-picker-search").value); $("bd-picker-list").scrollTop = 0; return; }
+    if (e.target.id === "bdf-clear") { pickerApt = {}; pickerSkills.length = 0; renderPickerFilters(); filterRender(); return; }
   });
   $("bd-picker-search").addEventListener("input", function (e) { renderSlotList(e.target.value); $("bd-picker-list").scrollTop = 0; });
   $("bd-picker-close").addEventListener("click", closeSlotPicker);
@@ -1612,7 +1617,8 @@
   });
   document.addEventListener("click", function (e) {
     if ($("char-picker").hidden) return;
-    if (e.target.closest("#char-picker") || e.target.closest("#ed-charbtn")) return;
+    if (e.target.closest("#char-picker") || e.target.closest("#ed-charbtn") ||
+        e.target.closest("#bd-filter") || e.target.closest("#skill-picker")) return;
     closeCharPicker();
   });
 
