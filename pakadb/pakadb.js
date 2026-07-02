@@ -996,9 +996,10 @@
     var pk = $(filterCtx.pickerId), fl = $("bd-filter");
     if (pk.hidden || fl.hidden) return;
     var pr = pk.getBoundingClientRect(), fw = fl.offsetWidth || 210, gap = 8, left;
-    if (pr.left - fw - gap >= 8) left = pr.left - fw - gap;                                   // room on the left
-    else if (pr.right + gap + fw <= window.innerWidth - 8) left = pr.right + gap;             // else the right
-    else left = Math.max(8, Math.min(pr.left, window.innerWidth - fw - 8));                   // fallback
+    var canLeft = pr.left - fw - gap >= 8, canRight = pr.right + gap + fw <= window.innerWidth - 8;
+    var fallback = Math.max(8, Math.min(pr.left, window.innerWidth - fw - 8));
+    if (filterCtx.side === "right") left = canRight ? pr.right + gap : (canLeft ? pr.left - fw - gap : fallback);
+    else left = canLeft ? pr.left - fw - gap : (canRight ? pr.right + gap : fallback);
     var top = Math.max(8, pr.top);
     fl.style.left = left + "px"; fl.style.top = top + "px";
     fl.style.maxHeight = (window.innerHeight - top - 8) + "px";                               // clamp to viewport, scroll inside
@@ -1074,11 +1075,24 @@
   function closeWhitePicker() { hideEl($("white-picker")); whitePickIdx = -1; }
 
   // ---- uma picker (spark editor character selector) ----
-  function openCharPicker(anchor) {
+  // place the uma picker beside the editor modal box (never on top of it)
+  function positionCharPicker() {
+    var el = $("char-picker"), box = $("cp-editor").querySelector(".cp-picker-box");
+    if (!box) return;
+    var br = box.getBoundingClientRect(), w = el.offsetWidth || 290, gap = 10, left;
+    if (br.right + gap + w <= window.innerWidth - 8) left = br.right + gap;       // right of the modal
+    else if (br.left - gap - w >= 8) left = br.left - gap - w;                    // else its left
+    else left = Math.max(8, window.innerWidth - w - 8);                           // fallback: right edge
+    el.style.left = left + "px"; el.style.top = Math.max(8, br.top) + "px";
+  }
+  function openCharPicker() {
     var el = $("char-picker"); showEl(el);
     var s = $("char-search"); s.value = ""; renderCharList("");
-    anchorUnder(el, anchor);
-    openFilterFor({ pickerId: "char-picker", searchId: "char-search", listId: "char-list", render: function () { renderCharList($("char-search").value); } });
+    positionCharPicker();
+    // dock the filter on the outer side of the picker (away from the editor)
+    var box = $("cp-editor").querySelector(".cp-picker-box"), side = "left";
+    if (box) side = el.getBoundingClientRect().left >= box.getBoundingClientRect().right ? "right" : "left";
+    openFilterFor({ pickerId: "char-picker", searchId: "char-search", listId: "char-list", side: side, render: function () { renderCharList($("char-search").value); } });
     s.focus();
   }
   function closeCharPicker() { hideEl($("char-picker")); closeFilter(); }
@@ -1603,7 +1617,7 @@
     }
     if (e.target.id === "ed-add-white") { editing.white.push({ name: "", lvl: 1 }); return renderEditor(); }
     var charbtn = e.target.closest("#ed-charbtn");
-    if (charbtn) { return openCharPicker(charbtn); }
+    if (charbtn) { return openCharPicker(); }
     var wpick = e.target.closest(".ed-wpick");
     if (wpick) { return openWhitePicker(Number(wpick.getAttribute("data-wi")), wpick); }
     var wdel = e.target.closest(".ed-wdel");
@@ -1652,6 +1666,10 @@
   });
 
   $("cp-scrim").addEventListener("click", function () { closeRoster(); closeEditor(); closeTrees(); });
+  // click the dimmed area outside the modal box to close it
+  [["cp-roster", closeRoster], ["cp-editor", closeEditor], ["cp-trees", closeTrees]].forEach(function (p) {
+    $(p[0]).addEventListener("click", function (e) { if (e.target === this) p[1](); });
+  });
 
   loadRoster();
   loadTrees();
