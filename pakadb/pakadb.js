@@ -7,7 +7,7 @@
   var GRADES = ["S", "A", "B", "C", "D", "E", "F", "G"];
   var GRANK = {}; GRADES.forEach(function (g, i) { GRANK[g] = GRADES.length - i; });
   var STAT_KEYS = ["speed", "stamina", "power", "guts", "wit"];
-  var STAT_ABBR = { speed: "SPD", stamina: "STA", power: "PWR", guts: "GUT", wit: "WIT" };
+  var STAT_NAME = { speed: "Speed", stamina: "Stamina", power: "Power", guts: "Guts", wit: "Wit" };
   var STAT_NAME = { speed: "Speed", stamina: "Stamina", power: "Power", guts: "Guts", wit: "Wit" };
 
   var $ = function (id) { return document.getElementById(id); };
@@ -271,7 +271,7 @@
     var g = (u.growth && u.growth[k]) || 0;
     var pct = Math.round((v / STATMAX[k]) * 100);
     return '<div class="stat"><span class="stat-l">' +
-      '<img class="stat-ico" src="/pakadb/assets/stat_icons/' + k + '.png" alt="' + STAT_ABBR[k] + '" data-tip="' + STAT_ABBR[k] + '" />' +
+      '<img class="stat-ico" src="/pakadb/assets/stat_icons/' + k + '.png" alt="' + STAT_NAME[k] + '" data-tip="' + STAT_NAME[k] + '" />' +
       (g ? '<span class="growth-tag">+' + g + "%</span>" : "") + "</span>" +
       '<span class="stat-bar"><span class="stat-fill f-' + k + '" style="width:' + pct + '%"></span></span>' +
       '<span class="stat-n">' + v + "</span></div>";
@@ -657,7 +657,7 @@
     var host = $("bd-factors");
     var f = inheritableFactors();
     var starsBlue = STAT_KEYS.filter(function (k) { return f.blue[k]; })
-      .map(function (k) { return '<span class="fac-chip fac-blue" data-tip="' + STAT_ABBR[k] + '"><img class="fac-ico" src="/pakadb/assets/stat_icons/' + k + '.png" alt="' + STAT_ABBR[k] + '" />★' + f.blue[k] + "</span>"; }).join("");
+      .map(function (k) { return '<span class="fac-chip fac-blue" data-tip="' + STAT_NAME[k] + '"><img class="fac-ico" src="/pakadb/assets/stat_icons/' + k + '.png" alt="' + STAT_NAME[k] + '" />★' + f.blue[k] + "</span>"; }).join("");
     var starsPink = APT_KEYS.filter(function (k) { return f.pink[k]; })
       .map(function (k) { return '<span class="fac-chip fac-pink">' + KEY_LABEL[k] + " ★" + f.pink[k] + "</span>"; }).join("");
     var green = Object.keys(f.green).map(function (n) { var ic = iconByName(n); return '<span class="fac-chip fac-green" data-tip="' + esc(n) + '">' + (ic ? skillIconImg(ic) : esc(n) + " ") + "★" + f.green[n] + "</span>"; }).join("");
@@ -737,7 +737,7 @@
     var uskill = (u && u.skills && u.skills.unique && u.skills.unique[0]) ? u.skills.unique[0] : null;
     var uniqName = uskill ? uskill.name : "Unique skill";
     var opts = UMAS.map(function (x) { return '<option value="' + x.id + '"' + (x.id === e.charId ? " selected" : "") + ">" + esc(x.name) + "</option>"; }).join("");
-    var blue = STAT_KEYS.map(function (k) { return '<div class="ed-row"><span class="ed-k">' + STAT_ABBR[k] + '</span><div class="ed-stars">' + starCtl("blue", k, e.blue[k] || 0) + "</div></div>"; }).join("");
+    var blue = STAT_KEYS.map(function (k) { return '<div class="ed-row"><span class="ed-k">' + STAT_NAME[k] + '</span><div class="ed-stars">' + starCtl("blue", k, e.blue[k] || 0) + "</div></div>"; }).join("");
     var pink = APT_KEYS.map(function (k) { return '<div class="ed-row"><span class="ed-k">' + KEY_LABEL[k] + '</span><div class="ed-stars">' + starCtl("pink", k, e.pink[k] || 0) + "</div></div>"; }).join("");
     var white = (e.white || []).map(function (w, i) {
       var bid = w.name ? RACE_BANNER[w.name] : null;
