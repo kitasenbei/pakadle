@@ -254,6 +254,7 @@ body.scrubbing .numc-val::selection { background: transparent; }
   opacity: 0; transition: opacity .1s;
 }
 .pk-tip.on { opacity: 1; }
+.pk-tip .tip-uma { color: #FF9EC6; font-weight: 800; }
 .pk-tip::after {
   content: ""; position: absolute; left: 50%; bottom: -6px; transform: translateX(-50%);
   border-left: 5px solid transparent; border-right: 5px solid transparent; border-top: 6px solid var(--turf);

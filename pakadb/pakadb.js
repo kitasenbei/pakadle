@@ -616,7 +616,7 @@
   }
   function lmPortrait(x, y, r, thumb, color, name, big, slot) {
     var img = thumb ? '<image href="/pakadb/' + esc(thumb.thumb) + '" x="' + (x - r) + '" y="' + (y - r) + '" width="' + (2 * r) + '" height="' + (2 * r) + '" clip-path="url(#lmclip)" preserveAspectRatio="xMidYMid slice"/>' : "";
-    return '<g class="lm-node" data-slot="' + esc(slot || "") + '" data-tip="' + esc(name || "") + '">' +
+    return '<g class="lm-node" data-slot="' + esc(slot || "") + '" data-tip="' + (name || "") + '">' +
       '<circle cx="' + x + '" cy="' + y + '" r="' + r + '" fill="#FBF5EA"/>' + img +
       '<circle cx="' + x + '" cy="' + y + '" r="' + r + '" fill="none" stroke="' + color + '" stroke-width="' + (big ? 4 : 3) + '"/></g>';
   }
@@ -633,6 +633,8 @@
       '<circle cx="' + x + '" cy="' + y + '" r="' + r + '" fill="none" stroke="#fff" stroke-width="2"/>' + badge + "</g>";
   }
   function lmSparkChild(lf) { return { nkind: "spark", leaf: lf, children: [] }; }
+  // uma name highlighted pink inside a tooltip (rendered as HTML by the tip controller)
+  function pinkName(n) { return "<span class='tip-uma'>" + esc(n) + "</span>"; }
   // build the lineage tree: foal -> parents -> grandparents, sparks hang off each ancestor
   function lineageTree() {
     var f = bstate.foal, foalName = (BYID[f] || {}).name || "your trainee";
@@ -641,9 +643,9 @@
       var id = bstate[slot], pId = parentSlot ? bstate[parentSlot] : null;
       var toFoal = compat(f, id), toParent = pId ? compat(pId, id) : 0;
       var contrib = toFoal + toParent;
-      var tip = BYID[id].name + ", " + contrib + " compatibility";
-      tip += parentSlot ? " (" + toFoal + " with " + foalName + ", " + toParent + " with its parent). Tap to swap her."
-                        : " with " + foalName + ". Tap to swap her.";
+      var tip = pinkName(BYID[id].name) + ", " + contrib + " compatibility";
+      tip += parentSlot ? " (" + toFoal + " with " + pinkName(foalName) + ", " + toParent + " with its parent). Tap to swap her."
+                        : " with " + pinkName(foalName) + ". Tap to swap her.";
       return {
         nkind: "anc", slot: slot, thumb: slotThumb(slot), name: BYID[id].name,
         contrib: contrib, tip: tip, children: sparkLeaves(slot).map(lmSparkChild),
@@ -657,7 +659,7 @@
     }
     return {
       nkind: "foal", slot: "foal", thumb: slotThumb("foal"), name: foalName,
-      tip: foalName + ", your trainee. Tap to change her.", big: true,
+      tip: pinkName(foalName) + ", your trainee. Tap to change her.", big: true,
       children: branch("p1", "gp11", "gp12").concat(branch("p2", "gp21", "gp22")),
     };
   }
@@ -1194,7 +1196,7 @@
     var tip = $("pk-tip"), cur = null;
     function show(el) {
       var txt = el.getAttribute("data-tip"); if (!txt) return;
-      cur = el; tip.textContent = txt; tip.hidden = false;
+      cur = el; tip.innerHTML = txt; tip.hidden = false;   // tips may carry <span class='tip-uma'> highlights
       var r = el.getBoundingClientRect();
       var below = r.top < 46;
       tip.classList.toggle("below", below);
