@@ -802,21 +802,32 @@
     UMAS.forEach(function (u) { var t = affinityWith(slot, u.id); if (t > bestT) { bestT = t; best = u.id; } });
     if (best != null) { bstate[slot] = best; slotSpark[slot] = null; slotCard[slot] = null; renderBreeding(); }
   }
-  function ctxItem(act, glyph, label, cls) {
+  // inline Tabler icons (MIT), self-hosted as SVG so no external requests
+  var TABLER = {
+    pick: '<path d="M10 10m-7 0a7 7 0 1 0 14 0a7 7 0 1 0 -14 0"/><path d="M21 21l-6 -6"/>',
+    auto: '<path d="M16 18a2 2 0 0 1 2 2a2 2 0 0 1 2 -2a2 2 0 0 1 -2 -2a2 2 0 0 1 -2 2z"/><path d="M16 6a2 2 0 0 1 2 2a2 2 0 0 1 2 -2a2 2 0 0 1 -2 -2a2 2 0 0 1 -2 2z"/><path d="M9 18a6 6 0 0 1 6 -6a6 6 0 0 1 -6 -6a6 6 0 0 1 -6 6a6 6 0 0 1 6 6z"/>',
+    outfit: '<path d="M15 4l6 2v5h-3v8a1 1 0 0 1 -1 1h-10a1 1 0 0 1 -1 -1v-8h-3v-5l6 -2a3 3 0 0 0 6 0"/>',
+    view: '<path d="M10 12a2 2 0 1 0 4 0a2 2 0 0 0 -4 0"/><path d="M21 12c-2.4 4 -5.4 6 -9 6c-3.6 0 -6.6 -2 -9 -6c2.4 -4 5.4 -6 9 -6c3.6 0 6.6 2 9 6"/>',
+    clear: '<path d="M4 7l16 0"/><path d="M10 11l0 6"/><path d="M14 11l0 6"/><path d="M5 7l1 12a2 2 0 0 0 2 2h8a2 2 0 0 0 2 -2l1 -12"/><path d="M9 7v-3a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v3"/>',
+  };
+  function tablerIco(act) {
+    return '<svg class="ti" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + (TABLER[act] || "") + "</svg>";
+  }
+  function ctxItem(act, label, cls) {
     return '<button type="button" class="bd-ctx-item' + (cls ? " " + cls : "") + '" data-act="' + act + '">' +
-      '<span class="bd-ctx-ico">' + glyph + "</span>" + label + "</button>";
+      '<span class="bd-ctx-ico">' + tablerIco(act) + "</span>" + label + "</button>";
   }
   function openCtx(slot, anchor, x, y) {
     ctxSlot = slot; ctxAnchor = anchor;
     var filled = !!bstate[slot];
     var canRank = SLOTS.some(function (k) { return k !== slot && bstate[k]; });
-    var items = ctxItem("pick", "🔍", filled ? "Change uma" : "Pick uma");
-    if (canRank) items += ctxItem("auto", "✨", "Auto-pick best match");
+    var items = ctxItem("pick", filled ? "Change uma" : "Pick uma");
+    if (canRank) items += ctxItem("auto", "Auto-pick best match");
     if (filled) {
       var u = BYID[bstate[slot]];
-      if (u && u.alts && u.alts.length > 1) items += ctxItem("outfit", "👗", "Change outfit");
-      items += ctxItem("view", "📖", "View in database");
-      items += '<div class="bd-ctx-sep"></div>' + ctxItem("clear", "✕", "Clear slot", "danger");
+      if (u && u.alts && u.alts.length > 1) items += ctxItem("outfit", "Change outfit");
+      items += ctxItem("view", "View in database");
+      items += '<div class="bd-ctx-sep"></div>' + ctxItem("clear", "Clear slot", "danger");
     }
     var el = $("bd-ctx"); el.innerHTML = items; showEl(el);
     var w = el.offsetWidth || 190, h = el.offsetHeight || 160;
