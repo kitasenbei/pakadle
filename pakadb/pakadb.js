@@ -572,16 +572,53 @@
     renderFactors();
   }
 
-  // the seven pairings that make up the in-game succession affinity total
-  var AFF_LINKS = [
-    { a: "foal", b: "p1", tier: 1, label: "Foal &amp; Parent 1" },
-    { a: "foal", b: "p2", tier: 1, label: "Foal &amp; Parent 2" },
-    { a: "p1", b: "p2", tier: 1, label: "Parent 1 &amp; Parent 2" },
-    { a: "foal", b: "gp11", tier: 2, label: "Foal &amp; Grandparent", sub: "Parent 1 line" },
-    { a: "foal", b: "gp12", tier: 2, label: "Foal &amp; Grandparent", sub: "Parent 1 line" },
-    { a: "foal", b: "gp21", tier: 2, label: "Foal &amp; Grandparent", sub: "Parent 2 line" },
-    { a: "foal", b: "gp22", tier: 2, label: "Foal &amp; Grandparent", sub: "Parent 2 line" },
-  ];
+  // ---- lineage map: every spark an ancestor passes toward the foal ----
+  // one leaf per spark on a slot's saved-uma sparks
+  function sparkLeaves(slot) {
+    var sp = slotSpark[slot]; if (!sp) return [];
+    var out = [];
+    STAT_KEYS.forEach(function (k) { if (sp.blue && sp.blue[k]) out.push({ kind: "blue", label: STAT_NAME[k], statk: k, lvl: sp.blue[k] }); });
+    APT_KEYS.forEach(function (k) { if (sp.pink && sp.pink[k]) out.push({ kind: "pink", label: KEY_LABEL[k], abbr: APT_ABBR[k], lvl: sp.pink[k] }); });
+    if (sp.green) {
+      var u = BYID[bstate[slot]], us = u && u.skills && u.skills.unique && u.skills.unique[0];
+      out.push({ kind: "green", label: us ? us.name : (sp.name || "Unique"), iconId: us ? us.iconId : null, lvl: sp.green });
+    }
+    (sp.white || []).forEach(function (w) {
+      if (!w.name) return;
+      var bid = RACE_BANNER[w.name];
+      if (bid) out.push({ kind: "race", label: w.name, banner: bid, lvl: w.lvl || 0 });
+      else out.push({ kind: "white", label: w.name, iconId: iconByName(w.name), lvl: w.lvl || 0 });
+    });
+    return out;
+  }
+  function leafColor(kind) {
+    return kind === "blue" ? "#2f7fc0" : kind === "pink" ? "#c23c74" : kind === "green" ? "#3C8523" : kind === "race" ? "#C79A2E" : "#8a7f88";
+  }
+  // a line trimmed to both nodes' radii, arrowhead pointing at the inner (target) node
+  function lmEdge(x1, y1, r1, x2, y2, r2) {
+    var dx = x2 - x1, dy = y2 - y1, d = Math.sqrt(dx * dx + dy * dy) || 1, ux = dx / d, uy = dy / d;
+    return '<line x1="' + (x1 + ux * r1).toFixed(1) + '" y1="' + (y1 + uy * r1).toFixed(1) +
+      '" x2="' + (x2 - ux * (r2 + 4)).toFixed(1) + '" y2="' + (y2 - uy * (r2 + 4)).toFixed(1) +
+      '" stroke="#ddd2c0" stroke-width="1.5" marker-end="url(#lmarrow)"/>';
+  }
+  function lmPortrait(x, y, r, thumb, color, name, big) {
+    var img = thumb ? '<image href="/pakadb/' + esc(thumb.thumb) + '" x="' + (x - r) + '" y="' + (y - r) + '" width="' + (2 * r) + '" height="' + (2 * r) + '" clip-path="url(#lmclip)" preserveAspectRatio="xMidYMid slice"/>' : "";
+    return '<g class="lm-node" data-tip="' + esc(name || "") + '">' +
+      '<circle cx="' + x + '" cy="' + y + '" r="' + r + '" fill="#FBF5EA"/>' + img +
+      '<circle cx="' + x + '" cy="' + y + '" r="' + r + '" fill="none" stroke="' + color + '" stroke-width="' + (big ? 4 : 3) + '"/></g>';
+  }
+  function lmLeaf(x, y, r, lf) {
+    var col = leafColor(lf.kind), inner = "";
+    if (lf.kind === "blue") inner = '<image href="/pakadb/assets/stat_icons/' + lf.statk + '.png" x="' + (x - r * 0.7) + '" y="' + (y - r * 0.7) + '" width="' + (r * 1.4) + '" height="' + (r * 1.4) + '"/>';
+    else if (lf.kind === "pink") inner = '<text x="' + x + '" y="' + (y + 3) + '" text-anchor="middle" font-size="8" font-weight="800" fill="#fff">' + esc(lf.abbr) + "</text>";
+    else if ((lf.kind === "green" || lf.kind === "white") && lf.iconId) inner = '<image href="/pakadb/assets/skill_icons/' + lf.iconId + '.png" x="' + (x - r * 0.78) + '" y="' + (y - r * 0.78) + '" width="' + (r * 1.56) + '" height="' + (r * 1.56) + '" clip-path="url(#lmclip)"/>';
+    else if (lf.kind === "race") inner = '<image href="/pakadb/assets/races/' + lf.banner + '.png" x="' + (x - r) + '" y="' + (y - r) + '" width="' + (2 * r) + '" height="' + (2 * r) + '" clip-path="url(#lmclip)" preserveAspectRatio="xMidYMid slice"/>';
+    var badge = lf.lvl ? '<circle cx="' + (x + r * 0.82) + '" cy="' + (y - r * 0.82) + '" r="6" fill="#fff" stroke="' + col + '" stroke-width="1.5"/>' +
+      '<text x="' + (x + r * 0.82) + '" y="' + (y - r * 0.82 + 3) + '" text-anchor="middle" font-size="8" font-weight="800" fill="' + col + '">' + lf.lvl + "</text>" : "";
+    return '<g class="lm-node" data-tip="' + esc(lf.label + (lf.lvl ? " ★" + lf.lvl : "")) + '">' +
+      '<circle cx="' + x + '" cy="' + y + '" r="' + r + '" fill="' + col + '"/>' + inner +
+      '<circle cx="' + x + '" cy="' + y + '" r="' + r + '" fill="none" stroke="#fff" stroke-width="2"/>' + badge + "</g>";
+  }
   // portrait (chosen outfit if any) for a slot, or null when empty
   function slotThumb(slot) {
     var u = bstate[slot] ? BYID[bstate[slot]] : null;
@@ -598,56 +635,58 @@
     var host = $("bd-affinity"); if (!host) return;
     if (!bstate.foal) { host.innerHTML = ""; return; }
     var a = affinity(), r = rating(a.total);
-    var links = AFF_LINKS.map(function (L) {
-      var A = slotThumb(L.a), B = slotThumb(L.b);
-      if (!A || !B) return null;
-      var d = compatDetail(bstate[L.a], bstate[L.b]);
-      return { A: A, B: B, pts: d.pts, bonds: d.bonds, tier: L.tier, label: L.label, sub: L.sub };
-    }).filter(Boolean);
-
-    if (!links.length) {
-      host.innerHTML = '<div class="sect-h">Affinity breakdown</div>' +
-        '<div class="cov-empty">Fill parent and grandparent slots to see where the affinity comes from.</div>';
-      return;
-    }
 
     // progress toward the next tier (50 / 100 / 150), else already maxed
     var TIERS = [{ t: 50, sym: "○", label: "OK" }, { t: 100, sym: "◎", label: "GOOD" }, { t: 150, sym: "◎", label: "GREAT" }];
     var next = null; for (var i = 0; i < TIERS.length; i++) { if (a.total < TIERS[i].t) { next = TIERS[i]; break; } }
-    var prevT = 0; if (next) { for (var j = 0; j < TIERS.length; j++) { if (TIERS[j].t < next.t && a.total >= 0 && TIERS[j].t <= a.total) prevT = TIERS[j].t; } }
+    var prevT = 0; if (next) { for (var j = 0; j < TIERS.length; j++) { if (TIERS[j].t < next.t && TIERS[j].t <= a.total) prevT = TIERS[j].t; } }
     var pct = next ? Math.round(Math.max(0, Math.min(1, (a.total - prevT) / (next.t - prevT))) * 100) : 100;
     var goal = next ? '<span class="bd-aff-goal">' + (next.t - a.total) + " to " + next.sym + " " + next.label + "</span>"
                     : '<span class="bd-aff-goal maxed">' + r.sym + " MAX TIER</span>";
-
-    // bar reference: a strong single pairing is ~30 pts, so weaker links read shorter
-    var maxPts = Math.max(30, links.reduce(function (m, l) { return Math.max(m, l.pts); }, 0));
-    var strength = function (p) { return p >= 20 ? "Strong" : p >= 10 ? "Good" : "Weak"; };
-    var rows = links.map(function (l) {
-      var w = Math.max(4, Math.round(l.pts / maxPts * 100));
-      var tip = l.A.name + " and " + l.B.name + ": " + l.pts + " affinity points, from " +
-        l.bonds + " shared connection" + (l.bonds === 1 ? "" : "s") + " (races won, lineage, aptitudes)";
-      return '<div class="bd-aff-row' + (l.tier === 2 ? " gp" : "") + '" data-tip="' + esc(tip) + '">' +
-        '<span class="bd-aff-pair">' +
-          '<img class="bd-aff-pic" loading="lazy" src="/pakadb/' + esc(l.A.thumb) + '" onerror="this.src=\'/pakadb/' + esc(l.A.img) + "'\" alt=\"\" />" +
-          '<img class="bd-aff-pic" loading="lazy" src="/pakadb/' + esc(l.B.thumb) + '" onerror="this.src=\'/pakadb/' + esc(l.B.img) + "'\" alt=\"\" />" +
-        "</span>" +
-        '<div class="bd-aff-mid">' +
-          '<div class="bd-aff-label">' + l.label + (l.sub ? ' <span class="bd-aff-sub">' + l.sub + "</span>" : "") + "</div>" +
-          '<span class="bd-aff-track"><span class="bd-aff-fill" style="width:' + w + "%;background:" + affColor(l.pts) + '"></span></span>' +
-        "</div>" +
-        '<span class="bd-aff-pts"><b style="color:' + affColor(l.pts) + '">' + l.pts + "</b><small>" + strength(l.pts) + "</small></span>" +
-      "</div>";
-    }).join("");
-
-    host.innerHTML =
-      '<div class="sect-h">Affinity breakdown</div>' +
+    var header = '<div class="sect-h">Lineage map</div>' +
       '<div class="bd-aff-head">' +
         '<div class="bd-aff-score"><span class="bd-aff-n">' + a.total + '</span>' +
           '<span class="ftop-rate bd-r-' + r.cls + '">' + r.sym + " " + r.label + "</span></div>" +
         '<div class="bd-aff-prog"><span class="bd-aff-track big"><span class="bd-aff-fill" style="width:' + pct + '%;background:' + affColor(a.total >= 150 ? 20 : a.total >= 100 ? 10 : 0) + '"></span></span>' + goal + "</div>" +
-      "</div>" +
-      '<div class="bd-aff-cap">Each row is one pairing’s compatibility. They add up to the total above — higher is better.</div>' +
-      '<div class="bd-aff-links">' + rows + "</div>";
+      "</div>";
+
+    // ancestors currently in the tree (each may carry sparks)
+    var ancestors = ANCESTORS.map(function (slot) {
+      var id = bstate[slot]; if (!id) return null;
+      return { slot: slot, uma: BYID[id], thumb: slotThumb(slot), leaves: sparkLeaves(slot) };
+    }).filter(Boolean);
+    if (!ancestors.length) {
+      host.innerHTML = header + '<div class="bd-aff-cap">Place parents and grandparents to grow the lineage map. Saved umas add each of their sparks as a spoke.</div>';
+      return;
+    }
+
+    // radial layout: foal at the center, ancestors on an inner ring, their sparks fanned outward
+    var W = 700, H = 560, cx = 350, cy = 282, R1 = 138, R2 = 248, foalR = 38, ancR = 24, leafR = 15;
+    var totalW = ancestors.reduce(function (s, an) { return s + Math.max(1, an.leaves.length); }, 0);
+    var ang = -Math.PI / 2, edges = "", nodes = "";
+    ancestors.forEach(function (an) {
+      var wgt = Math.max(1, an.leaves.length), slice = 2 * Math.PI * wgt / totalW, mid = ang + slice / 2;
+      var ax = cx + R1 * Math.cos(mid), ay = cy + R1 * Math.sin(mid);
+      edges += lmEdge(ax, ay, ancR, cx, cy, foalR);
+      var n = an.leaves.length, pad = Math.min(slice * 0.14, 0.14);
+      an.leaves.forEach(function (lf, i) {
+        var t = n === 1 ? mid : (ang + pad) + (slice - 2 * pad) * (i / (n - 1));
+        var lx = cx + R2 * Math.cos(t), ly = cy + R2 * Math.sin(t);
+        edges += lmEdge(lx, ly, leafR, ax, ay, ancR);
+        nodes += lmLeaf(lx, ly, leafR, lf);
+      });
+      nodes += lmPortrait(ax, ay, ancR, an.thumb, "#4CA62E", an.uma.name);
+      ang += slice;
+    });
+    nodes += lmPortrait(cx, cy, foalR, slotThumb("foal"), "#3C8523", (BYID[bstate.foal] || {}).name, true);
+
+    var defs = '<defs><clipPath id="lmclip" clipPathUnits="objectBoundingBox"><circle cx=".5" cy=".5" r=".5"/></clipPath>' +
+      '<marker id="lmarrow" markerWidth="7" markerHeight="7" refX="6" refY="3.5" orient="auto"><path d="M0 0L7 3.5L0 7z" fill="#cabfae"/></marker></defs>';
+    var svg = '<svg class="lm-svg" viewBox="0 0 ' + W + " " + H + '" width="100%" preserveAspectRatio="xMidYMid meet">' + defs + edges + nodes + "</svg>";
+
+    host.innerHTML = header +
+      '<div class="bd-aff-cap">Every stat, aptitude, skill and race spark your ancestors pass toward the foal. Hover a node for details.</div>' +
+      '<div class="lm-wrap">' + svg + "</div>";
   }
 
   // the block that floats above the foal card: total affinity + rating + aptitude mini

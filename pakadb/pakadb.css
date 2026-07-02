@@ -425,25 +425,16 @@ body.scrubbing .numc-val::selection { background: transparent; }
 .bd-aff-prog { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
 .bd-aff-goal { font-size: 9.5px; font-weight: 800; letter-spacing: .3px; text-transform: uppercase; color: var(--ink3); }
 .bd-aff-goal.maxed { color: var(--sakura); }
-.bd-aff-cap { font-size: 10.5px; font-weight: 700; color: var(--ink3); line-height: 1.35; margin: 0 2px 8px; }
-.bd-aff-links { display: flex; flex-direction: column; gap: 5px; }
-.bd-aff-row { display: flex; align-items: center; gap: 10px; background: var(--panel);
-  border: 2px solid var(--divider); border-radius: 10px; padding: 6px 10px 6px 6px; box-shadow: 0 2px 0 var(--shadow); }
-.bd-aff-row.gp { margin-left: 18px; }
-.bd-aff-pair { flex: none; display: flex; }
-.bd-aff-pic { width: 30px; height: 30px; border-radius: 30%; object-fit: cover; object-position: top center;
-  border: 2px solid var(--panel); background: var(--bg); }
-.bd-aff-pic:last-child { margin-left: -10px; }
-.bd-aff-mid { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
-.bd-aff-label { font-size: 12px; font-weight: 800; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.bd-aff-sub { font-size: 9px; font-weight: 800; letter-spacing: .3px; text-transform: uppercase; color: var(--ink3); margin-left: 4px; }
-.bd-aff-track { position: relative; flex: 1; min-width: 0; height: 8px; background: var(--bg);
+.bd-aff-cap { font-size: 10.5px; font-weight: 700; color: var(--ink3); line-height: 1.35; margin: 0 2px 6px; }
+.bd-aff-track { position: relative; display: block; height: 12px; background: var(--bg);
   border: 1px solid var(--tile-line); border-radius: 999px; overflow: hidden; }
-.bd-aff-prog .bd-aff-track, .bd-aff-track.big { display: block; height: 12px; }
 .bd-aff-fill { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 999px; min-width: 3px; }
-.bd-aff-pts { flex: none; display: flex; flex-direction: column; align-items: flex-end; line-height: 1; }
-.bd-aff-pts b { font-size: 18px; font-weight: 800; }
-.bd-aff-pts small { font-size: 8.5px; font-weight: 800; letter-spacing: .3px; text-transform: uppercase; color: var(--ink3); margin-top: 2px; }
+
+/* lineage map: radial hub-and-spoke of ancestors + their inherited sparks */
+.lm-wrap { width: 100%; overflow: hidden; }
+.lm-svg { display: block; width: 100%; height: auto; max-height: 70vh; }
+.lm-node { cursor: default; }
+.lm-node:hover { filter: drop-shadow(0 1px 4px rgba(58,46,57,.4)); }
 
 /* inheritable factors */
 .bd-factors { padding: 4px 12px 18px; }
