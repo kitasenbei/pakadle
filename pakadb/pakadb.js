@@ -231,7 +231,7 @@
     var g = (u.growth && u.growth[k]) || 0;
     var pct = Math.round((v / STATMAX[k]) * 100);
     return '<div class="stat"><span class="stat-l">' +
-      '<img class="stat-ico" src="/pakadb/assets/stat_icons/' + k + '.png" alt="' + STAT_ABBR[k] + '" title="' + STAT_ABBR[k] + '" />' +
+      '<img class="stat-ico" src="/pakadb/assets/stat_icons/' + k + '.png" alt="' + STAT_ABBR[k] + '" data-tip="' + STAT_ABBR[k] + '" />' +
       (g ? '<span class="growth-tag">+' + g + "%</span>" : "") + "</span>" +
       '<span class="stat-bar"><span class="stat-fill f-' + k + '" style="width:' + pct + '%"></span></span>' +
       '<span class="stat-n">' + v + "</span></div>";
@@ -464,7 +464,7 @@
       '<div class="bd-node-meta">' +
         '<div class="bd-node-role">' + n.role + (hasSpark ? ' <span class="bd-spark-tag">SPARKS</span>' : "") + "</div>" +
         '<div class="bd-node-name">' + esc(n.uma.name) + "</div>" +
-        (uskill ? '<div class="bd-node-uniq" title="Unique skill (green factor)">' + skillIcon(uskill) + esc(uskill.name) + "</div>" : "") +
+        (uskill ? '<div class="bd-node-uniq" data-tip="Unique skill (green factor)">' + skillIcon(uskill) + esc(uskill.name) + "</div>" : "") +
       "</div></div>";
   }
 
@@ -580,7 +580,7 @@
       var w = Math.round(l.pts / maxPts * 100);
       var bonds = ""; for (var k = 0; k < Math.min(l.bonds, 6); k++) bonds += '<i class="bd-aff-pip"></i>';
       if (l.bonds > 6) bonds += '<i class="bd-aff-pip more"></i>';
-      return '<div class="bd-aff-row' + (l.tier === 2 ? " gp" : "") + '" title="' + esc(l.A.name) + " × " + esc(l.B.name) + ": " + l.pts + " pts, " + l.bonds + ' shared">' +
+      return '<div class="bd-aff-row' + (l.tier === 2 ? " gp" : "") + '" data-tip="' + esc(l.A.name) + " × " + esc(l.B.name) + ": " + l.pts + " pts, " + l.bonds + ' shared">' +
         '<span class="bd-aff-pair">' +
           '<img class="bd-aff-pic" loading="lazy" src="/pakadb/' + esc(l.A.thumb) + '" onerror="this.src=\'/pakadb/' + esc(l.A.img) + "'\" alt=\"\" />" +
           '<img class="bd-aff-pic" loading="lazy" src="/pakadb/' + esc(l.B.thumb) + '" onerror="this.src=\'/pakadb/' + esc(l.B.img) + "'\" alt=\"\" />" +
@@ -616,11 +616,11 @@
     var host = $("bd-factors");
     var f = inheritableFactors();
     var starsBlue = STAT_KEYS.filter(function (k) { return f.blue[k]; })
-      .map(function (k) { return '<span class="fac-chip fac-blue" title="' + STAT_ABBR[k] + '"><img class="fac-ico" src="/pakadb/assets/stat_icons/' + k + '.png" alt="' + STAT_ABBR[k] + '" />★' + f.blue[k] + "</span>"; }).join("");
+      .map(function (k) { return '<span class="fac-chip fac-blue" data-tip="' + STAT_ABBR[k] + '"><img class="fac-ico" src="/pakadb/assets/stat_icons/' + k + '.png" alt="' + STAT_ABBR[k] + '" />★' + f.blue[k] + "</span>"; }).join("");
     var starsPink = APT_KEYS.filter(function (k) { return f.pink[k]; })
       .map(function (k) { return '<span class="fac-chip fac-pink">' + KEY_LABEL[k] + " ★" + f.pink[k] + "</span>"; }).join("");
-    var green = Object.keys(f.green).map(function (n) { var ic = iconByName(n); return '<span class="fac-chip fac-green" title="' + esc(n) + '">' + (ic ? skillIconImg(ic) : esc(n) + " ") + "★" + f.green[n] + "</span>"; }).join("");
-    var white = Object.keys(f.white).map(function (n) { var ic = iconByName(n); return '<span class="fac-chip fac-white" title="' + esc(n) + '">' + (ic ? skillIconImg(ic) : esc(n) + " ") + "★" + f.white[n] + "</span>"; }).join("");
+    var green = Object.keys(f.green).map(function (n) { var ic = iconByName(n); return '<span class="fac-chip fac-green" data-tip="' + esc(n) + '">' + (ic ? skillIconImg(ic) : esc(n) + " ") + "★" + f.green[n] + "</span>"; }).join("");
+    var white = Object.keys(f.white).map(function (n) { var ic = iconByName(n); return '<span class="fac-chip fac-white" data-tip="' + esc(n) + '">' + (ic ? skillIconImg(ic) : esc(n) + " ") + "★" + f.white[n] + "</span>"; }).join("");
     if (!starsBlue && !starsPink && !green && !white) {
       host.innerHTML = '<div class="fac-h">Inheritable factors</div><div class="cov-empty">Place saved umas (with sparks) in the parent/grandparent slots to pool their factors here.</div>';
       return;
@@ -644,7 +644,7 @@
       if (isWeak) weak++;
       var boost = pink[k] || 0;
       return '<span class="fcov-c v-' + (g && GRANK[g] ? g : "null") + (isWeak ? " weak" : "") + (boost ? " backed" : "") +
-        '" title="' + esc(KEY_LABEL[k]) + (boost ? " (pink ★" + boost + " incoming)" : "") + '">' +
+        '" data-tip="' + esc(KEY_LABEL[k]) + (boost ? " (pink ★" + boost + " incoming)" : "") + '">' +
         (boost ? '<i class="fcov-boost">▲' + boost + "</i>" : "") +
         '<small class="fcov-k">' + APT_ABBR[k] + "</small>" + gradeTxt(g) + "</span>";
     }).join("");
@@ -908,6 +908,29 @@
   });
   $("cp-scrim").addEventListener("click", function () { closeDrawer(); closePicker(); });
   document.addEventListener("keydown", function (e) { if (e.key === "Escape") { closeDrawer(); closePicker(); closeRoster(); closeEditor(); closeSkillPicker(); closeSlotPicker(); } });
+
+  // ---- pakadle tooltip: one floating bubble driven by [data-tip], clip-proof ----
+  (function () {
+    var tip = $("pk-tip"), cur = null;
+    function show(el) {
+      var txt = el.getAttribute("data-tip"); if (!txt) return;
+      cur = el; tip.textContent = txt; tip.hidden = false;
+      var r = el.getBoundingClientRect();
+      var below = r.top < 46;
+      tip.classList.toggle("below", below);
+      var tw = tip.offsetWidth;
+      var cx = Math.max(8 + tw / 2, Math.min(r.left + r.width / 2, window.innerWidth - 8 - tw / 2));
+      tip.style.left = cx + "px";
+      tip.style.top = (below ? r.bottom + 8 : r.top - 8) + "px";
+      tip.classList.add("on");
+    }
+    function hide() { cur = null; tip.classList.remove("on"); tip.hidden = true; }
+    document.addEventListener("mouseover", function (e) { var el = e.target.closest && e.target.closest("[data-tip]"); if (el && el !== cur) show(el); });
+    document.addEventListener("mouseout", function (e) { if (cur && (!e.relatedTarget || !cur.contains(e.relatedTarget))) hide(); });
+    document.addEventListener("focusin", function (e) { var el = e.target.closest && e.target.closest("[data-tip]"); if (el) show(el); });
+    document.addEventListener("focusout", hide);
+    window.addEventListener("scroll", hide, true);
+  })();
   $("cp-search").addEventListener("input", function (e) { state.q = e.target.value.trim().toLowerCase(); render(); });
   initDropdown($("cp-sort"), function (v) { state.sort = v; render(); });
 
