@@ -548,7 +548,7 @@
     var depth = Math.max.apply(null, fl.nodes.map(function (n) { return n.x / COL_W; }));
     var w = depth * COL_W + NODE_W + PAD * 2;
 
-    var svg = '<svg width="' + w + '" height="' + h + '" style="display:inline-block">';
+    var svg = '<svg class="bd-tree-svg" width="' + w + '" height="' + h + '" viewBox="0 0 ' + w + " " + h + '" preserveAspectRatio="xMidYMid meet" style="display:inline-block">';
     fl.edges.forEach(function (pair) {
       var ep = edgePath(pair[0], pair[1]);
       svg += '<path d="' + ep.d + '" fill="none" stroke="#DAD0C2" stroke-width="2" />';
