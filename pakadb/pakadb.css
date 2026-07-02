@@ -404,7 +404,9 @@ body.scrubbing .numc-val::selection { background: transparent; }
 .fac-row { display: flex; align-items: flex-start; gap: 8px; margin-bottom: 6px; }
 .fac-l { flex: none; width: 44px; font-size: 11px; font-weight: 800; color: var(--ink3); padding-top: 3px; }
 .fac-chips { display: flex; flex-wrap: wrap; gap: 5px; }
-.fac-chip { font-size: 10.5px; font-weight: 800; padding: 3px 8px; border-radius: 999px; border: 2px solid var(--divider); }
+.fac-chip { display: inline-flex; align-items: center; gap: 3px; font-size: 10.5px; font-weight: 800; padding: 3px 8px; border-radius: 999px; border: 2px solid var(--divider); }
+.fac-ico { width: 16px; height: 16px; object-fit: contain; vertical-align: middle; }
+.fac-ico.sk { border-radius: 4px; }
 .fac-blue { color: #2f7fc0; border-color: #bcdcf3; background: #eef6fc; }
 .fac-pink { color: #c23c74; border-color: #f4c4d8; background: #fdeef4; }
 .fac-green { color: var(--turf-dark); border-color: #cbe9be; background: #eef8e9; }

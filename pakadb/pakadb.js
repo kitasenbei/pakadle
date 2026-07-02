@@ -257,6 +257,16 @@
     }).join("");
   }
 
+  // name -> iconId, built lazily from the uma skill index (unique/innate/etc.)
+  var SKILL_ICON_MAP = null;
+  function iconByName(name) {
+    if (!SKILL_ICON_MAP) { SKILL_ICON_MAP = {}; SKILL_INDEX.forEach(function (s) { if (s.iconId && !SKILL_ICON_MAP[s.name]) SKILL_ICON_MAP[s.name] = s.iconId; }); }
+    return SKILL_ICON_MAP[name] || null;
+  }
+  function skillIconImg(iconId) {
+    return iconId ? '<img class="fac-ico sk" loading="lazy" src="/pakadb/assets/skill_icons/' + esc(iconId) + '.png" alt="" onerror="this.style.display=\'none\'" />' : "";
+  }
+
   function skillIcon(s) {
     if (!s || !s.iconId) return "";
     return '<img class="skill-ico" loading="lazy" src="/pakadb/assets/skill_icons/' + esc(s.iconId) +
@@ -606,11 +616,11 @@
     var host = $("bd-factors");
     var f = inheritableFactors();
     var starsBlue = STAT_KEYS.filter(function (k) { return f.blue[k]; })
-      .map(function (k) { return '<span class="fac-chip fac-blue">' + STAT_ABBR[k] + " ★" + f.blue[k] + "</span>"; }).join("");
+      .map(function (k) { return '<span class="fac-chip fac-blue" title="' + STAT_ABBR[k] + '"><img class="fac-ico" src="/pakadb/assets/stat_icons/' + k + '.png" alt="' + STAT_ABBR[k] + '" />★' + f.blue[k] + "</span>"; }).join("");
     var starsPink = APT_KEYS.filter(function (k) { return f.pink[k]; })
       .map(function (k) { return '<span class="fac-chip fac-pink">' + KEY_LABEL[k] + " ★" + f.pink[k] + "</span>"; }).join("");
-    var green = Object.keys(f.green).map(function (n) { return '<span class="fac-chip fac-green">' + esc(n) + " ★" + f.green[n] + "</span>"; }).join("");
-    var white = Object.keys(f.white).map(function (n) { return '<span class="fac-chip fac-white">' + esc(n) + " ★" + f.white[n] + "</span>"; }).join("");
+    var green = Object.keys(f.green).map(function (n) { var ic = iconByName(n); return '<span class="fac-chip fac-green" title="' + esc(n) + '">' + (ic ? skillIconImg(ic) : esc(n) + " ") + "★" + f.green[n] + "</span>"; }).join("");
+    var white = Object.keys(f.white).map(function (n) { var ic = iconByName(n); return '<span class="fac-chip fac-white" title="' + esc(n) + '">' + (ic ? skillIconImg(ic) : esc(n) + " ") + "★" + f.white[n] + "</span>"; }).join("");
     if (!starsBlue && !starsPink && !green && !white) {
       host.innerHTML = '<div class="fac-h">Inheritable factors</div><div class="cov-empty">Place saved umas (with sparks) in the parent/grandparent slots to pool their factors here.</div>';
       return;
