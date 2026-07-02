@@ -740,7 +740,7 @@
     var svg = '<svg class="lm-svg" viewBox="0 0 ' + W + " " + H + '" width="100%" preserveAspectRatio="xMidYMid meet">' + defs + edges + nodes + "</svg>";
 
     host.innerHTML = header +
-      '<div class="bd-aff-cap">Foal ◂ parents ◂ grandparents, sparks fanned around each. Numbers on the spokes are affinity contributions (a grandparent’s counts its bond with the foal and with its parent); the dashed link is the two parents’ compatibility. <b>Click a portrait to change the uma, or a spark to edit its sparks.</b></div>' +
+      '<div class="bd-aff-cap">Your trainee sits at the center, surrounded by her parents and grandparents and every spark they can pass down. The numbers show how well each pair gets along, better compatibility means better inheritance, and the dashed line is how the two parents match up. <b>Tap any uma to swap her out, or tap a spark to change it.</b></div>' +
       '<div class="lm-wrap">' + svg + "</div>";
   }
 
