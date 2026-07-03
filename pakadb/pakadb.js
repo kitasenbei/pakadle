@@ -441,6 +441,55 @@
     return { blue: blue, pink: pink, green: green, white: white };
   }
 
+  // ---- projection: turn the pooled factor stars into concrete foal outcomes ----
+  // These are APPROXIMATIONS, not the exact in-game constants. Tune here once the
+  // real GameTora numbers are in hand; every downstream readout reads from this.
+  var FACTOR_MODEL = {
+    bluePerStar: 20,      // starting stat points per pooled blue star
+    starsPerGrade: 3,     // pooled pink stars to raise one aptitude letter
+    skillPerStar: 0.15,   // per-star independent inherit chance (green/white)
+    maxGrade: "S",        // aptitude/grade ceiling in this dataset
+  };
+  var RANK_GRADE = {}; GRADES.forEach(function (g) { RANK_GRADE[GRANK[g]] = g; });
+  // raise `base` grade by `steps` letters, clamped to the model ceiling
+  function bumpGrade(base, steps) {
+    var r = GRANK[base] || 0;
+    var nr = Math.min(GRANK[FACTOR_MODEL.maxGrade], r + steps);
+    return RANK_GRADE[nr] || base || "-";
+  }
+
+  // predicted foal from the current ancestor pool: starting-stat gain, projected
+  // aptitude grades (with over-cap waste), and per-skill inherit probability.
+  function projection() {
+    var f = inheritableFactors();
+    var foal = bstate.foal ? BYID[bstate.foal] : null;
+    var cap = GRANK[FACTOR_MODEL.maxGrade], per = FACTOR_MODEL.starsPerGrade;
+
+    var statGain = {}, statTotal = 0;
+    STAT_KEYS.forEach(function (k) {
+      var s = f.blue[k] || 0; if (!s) return;
+      var g = s * FACTOR_MODEL.bluePerStar; statGain[k] = g; statTotal += g;
+    });
+
+    var apt = [];
+    APT_KEYS.forEach(function (k) {
+      var s = f.pink[k] || 0; if (!s) return;
+      var base = foal ? aptGrade(foal, k) : null, baseR = GRANK[base] || 0;
+      var proj = bumpGrade(base, Math.floor(s / per));
+      var neededStars = Math.max(0, cap - baseR) * per; // stars to reach the ceiling
+      apt.push({ key: k, stars: s, base: base, proj: proj,
+        gained: (GRANK[proj] || 0) - baseR, waste: Math.max(0, s - neededStars) });
+    });
+
+    var skills = [];
+    Object.keys(f.green).forEach(function (n) { skills.push({ name: n, stars: f.green[n], kind: "green" }); });
+    Object.keys(f.white).forEach(function (n) { skills.push({ name: n, stars: f.white[n], kind: "white" }); });
+    skills.forEach(function (s) { s.p = 1 - Math.pow(1 - FACTOR_MODEL.skillPerStar, s.stars); });
+
+    return { statGain: statGain, statTotal: statTotal, apt: apt, skills: skills,
+      any: statTotal > 0 || apt.length > 0 || skills.length > 0 };
+  }
+
   function compatDetail(x, y) {
     if (!x || !y) return { pts: 0, bonds: 0 };
     var a = BREED.members[x], b = BREED.members[y], p = BREED.relationPoints;
@@ -568,13 +617,8 @@
       svg += '<foreignObject x="' + (n.x + PAD) + '" y="' + (n.y + PAD) + '" width="' + NODE_W + '" height="' + NODE_H + '">' +
         nodeCard(n) + "</foreignObject>";
     });
-    // affinity chip above the foal card, aptitude coverage below it
+    // aptitude coverage below the foal card
     if (foalNode) {
-      var aff = foalTop();
-      if (aff) {
-        var AFF_H = 40, affY = Math.max(0, foalNode.y + PAD - AFF_H - 6);
-        svg += '<foreignObject x="' + (foalNode.x + PAD) + '" y="' + affY + '" width="' + NODE_W + '" height="' + AFF_H + '">' + aff + "</foreignObject>";
-      }
       var cov = foalCov();
       if (cov) {
         var aptY = foalNode.y + PAD + NODE_H + 8;
@@ -701,8 +745,7 @@
   function renderAffinity() {
     var host = $("bd-affinity"); if (!host) return;
     if (!bstate.foal) { host.innerHTML = ""; return; }
-    var r = rating(affinity().total);
-    var header = '<div class="sect-h">Lineage map <span class="ftop-rate bd-r-' + r.cls + '">' + r.sym + " " + r.label + "</span></div>";
+    var header = "";  // no title/rating label — the map speaks for itself
 
     // build the lineage tree; bail out if no ancestors are placed
     var tree = lineageTree();
@@ -773,8 +816,59 @@
       return;
     }
     var row = function (label, chips) { return chips ? '<div class="fac-row"><span class="fac-l">' + label + "</span><div class=\"fac-chips\">" + chips + "</div></div>" : ""; };
-    host.innerHTML = '<div class="fac-h">Inheritable factors (from the 6 ancestors)</div>' +
+    host.innerHTML = projectionHTML() +
+      '<div class="fac-h fac-h2">Factor pool <span class="fac-sub">6 ancestors</span></div>' +
       row("Blue", starsBlue) + row("Pink", starsPink) + row("Green", green) + row("White", white);
+  }
+
+  // the projection readout: what the pooled factors actually do to the foal.
+  function projectionHTML() {
+    var p = projection();
+    if (!p.any) return "";
+    var foal = bstate.foal ? BYID[bstate.foal] : null;
+
+    // starting stats
+    var stat = "";
+    if (p.statTotal) {
+      var cells = STAT_KEYS.filter(function (k) { return p.statGain[k]; }).map(function (k) {
+        return '<span class="fp-stat"><img class="fac-ico" src="/pakadb/assets/stat_icons/' + k + '.png" alt="" />' +
+          STAT_NAME[k] + '<b>+' + p.statGain[k] + "</b></span>";
+      }).join("");
+      stat = '<div class="fp-row"><span class="fp-l">Start stats <em>+' + p.statTotal + "</em></span>" +
+        '<div class="fp-chips">' + cells + "</div></div>";
+    }
+
+    // projected aptitude (base -> proj), waste flagged
+    var apt = "";
+    if (p.apt.length) {
+      var cells2 = p.apt.map(function (a) {
+        var up = a.gained > 0, capped = GRANK[a.proj] >= GRANK[FACTOR_MODEL.maxGrade];
+        var arrow = up ? '<span class="fp-arrow">' + gradeTxt(a.base) + "→</span>" : "";
+        var tip = KEY_LABEL[a.key] + ": " + gradeTxt(a.base) + " → " + gradeTxt(a.proj) +
+          (a.waste ? " · " + a.waste + "★ over cap" : up ? "" : " (need " + FACTOR_MODEL.starsPerGrade + "★ per grade)");
+        return '<span class="fp-apt' + (up ? " up" : "") + (a.waste ? " waste" : "") + '" data-tip="' + esc(tip) + '">' +
+          KEY_LABEL[a.key] + " " + arrow + '<b class="g-' + (GRANK[a.proj] ? a.proj : "null") + '">' + gradeTxt(a.proj) + "</b>" +
+          (a.waste ? '<i class="fp-waste">' + a.waste + "★</i>" : capped && up ? '<i class="fp-cap">cap</i>' : "") + "</span>";
+      }).join("");
+      apt = '<div class="fp-row"><span class="fp-l">Aptitude</span><div class="fp-chips">' + cells2 + "</div></div>";
+    }
+
+    // skill inherit odds
+    var skills = "";
+    if (p.skills.length) {
+      var cells3 = p.skills.slice().sort(function (a, b) { return b.p - a.p; }).map(function (s) {
+        var pct = Math.round(s.p * 100), bid = RACE_BANNER[s.name];
+        var art = bid ? raceBannerImg(bid, "fp-banner") + " "
+          : (function () { var ic = iconByName(s.name); return ic ? skillIconImg(ic) + " " : ""; })();
+        return '<span class="fp-skill fp-' + s.kind + (bid ? " fp-race" : "") + '" data-tip="' + esc(s.name + ": ★" + s.stars + " pooled → ~" + pct + "% to inherit") + '">' +
+          art + esc(s.name) + '<b>' + pct + "%</b></span>";
+      }).join("");
+      skills = '<div class="fp-row"><span class="fp-l">Skills</span><div class="fp-chips">' + cells3 + "</div></div>";
+    }
+
+    var note = foal ? "" : '<div class="fp-note">Place a foal to project aptitude grades.</div>';
+    return '<div class="fac-h">Projected foal <span class="fac-sub">est.</span></div>' +
+      '<div class="fproj">' + stat + apt + skills + note + "</div>";
   }
 
   // compact aptitude coverage that floats above the foal card: one tiny cell per
