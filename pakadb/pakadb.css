@@ -377,29 +377,110 @@ body.scrubbing .numc-val::selection { background: transparent; }
 .bd-r-great{background:var(--sakura)} .bd-r-good{background:var(--turf)}
 .bd-r-ok{background:var(--gold)} .bd-r-low{background:var(--slate)}
 
-/* breeding layout: lineage map (left) beside a tree + factors column (right) */
-.bd-main { display: flex; align-items: flex-start; gap: 20px; }
-.bd-main > .bd-affinity { flex: 1 1 44%; min-width: 340px; }
-.bd-right { flex: 1 1 56%; min-width: 0; display: flex; flex-direction: column; }
+/* breeding layout: a left column (active view stacked over the projected-foal +
+   factor-pool panel) beside a permanent, full-height Tree Profiles panel. */
+.bd-workspace { display: flex; flex-direction: column; }
+.bd-left { display: flex; flex-direction: column; min-width: 0; }
+.bd-main { display: flex; flex-direction: column; min-width: 0; }
 .bd-stage { overflow-x: auto; padding: 14px 12px; text-align: left; }
 .bd-stage svg { display: inline-block; }
+/* view toggle: only the active view is shown; factors stay in both modes */
+.bd-main.view-tree  > .bd-affinity { display: none; }
+.bd-main.view-graph > .bd-stage    { display: none; }
 
-/* wide screens: the whole breeding view fits one viewport. the map (left) takes the
-   full height for breathing room; the tree + factors stack in the right column. */
+/* segmented TREE/GRAPH toggle */
+.bd-toolbar { padding: 8px 12px 0; }
+.bd-seg { display: inline-flex; gap: 2px; padding: 2px; border-radius: 999px; background: var(--divider); border: 2px solid var(--divider); }
+.bd-seg-btn { border: none; background: transparent; cursor: pointer; height: 26px; padding: 0 14px; border-radius: 999px;
+  font-size: 10.5px; font-weight: 800; letter-spacing: .4px; color: var(--ink3); }
+.bd-seg-btn.on { background: var(--panel); color: var(--turf-dark); box-shadow: 0 1px 0 var(--shadow); }
+
+/* permanent side panels: flush, square, span full height, no separators;
+   same cream canvas as the center so the whole workspace reads as one surface */
+.bd-profiles, .bd-umas { display: flex; flex-direction: column; background: var(--bg); overflow: hidden; }
+.bd-profiles-head, .bd-umas-head { padding: 10px 12px; display: flex; align-items: baseline; gap: 8px; }
+.bd-profiles-head .cp-modal-title, .bd-umas-head .cp-modal-title { font-size: 13px; }
+.bd-profiles-list { overflow-y: auto; padding: 8px; }
+/* Tree Profiles (sakura accents on the cream canvas), mirrors the uma rail */
+.bd-profiles-head .cp-modal-title { color: var(--sakura); }
+.bd-profiles-list { display: flex; flex-direction: column; gap: 12px; padding: 18px 8px 8px; }
+/* save box */
+.tp-save { display: flex; gap: 6px; align-items: center; padding-bottom: 4px; }
+.tp-save.shake { animation: tp-shake .32s ease; }
+.tp-save.shake .cp-input { border-color: var(--sakura); }
+@keyframes tp-shake { 0%,100% { transform: translateX(0); } 20%,60% { transform: translateX(-5px); } 40%,80% { transform: translateX(5px); } }
+.tp-save-note { color: var(--sakura); font-size: 10px; font-weight: 800; letter-spacing: .2px; padding: 4px 2px 0; }
+.tp-save .cp-input { flex: 1; min-width: 0; height: 32px; border-color: #F4C4D8; border-radius: 9px; }
+.tp-save-btn { flex: none; height: 32px; padding: 0 14px; border: none; border-radius: 9px; cursor: pointer;
+  background: var(--sakura); color: #fff; font-size: 11px; font-weight: 800; letter-spacing: .4px; box-shadow: 0 2px 0 #c73f6d; }
+.tp-save-btn:hover { filter: brightness(1.05); }
+.tp-save-btn:active { transform: translateY(2px); box-shadow: none; }
+/* pedigree card: sakura checkerboard band, foal portrait popping out the top (mirrors the uma cards) */
+.tp-card { position: relative; display: flex; align-items: center; min-height: 52px; padding: 6px 32px 6px 66px; cursor: pointer;
+  transition: transform .08s; }
+.tp-card:hover { transform: translateY(-1px); }
+.tp-bg { position: absolute; inset: 0; border-radius: 12px; background: var(--sakura); border: 2px solid #c73f6d; overflow: hidden; }
+.tp-bg::after { content: ""; position: absolute; inset: 0;
+  background-image:
+    linear-gradient(45deg, rgba(255,255,255,.14) 25%, transparent 25% 75%, rgba(255,255,255,.14) 75%),
+    linear-gradient(45deg, rgba(255,255,255,.14) 25%, transparent 25% 75%, rgba(255,255,255,.14) 75%);
+  background-size: 14px 14px; background-position: 0 0, 7px 7px;
+  -webkit-mask-image: linear-gradient(105deg, transparent 35%, #000); mask-image: linear-gradient(105deg, transparent 35%, #000); }
+.tp-card:hover .tp-bg { border-color: #a83057; }
+.tp-por { position: absolute; left: 4px; bottom: 0; width: 62px; height: 66px; object-fit: cover; object-position: top center;
+  z-index: 1; pointer-events: none; filter: drop-shadow(0 2px 2px rgba(58,46,57,.35)); }
+.tp-empty { display: flex; align-items: center; justify-content: center; color: #fff; font-weight: 800; font-size: 22px; filter: none; opacity: .8; }
+.tp-info { position: relative; z-index: 1; min-width: 0; flex: 1; }
+.tp-date { font-size: 9.5px; font-weight: 800; letter-spacing: .3px; color: rgba(255,255,255,.85); }
+.tp-name { font-size: 17px; font-weight: 800; color: #fff; line-height: 1.1; margin-top: 1px;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tp-del { position: absolute; top: 5px; right: 5px; z-index: 2; width: 20px; height: 20px; border-radius: 50%;
+  border: none; background: rgba(255,255,255,.9); color: var(--sakura); font-size: 11px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+.tp-del:hover { background: #fff; color: #c73f6d; }
+
+/* left saved-uma rail (sakura accents on the cream canvas) */
+.bd-umas-head .cp-modal-title { color: var(--sakura); }
+.bd-umas-add { height: 24px; padding: 0 9px; font-size: 9.5px; margin-left: auto; }
+.bd-umas-list { overflow-y: auto; padding: 18px 8px 8px; display: flex; flex-direction: column; gap: 12px; }
+/* each uma = a mini detail-drawer header: green checkerboard band, portrait popping out the top */
+.bd-uma-row { position: relative; display: flex; align-items: center; min-height: 44px; padding: 4px 8px 4px 60px; cursor: grab; }
+.bd-uma-bg { position: absolute; inset: 0; border-radius: 12px; background: var(--turf); border: 2px solid var(--turf-dark); overflow: hidden; }
+.bd-uma-bg::after { content: ""; position: absolute; inset: 0;
+  background-image:
+    linear-gradient(45deg, rgba(255,255,255,.12) 25%, transparent 25% 75%, rgba(255,255,255,.12) 75%),
+    linear-gradient(45deg, rgba(255,255,255,.12) 25%, transparent 25% 75%, rgba(255,255,255,.12) 75%);
+  background-size: 14px 14px; background-position: 0 0, 7px 7px;
+  -webkit-mask-image: linear-gradient(105deg, transparent 35%, #000); mask-image: linear-gradient(105deg, transparent 35%, #000); }
+.bd-uma-por { position: absolute; left: 3px; bottom: 0; width: 56px; height: 58px; object-fit: cover; object-position: top center;
+  z-index: 1; pointer-events: none; filter: drop-shadow(0 2px 2px rgba(58,46,57,.35)); }
+.bd-uma-info { position: relative; z-index: 1; min-width: 0; }
+.bd-uma-name { font-size: 12.5px; font-weight: 800; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.bd-uma-sub { font-size: 9.5px; font-weight: 800; color: #FFE7B3; }
+.bd-uma-edit { position: absolute; top: 4px; right: 4px; z-index: 2; width: 20px; height: 20px; border-radius: 50%; border: none;
+  background: rgba(255,255,255,.92); color: var(--turf-dark); font-size: 11px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+.bd-uma-edit:hover { background: #fff; color: var(--sakura); }
+.bd-uma-row:hover .bd-uma-bg { border-color: #2f6a1a; }
+body.bd-dragging .bd-uma-row { cursor: grabbing; }
+/* drop-target highlight while dragging a saved uma (tree node or graph portrait) */
+.bd-node.assign-hi { border-color: var(--turf); box-shadow: 0 0 0 3px var(--turf); }
+.lm-node.assign-hi { filter: drop-shadow(0 0 5px var(--turf)) drop-shadow(0 0 2px var(--turf)); }
+
+/* wide screens: the whole breeding view fits one viewport; the profiles panel
+   runs the full height (top header to bottom); the active view fills the left. */
 @media (min-width: 861px) {
   #view-breed:not([hidden]) { display: flex; flex-direction: column; height: calc(100dvh - 52px); overflow: hidden; }
-  .bd-main { flex: 1 1 auto; min-height: 0; align-items: stretch; }
-  .bd-main > .bd-affinity:not(:empty) { display: flex; flex-direction: column; min-height: 0; }
+  .bd-workspace { flex: 1 1 auto; min-height: 0; flex-direction: row; align-items: stretch; }
+  .bd-umas { flex: 0 0 220px; min-height: 0; order: -1; }
+  .bd-left { flex: 1 1 auto; min-height: 0; min-width: 0; }
+  .bd-toolbar { flex: 0 0 auto; }
+  .bd-main { flex: 1 1 auto; min-height: 0; }
+  .bd-profiles { flex: 0 0 300px; min-height: 0; }
+  .bd-main > .bd-affinity { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; }
   .bd-main > .bd-affinity .lm-wrap { flex: 1 1 auto; min-height: 0; }
   .bd-main > .bd-affinity .lm-svg { width: 100%; height: 100%; max-height: 100%; }
-  .bd-right { min-height: 0; }
-  .bd-right > .bd-stage { flex: 1 1 auto; min-height: 0; overflow: hidden; display: flex; align-items: center; justify-content: flex-start; }
-  .bd-right > .bd-stage .bd-tree-svg { width: 100%; height: 100%; max-width: 100%; max-height: 100%; }
-  .bd-right > .bd-factors { flex: 0 0 auto; }
-}
-@media (max-width: 860px) {
-  .bd-main { flex-direction: column; }
-  .bd-main > .bd-affinity, .bd-right { flex: none; width: 100%; }
+  .bd-main > .bd-stage { flex: 1 1 auto; min-height: 0; overflow: hidden; display: flex; align-items: center; justify-content: flex-start; }
+  .bd-main > .bd-stage .bd-tree-svg { width: 100%; height: 100%; max-width: 100%; max-height: 100%; }
+  .bd-main > .bd-factors { flex: 0 0 auto; }
 }
 .bd-hint { color: var(--ink3); font-size: 11.5px; font-weight: 700; padding: 0 12px 24px; }
 
@@ -458,6 +539,13 @@ body.scrubbing .numc-val::selection { background: transparent; }
 .bd-picker-title { flex: 1; font-size: 11px; font-weight: 800; color: var(--turf-dark); text-transform: uppercase; letter-spacing: .3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .bd-picker-clear { height: 26px; padding: 0 9px; font-size: 10px; }
 .bd-picker-head .dh-x { position: static; flex: none; width: 26px; height: 26px; font-size: 13px; box-shadow: 0 2px 0 rgba(58,46,57,.15); }
+.bp-current { display: flex; align-items: center; gap: 9px; margin: 0 8px 8px; padding: 6px 8px; border-radius: 10px; border: 2px solid var(--divider); background: var(--bg); }
+.bp-current:empty { display: none; }
+.bp-cur-img { width: 34px; height: 34px; flex: none; border-radius: 30%; object-fit: cover; object-position: top center; border: 2px solid var(--panel); }
+.bp-cur-meta { min-width: 0; }
+.bp-cur-label { font-size: 8.5px; font-weight: 800; letter-spacing: .3px; text-transform: uppercase; color: var(--turf-dark); }
+.bp-cur-name { font-size: 12.5px; font-weight: 800; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.bp-cur-title { font-size: 10px; font-weight: 700; color: var(--ink3); }
 .bd-picker-search { width: calc(100% - 16px); margin: 0 8px 8px; height: 32px; }
 .bd-picker-list { flex: 1 1 auto; min-height: 0; overflow-y: auto; padding: 0 6px 6px; }
 .bp-note { font-size: 10px; font-weight: 800; letter-spacing: .3px; color: var(--ink3); text-transform: uppercase; padding: 6px 8px 4px; position: sticky; top: 0; background: var(--panel); }
@@ -487,7 +575,9 @@ body.scrubbing .numc-val::selection { background: transparent; }
 
 /* lineage map: radial hub-and-spoke of ancestors + their inherited sparks */
 .lm-wrap { width: 100%; overflow: hidden; }
-.lm-svg { display: block; width: 100%; height: auto; max-height: 82vh; }
+.lm-svg { display: block; width: 100%; height: auto; max-height: 82vh; cursor: grab; touch-action: none; }
+body.bd-panning, body.bd-panning .lm-svg { cursor: grabbing; user-select: none; }
+body.bd-panning .lm-node { pointer-events: none; }
 .lm-node { cursor: pointer; }
 .lm-node:hover { filter: drop-shadow(0 2px 5px rgba(58,46,57,.45)); }
 .lm-elabel { pointer-events: none; }

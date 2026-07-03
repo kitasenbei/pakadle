@@ -46,7 +46,6 @@
     </div>
     <div class="cp-controls" id="cp-breed-controls" hidden>
       <button class="cp-ghost" id="cp-roster-open">SAVED UMAS</button>
-      <button class="cp-ghost" id="cp-trees-open">PROFILES</button>
       <button class="cp-ghost" id="cp-breed-reset">RESET TREE</button>
       <a class="cp-exit" href="/">EXIT ▸</a>
     </div>
@@ -62,13 +61,31 @@
 
   <!-- ===== BREEDING view ===== -->
   <div id="view-breed" hidden>
-    <!-- lineage map (left, full height) beside the tree + factors column (right) -->
-    <div class="bd-main">
-      <div class="bd-affinity" id="bd-affinity"></div>
-      <div class="bd-right">
-        <div class="bd-stage" id="bd-stage"></div>
-        <div class="bd-factors" id="bd-factors"></div>
+    <div class="bd-workspace">
+      <!-- saved-uma rail: drag a uma onto any tree/graph slot to assign it -->
+      <aside class="bd-umas" id="bd-umas">
+        <div class="bd-umas-head"><b class="cp-modal-title">Saved Umas</b><button class="cp-ghost bd-umas-add" id="bd-umas-add">+ ADD</button></div>
+        <div class="bd-umas-list" id="bd-umas-list"></div>
+      </aside>
+      <div class="bd-left">
+        <!-- view toggle: pedigree TREE or radial GRAPH; projected foal + pool stay below both -->
+        <div class="bd-toolbar">
+          <div class="bd-seg" role="tablist" aria-label="Breeding view">
+            <button class="bd-seg-btn on" id="bd-view-tree" data-bview="tree" role="tab">TREE</button>
+            <button class="bd-seg-btn" id="bd-view-graph" data-bview="graph" role="tab">GRAPH</button>
+          </div>
+        </div>
+        <div class="bd-main view-tree">
+          <div class="bd-affinity" id="bd-affinity"></div>
+          <div class="bd-stage" id="bd-stage"></div>
+          <div class="bd-factors" id="bd-factors"></div>
+        </div>
       </div>
+      <!-- tree profiles: permanent right-side panel, flush + full height -->
+      <aside class="bd-profiles" id="bd-profiles">
+        <div class="bd-profiles-head"><b class="cp-modal-title">Tree Profiles</b></div>
+        <div class="cp-picker-list bd-profiles-list" id="cp-trees-body"></div>
+      </aside>
     </div>
 
     <!-- inline slot picker (appears under the tapped slot) -->
@@ -79,6 +96,7 @@
         <button class="cp-ghost bd-picker-clear" id="bd-picker-clear">CLEAR</button>
         <button class="dh-x" id="bd-picker-close">✕</button>
       </div>
+      <div class="bp-current" id="bd-picker-current"></div>
       <input id="bd-picker-search" class="cp-input bd-picker-search" type="search" placeholder="SEARCH MARE…" autocomplete="off" spellcheck="false" />
       <div class="bd-picker-list" id="bd-picker-list"></div>
     </div>
@@ -148,17 +166,6 @@
         <button class="dh-x" id="cp-roster-x">✕</button>
       </div>
       <div class="cp-picker-list" id="cp-roster-list"></div>
-    </div>
-  </div>
-
-  <!-- tree profiles (save / load pedigrees) -->
-  <div class="cp-picker" id="cp-trees" hidden>
-    <div class="cp-picker-box">
-      <div class="cp-picker-head">
-        <b class="cp-modal-title">Tree Profiles</b>
-        <button class="dh-x" id="cp-trees-x">✕</button>
-      </div>
-      <div class="cp-picker-list" id="cp-trees-body"></div>
     </div>
   </div>
 

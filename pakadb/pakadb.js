@@ -118,6 +118,8 @@
       buildWhiteCatalog();
       buildFilters();
       render();
+      renderTrees();      // now that BYID is populated, foal thumbnails resolve
+      renderUmaRail();
     }).catch(function (e) {
       $("cp-grid").innerHTML = "";
       var p = $("cp-empty"); p.hidden = false; p.textContent = "DATA LOAD FAILED: " + e.message;
@@ -422,7 +424,7 @@
     return { charId: null, name: "", blue: blue, pink: pink, green: 0, white: [] };
   }
   function loadRoster() { try { savedUmas = JSON.parse(localStorage.getItem("pakadb_umas") || "[]"); } catch (e) { savedUmas = []; } }
-  function persistRoster() { try { localStorage.setItem("pakadb_umas", JSON.stringify(savedUmas)); } catch (e) {} }
+  function persistRoster() { try { localStorage.setItem("pakadb_umas", JSON.stringify(savedUmas)); } catch (e) {} renderUmaRail(); }
 
   // aggregate the inheritable factor pool across the foal's 6 ancestors
   function inheritableFactors() {
@@ -785,7 +787,18 @@
 
     host.innerHTML = header +
       '<div class="lm-wrap">' + svg + "</div>";
+    // keep the user's current zoom/pan across re-renders
+    if (lmView) { var s = host.querySelector(".lm-svg"); if (s) s.setAttribute("viewBox", lmViewStr()); }
   }
+
+  // ---- graph pan/zoom: viewBox-driven, precise via getScreenCTM ----
+  var LM_W = 760, LM_H = 680, LM_RATIO = LM_H / LM_W;
+  var lmView = null;                    // {x,y,w,h} or null = full/base view
+  function lmCur() { return lmView || { x: 0, y: 0, w: LM_W, h: LM_H }; }
+  function lmViewStr() { var v = lmCur(); return v.x + " " + v.y + " " + v.w + " " + v.h; }
+  function lmSvg() { var h = $("bd-affinity"); return h ? h.querySelector(".lm-svg") : null; }
+  function lmApply() { var s = lmSvg(); if (s) s.setAttribute("viewBox", lmViewStr()); }
+  function lmReset() { lmView = null; lmApply(); }
 
   // the block that floats above the foal card: total affinity + rating + aptitude mini
   function foalTop() {
@@ -905,8 +918,6 @@
   var savedTrees = [];
   function loadTrees() { try { savedTrees = JSON.parse(localStorage.getItem("pakadb_trees") || "[]"); } catch (e) { savedTrees = []; } }
   function persistTrees() { try { localStorage.setItem("pakadb_trees", JSON.stringify(savedTrees)); } catch (e) {} }
-  function openTrees() { showEl($("cp-trees")); showEl($("cp-scrim")); renderTrees(); }
-  function closeTrees() { hideEl($("cp-trees")); hideEl($("cp-scrim")); }
   function treeSnapshot(name) {
     var slots = {}, sparks = {}, cards = {};
     SLOTS.forEach(function (s) {
@@ -914,7 +925,13 @@
       if (slotSpark[s]) sparks[s] = slotSpark[s];
       if (slotCard[s] != null) cards[s] = slotCard[s];
     });
-    return { name: name, slots: slots, sparks: sparks, cards: cards };
+    return { name: name, slots: slots, sparks: sparks, cards: cards, at: Date.now() };
+  }
+  // creation stamp → "yyyy/mm/dd HH:MM"
+  function fmtStamp(ms) {
+    if (!ms) return "";
+    var d = new Date(ms), p = function (n) { return (n < 10 ? "0" : "") + n; };
+    return d.getFullYear() + "/" + p(d.getMonth() + 1) + "/" + p(d.getDate()) + " " + p(d.getHours()) + ":" + p(d.getMinutes());
   }
   function loadTree(idx) {
     var t = savedTrees[idx]; if (!t) return;
@@ -922,26 +939,49 @@
     Object.keys(t.slots || {}).forEach(function (s) { bstate[s] = t.slots[s]; });
     Object.keys(t.sparks || {}).forEach(function (s) { slotSpark[s] = t.sparks[s]; });
     Object.keys(t.cards || {}).forEach(function (s) { slotCard[s] = t.cards[s]; });
-    renderBreeding(); closeTrees();
+    renderBreeding();
   }
   function renderTrees() {
     var host = $("cp-trees-body");
-    var save = '<div class="tree-save">' +
-      '<input id="tree-name" class="cp-input" placeholder="Name this tree…" autocomplete="off" spellcheck="false" />' +
-      '<button class="cp-ghost" id="tree-save-btn">SAVE CURRENT</button></div>';
+    var save = '<div class="tp-savewrap">' +
+      '<div class="tp-save">' +
+        '<input id="tree-name" class="cp-input" placeholder="Name this pedigree…" autocomplete="off" spellcheck="false" />' +
+        '<button class="tp-save-btn" id="tree-save-btn">SAVE</button></div>' +
+      '<div class="tp-save-note" id="tp-save-note" hidden>Place at least one uma before saving.</div>' +
+      "</div>";
     var list = savedTrees.length ? savedTrees.map(function (t, i) {
       var foal = t.slots && t.slots.foal ? BYID[t.slots.foal] : null;
-      var anc = ["p1", "p2", "gp11", "gp12", "gp21", "gp22"].filter(function (s) { return t.slots && t.slots[s]; }).length;
-      var sparks = t.sparks ? Object.keys(t.sparks).length : 0;
-      return '<div class="pk-row" data-load="' + i + '">' +
-        '<img class="pk-img" loading="lazy" src="/pakadb/' + esc(foal ? foal.thumb : "") + '" alt="" />' +
-        '<div class="pk-meta"><div class="pk-name">' + esc(t.name || "Tree") + "</div>" +
-        '<div class="pk-sub">' + (foal ? esc(foal.name) : "no foal") + " · " + anc + " ancestor" + (anc === 1 ? "" : "s") +
-          (sparks ? " · " + sparks + " with sparks" : "") + "</div></div>" +
-        '<button class="cp-ghost rost-edit" data-load="' + i + '">LOAD</button>' +
-        '<button class="cp-ghost rost-del" data-deltree="' + i + '">✕</button></div>';
-    }).join("") : '<div class="cov-empty">No saved trees yet. Build a pedigree, name it, and hit SAVE CURRENT.</div>';
+      var por = foal
+        ? '<img class="tp-por" loading="lazy" src="/pakadb/' + esc(foal.thumb) + '" alt="" onerror="this.src=\'/pakadb/' + esc(foal.image) + "'\" />"
+        : '<span class="tp-por tp-empty">?</span>';
+      var when = fmtStamp(t.at);
+      return '<div class="tp-card" data-load="' + i + '" data-tip="Load this pedigree">' +
+        '<span class="tp-bg"></span>' + por +
+        '<div class="tp-info">' + (when ? '<div class="tp-date">' + when + "</div>" : "") +
+        '<div class="tp-name">' + esc(foal ? foal.name : (t.name || "No foal")) + "</div></div>" +
+        '<button class="tp-del" data-deltree="' + i + '" data-tip="Delete">✕</button></div>';
+    }).join("") : '<div class="cov-empty">No saved pedigrees yet. Build a tree, name it, and hit SAVE.</div>';
     host.innerHTML = save + list;
+  }
+  // the left rail: saved umas, each draggable onto a tree/graph slot
+  function renderUmaRail() {
+    var host = $("bd-umas-list"); if (!host) return;
+    if (!savedUmas.length) {
+      host.innerHTML = '<div class="cov-empty">No saved umas yet. Use SAVED UMAS to add one, then drag it onto a slot.</div>';
+      return;
+    }
+    host.innerHTML = savedUmas.map(function (s, i) {
+      var u = BYID[s.charId];
+      var stars = STAT_KEYS.reduce(function (t, k) { return t + (s.blue[k] || 0); }, 0) +
+        APT_KEYS.reduce(function (t, k) { return t + (s.pink[k] || 0); }, 0) + (s.green || 0) +
+        (s.white || []).reduce(function (t, w) { return t + (w.lvl || 0); }, 0);
+      return '<div class="bd-uma-row" data-uidx="' + i + '" data-tip="Drag onto a slot · right-click to edit">' +
+        '<span class="bd-uma-bg"></span>' +
+        '<img class="bd-uma-por" loading="lazy" src="/pakadb/' + esc(u ? u.thumb : "") + '" alt="" onerror="this.src=\'/pakadb/' + esc(u ? u.image : "") + "'\" />" +
+        '<div class="bd-uma-info"><div class="bd-uma-name">' + esc(s.name || (u && u.name) || "Uma") + "</div>" +
+        '<div class="bd-uma-sub">★' + stars + " factors</div></div>" +
+        '<button class="bd-uma-edit" data-edit-uma="' + i + '" data-tip="Edit sparks">✎</button></div>';
+    }).join("");
   }
   function renderRoster() {
     var host = $("cp-roster-list");
@@ -1044,11 +1084,22 @@
     el.style.left = left + "px"; el.style.top = top + "px";
     el.style.maxHeight = (window.innerHeight - top - 8) + "px";   // never past the viewport; list scrolls
   }
+  // the uma currently sitting in this slot, shown at the top of the picker
+  function pickerCurrentHTML(slot) {
+    var id = bstate[slot]; if (id == null) return "";
+    var u = BYID[id]; if (!u) return "";
+    var thumb = u.thumb, img = u.image, cid = slotCard[slot], title = "";
+    if (cid && u.alts) { var alt = u.alts.filter(function (a) { return a.cardId === cid; })[0]; if (alt) { thumb = alt.thumb; img = alt.image; title = alt.title || ""; } }
+    return '<img class="bp-cur-img" src="/pakadb/' + esc(thumb) + '" alt="" onerror="this.src=\'/pakadb/' + esc(img) + "'\" />" +
+      '<div class="bp-cur-meta"><div class="bp-cur-label">Currently picked</div>' +
+      '<div class="bp-cur-name">' + esc(u.name) + (title ? ' <span class="bp-cur-title">' + esc(title) + "</span>" : "") + "</div></div>";
+  }
   function openSlotPicker(slot, anchor) {
     bstate.active = slot;
     var el = $("bd-picker");
     showEl(el);
     $("bd-picker-title").textContent = "Assign " + (ROLE_LABEL[slot] || slot);
+    $("bd-picker-current").innerHTML = pickerCurrentHTML(slot);
     var s = $("bd-picker-search"); s.value = ""; renderSlotList("");
     $("bd-picker-list").scrollTop = 0;                 // always start at the top
     anchorUnder(el, anchor);
@@ -1393,7 +1444,7 @@
     openDrawer(u);
   });
   $("cp-scrim").addEventListener("click", function () { closeDrawer(); closePicker(); });
-  document.addEventListener("keydown", function (e) { if (e.key === "Escape") { if (!$("bd-ctx").hidden) return closeCtx(); if (!$("char-picker").hidden) return closeCharPicker(); if (!$("white-picker").hidden) return closeWhitePicker(); closeDrawer(); closePicker(); closeRoster(); closeTrees(); closeEditor(); closeSkillPicker(); closeSlotPicker(); } });
+  document.addEventListener("keydown", function (e) { if (e.key === "Escape") { if (!$("bd-ctx").hidden) return closeCtx(); if (!$("char-picker").hidden) return closeCharPicker(); if (!$("white-picker").hidden) return closeWhitePicker(); closeDrawer(); closePicker(); closeRoster(); closeEditor(); closeSkillPicker(); closeSlotPicker(); } });
 
   // ---- pakadle tooltip: one floating bubble driven by [data-tip], clip-proof ----
   (function () {
@@ -1542,6 +1593,21 @@
     var b = e.target.closest(".cp-tab"); if (b) setView(b.getAttribute("data-view"));
   });
 
+  // pedigree TREE vs radial GRAPH toggle — factors panel stays visible in both
+  function setBreedView(v) {
+    if (v !== "graph") v = "tree";
+    try { localStorage.setItem("pakadb_bview", v); } catch (e) {}
+    var main = document.querySelector(".bd-main");
+    if (main) { main.classList.toggle("view-tree", v === "tree"); main.classList.toggle("view-graph", v === "graph"); }
+    Array.prototype.forEach.call(document.querySelectorAll(".bd-seg-btn"), function (b) {
+      b.classList.toggle("on", b.getAttribute("data-bview") === v);
+    });
+  }
+  $("bd-view-tree").parentNode.addEventListener("click", function (e) {
+    var b = e.target.closest(".bd-seg-btn"); if (b) setBreedView(b.getAttribute("data-bview"));
+  });
+  try { var savedView = localStorage.getItem("pakadb_bview"); if (savedView) setBreedView(savedView); } catch (e) {}
+
   // breeding interactions: tree slots open the popup anchored under the slot
   $("bd-stage").addEventListener("click", function (e) {
     if (suppressNodeClick) { suppressNodeClick = false; return; }
@@ -1553,13 +1619,47 @@
     openCtx(n.getAttribute("data-slot"), n, e.clientX, e.clientY);
   });
   // the lineage map is editable: click a portrait to change the uma, a spark to edit its sparks
+  var suppressLmClick = false;
   $("bd-affinity").addEventListener("click", function (e) {
+    if (suppressLmClick) { suppressLmClick = false; return; }
     var g = e.target.closest(".lm-node"); if (!g) return;
     var slot = g.getAttribute("data-slot"); if (!slot) return;
     e.stopPropagation();
     if (g.getAttribute("data-spark") != null) openSlotSparkEditor(slot);
     else openSlotPicker(slot, g);
   });
+  // wheel to zoom toward the cursor, drag to pan, double-click to reset
+  $("bd-affinity").addEventListener("wheel", function (e) {
+    var svg = lmSvg(); if (!svg || !svg.getScreenCTM) return;
+    e.preventDefault();
+    var ctm = svg.getScreenCTM(); if (!ctm) return;
+    var pt = svg.createSVGPoint(); pt.x = e.clientX; pt.y = e.clientY;
+    var loc = pt.matrixTransform(ctm.inverse());          // point under the cursor, in svg units
+    var v = lmCur(), factor = e.deltaY < 0 ? 0.85 : 1 / 0.85;
+    var nw = Math.max(LM_W * 0.2, Math.min(LM_W * 2, v.w * factor)), nh = nw * LM_RATIO, r = nw / v.w;
+    lmView = { x: loc.x - (loc.x - v.x) * r, y: loc.y - (loc.y - v.y) * r, w: nw, h: nh };
+    lmApply();
+  }, { passive: false });
+  var lmPan = null;
+  $("bd-affinity").addEventListener("pointerdown", function (e) {
+    if (e.button !== 0) return;
+    var svg = lmSvg(); if (!svg || !svg.getScreenCTM) return;
+    var ctm = svg.getScreenCTM(); if (!ctm) return;
+    lmPan = { sx: e.clientX, sy: e.clientY, a: ctm.a || 1, d: ctm.d || 1, v: lmCur(), moved: false };
+  });
+  window.addEventListener("pointermove", function (e) {
+    if (!lmPan) return;
+    var dx = e.clientX - lmPan.sx, dy = e.clientY - lmPan.sy;
+    if (!lmPan.moved && Math.abs(dx) + Math.abs(dy) < 4) return;
+    lmPan.moved = true; document.body.classList.add("bd-panning");
+    lmView = { x: lmPan.v.x - dx / lmPan.a, y: lmPan.v.y - dy / lmPan.d, w: lmPan.v.w, h: lmPan.v.h };
+    lmApply();
+  });
+  window.addEventListener("pointerup", function () {
+    if (lmPan && lmPan.moved) suppressLmClick = true;   // a drag isn't a node click
+    lmPan = null; document.body.classList.remove("bd-panning");
+  });
+  $("bd-affinity").addEventListener("dblclick", function () { lmReset(); });
 
   // ---- drag a filled tree node onto another slot to move / swap it ----
   var drag = null, suppressNodeClick = false;
@@ -1605,6 +1705,63 @@
     suppressNodeClick = true; setTimeout(function () { suppressNodeClick = false; }, 0);
     var hit = document.elementFromPoint(e.clientX, e.clientY), tgt = hit && hit.closest ? hit.closest(".bd-node") : null;
     if (tgt) { var to = tgt.getAttribute("data-slot"); if (to && to !== d.slot) { swapSlots(d.slot, to); renderBreeding(); } }
+  });
+
+  // ---- drag a saved uma from the left rail onto a tree OR graph slot to assign it ----
+  var umaDrag = null;
+  // a droppable slot node: a filled/empty tree node, or a graph portrait (not a spark leaf)
+  function slotNodeAt(x, y) {
+    var hit = document.elementFromPoint(x, y); if (!hit || !hit.closest) return null;
+    var node = hit.closest(".bd-node, .lm-node"); if (!node) return null;
+    var slot = node.getAttribute("data-slot");
+    if (!slot || node.getAttribute("data-spark") != null) return null;   // spark leaves aren't slots
+    return { node: node, slot: slot };
+  }
+  function clearAssignHi() { Array.prototype.forEach.call(document.querySelectorAll(".assign-hi"), function (x) { x.classList.remove("assign-hi"); }); }
+  $("bd-umas").addEventListener("dragstart", function (e) { e.preventDefault(); });   // kill native image drag
+  $("bd-umas").addEventListener("mousedown", function (e) {
+    if (e.button !== 0) return;
+    if (e.target.closest(".bd-uma-edit")) return;      // the edit button isn't a drag handle
+    var row = e.target.closest(".bd-uma-row"); if (!row) return;
+    e.preventDefault();
+    umaDrag = { idx: Number(row.getAttribute("data-uidx")), sx: e.clientX, sy: e.clientY, moved: false, ghost: null };
+  });
+  // per-uma edit (pencil button or right-click) + add a new uma
+  $("bd-umas").addEventListener("click", function (e) {
+    var eb = e.target.closest(".bd-uma-edit"); if (eb) openEditor(Number(eb.getAttribute("data-edit-uma")));
+  });
+  $("bd-umas").addEventListener("contextmenu", function (e) {
+    var row = e.target.closest(".bd-uma-row"); if (!row) return;
+    e.preventDefault(); openEditor(Number(row.getAttribute("data-uidx")));
+  });
+  $("bd-umas-add").addEventListener("click", function () { openEditor(null); });
+  document.addEventListener("mousemove", function (e) {
+    if (!umaDrag) return;
+    if (!umaDrag.moved) {
+      if (Math.abs(e.clientX - umaDrag.sx) + Math.abs(e.clientY - umaDrag.sy) < 6) return;
+      umaDrag.moved = true;
+      var s0 = savedUmas[umaDrag.idx], u0 = s0 && BYID[s0.charId];
+      var g = document.createElement("div"); g.className = "bd-drag-ghost";
+      g.innerHTML = u0 ? '<img src="/pakadb/' + esc(u0.thumb) + '" alt="" />' : "";
+      document.body.appendChild(g); umaDrag.ghost = g;
+      document.body.classList.add("bd-dragging");
+    }
+    umaDrag.ghost.style.left = e.clientX + "px";
+    umaDrag.ghost.style.top = e.clientY + "px";
+    clearAssignHi();
+    var t = slotNodeAt(e.clientX, e.clientY); if (t) t.node.classList.add("assign-hi");
+  });
+  document.addEventListener("mouseup", function (e) {
+    if (!umaDrag) return;
+    var d = umaDrag; umaDrag = null;
+    document.body.classList.remove("bd-dragging");
+    if (d.ghost) d.ghost.remove();
+    clearAssignHi();
+    if (!d.moved) return;
+    var t = slotNodeAt(e.clientX, e.clientY); if (!t) return;
+    var s = savedUmas[d.idx]; if (!s) return;
+    bstate[t.slot] = s.charId; slotSpark[t.slot] = s; slotCard[t.slot] = null;
+    renderBreeding();
   });
   $("bd-ctx").addEventListener("click", function (e) {
     var it = e.target.closest(".bd-ctx-item"); if (!it || !ctxSlot) return;
@@ -1696,13 +1853,17 @@
     }
   });
 
-  // ---- tree-profile wiring ----
-  $("cp-trees-open").addEventListener("click", openTrees);
-  $("cp-trees-x").addEventListener("click", closeTrees);
+  // ---- tree-profile wiring (permanent right-side panel) ----
   $("cp-trees-body").addEventListener("click", function (e) {
     var del = e.target.closest("[data-deltree]");
     if (del) { savedTrees.splice(Number(del.getAttribute("data-deltree")), 1); persistTrees(); renderTrees(); return; }
     if (e.target.id === "tree-save-btn") {
+      if (SLOTS.every(function (s) { return bstate[s] == null; })) {   // nothing placed → nothing to save
+        var box = e.target.closest(".tp-save");
+        if (box) { box.classList.remove("shake"); void box.offsetWidth; box.classList.add("shake"); }
+        var note = $("tp-save-note"); if (note) note.hidden = false;
+        return;
+      }
       var nm = (($("tree-name") || {}).value || "").trim() || ("Tree " + (savedTrees.length + 1));
       savedTrees.push(treeSnapshot(nm)); persistTrees(); renderTrees(); return;
     }
@@ -1777,9 +1938,9 @@
     persistRoster(); closeEditor(); openRoster();
   });
 
-  $("cp-scrim").addEventListener("click", function () { closeRoster(); closeEditor(); closeTrees(); });
+  $("cp-scrim").addEventListener("click", function () { closeRoster(); closeEditor(); });
   // click the dimmed area outside the modal box to close it
-  [["cp-roster", closeRoster], ["cp-editor", closeEditor], ["cp-trees", closeTrees]].forEach(function (p) {
+  [["cp-roster", closeRoster], ["cp-editor", closeEditor]].forEach(function (p) {
     $(p[0]).addEventListener("click", function (e) { if (e.target === this) p[1](); });
   });
 
