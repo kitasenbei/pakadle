@@ -462,7 +462,7 @@ body.scrubbing .numc-val::selection { background: transparent; }
 .bd-uma-row:hover .bd-uma-bg { border-color: #2f6a1a; }
 body.bd-dragging .bd-uma-row { cursor: grabbing; }
 /* drop-target highlight while dragging a saved uma (tree node or graph portrait) */
-.bd-node.assign-hi { border-color: var(--turf); box-shadow: 0 0 0 3px var(--turf); }
+.bd-node.assign-hi { border-color: var(--turf); }
 .lm-node.assign-hi { filter: drop-shadow(0 0 5px var(--turf)) drop-shadow(0 0 2px var(--turf)); }
 
 /* wide screens: the whole breeding view fits one viewport; the profiles panel
@@ -480,7 +480,8 @@ body.bd-dragging .bd-uma-row { cursor: grabbing; }
   .bd-main > .bd-affinity .lm-svg { width: 100%; height: 100%; max-height: 100%; }
   .bd-main > .bd-stage { flex: 1 1 auto; min-height: 0; overflow: hidden; display: flex; align-items: center; justify-content: flex-start; }
   .bd-main > .bd-stage .bd-tree-svg { width: 100%; height: 100%; max-width: 100%; max-height: 100%; }
-  .bd-main > .bd-factors { flex: 0 0 auto; }
+  /* reserve a constant height so expand/collapse (or empty vs filled) never resizes the tree above */
+  .bd-main > .bd-factors { flex: 0 0 160px; overflow-y: auto; }
 }
 .bd-hint { color: var(--ink3); font-size: 11.5px; font-weight: 700; padding: 0 12px 24px; }
 
@@ -585,6 +586,14 @@ body.bd-panning .lm-node { pointer-events: none; }
 /* inheritable factors */
 .bd-factors { padding: 4px 12px 18px; }
 .fac-h { font-size: 11px; font-weight: 800; letter-spacing: .4px; color: var(--turf); text-transform: uppercase; margin-bottom: 8px; }
+/* collapsible sections (Projected foal / Factor pool) */
+.fac-toggle { display: flex; align-items: center; gap: 6px; width: 100%; text-align: left; background: none; border: none; cursor: pointer; padding: 6px 2px; }
+.fac-toggle:hover { color: var(--turf-dark); }
+.fac-caret { margin-left: auto; color: var(--ink3); font-size: 11px; transition: transform .18s ease; }
+.fac-sec.open .fac-caret { transform: rotate(90deg); }
+.fac-body { display: none; }
+.fac-sec.open .fac-body { display: block; animation: fac-open .22s ease; }
+@keyframes fac-open { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: translateY(0); } }
 .fac-row { display: flex; align-items: flex-start; gap: 8px; margin-bottom: 6px; }
 .fac-l { flex: none; width: 44px; font-size: 11px; font-weight: 800; color: var(--ink3); padding-top: 3px; }
 .fac-chips { display: flex; flex-wrap: wrap; gap: 5px; }
@@ -695,12 +704,19 @@ body.bd-panning .lm-node { pointer-events: none; }
 .bd-node.empty { border-style: dashed; box-shadow: none; justify-content: center; color: var(--ink3); font-weight: 800; font-size: 12px; }
 /* drag a filled node onto another slot to move/swap */
 .bd-node.drag-src { opacity: .35; }
-.bd-node.drop-hi { border-color: var(--sakura); box-shadow: 0 0 0 3px var(--sakura); transform: translateY(-1px); }
+.bd-node.drop-hi { border-color: var(--sakura); transform: translateY(-1px); }
 body.bd-dragging, body.bd-dragging .bd-node { cursor: grabbing; user-select: none; }
 .bd-drag-ghost { position: fixed; z-index: 60; pointer-events: none; transform: translate(-50%, -50%);
   width: 52px; height: 52px; border-radius: 30%; overflow: hidden; border: 3px solid var(--sakura);
   box-shadow: 0 8px 20px rgba(58,46,57,.35); background: var(--bg); }
 .bd-drag-ghost img { width: 100%; height: 100%; object-fit: cover; object-position: top center; display: block; }
+.bd-drag-ghost.pop { animation: ghost-pop .34s cubic-bezier(.2,1.5,.35,1); }
+@keyframes ghost-pop { 0% { transform: translate(-50%,-50%) scale(.4); } 100% { transform: translate(-50%,-50%) scale(1); } }
+
+/* the previewed slot (real node, tentatively filled) bounces in while you hover */
+.bd-node.pv-in { animation: pv-in .34s cubic-bezier(.2,1.5,.35,1); border-color: var(--turf); }
+.lm-node.pv-in { animation: pv-in .34s cubic-bezier(.2,1.5,.35,1); transform-box: fill-box; transform-origin: center; }
+@keyframes pv-in { 0% { transform: scale(.7); } 100% { transform: scale(1); } }
 .bd-node-img { width: 40px; height: 40px; flex: none; border-radius: 30%; object-fit: cover; object-position: top center;
   background: var(--bg); border: 2px solid var(--divider); }
 .bd-node-meta { min-width: 0; }
