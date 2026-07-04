@@ -1817,13 +1817,16 @@
   }
   // tentatively place the dragged uma into a slot so the real node renders exactly as it
   // would if dropped; remember the slot's prior contents so we can revert on leave/cancel.
-  // Game rule (Game8): an uma can't be her own Parent (Legacy), but CAN be her own
-  // Grandparent (Sub-Legacy). Enforced by CHARACTER (charId in bstate), since umas
-  // are placed by character (picker outfit rows, auto-pick) as well as saved sparks.
-  // A charId is only barred from a slot and its DIRECT parent/child slot; non-adjacent
-  // repeats (foal == a grandparent) are fine. Returns the conflicting slot, or null.
+  // Game rules, enforced by CHARACTER (charId in bstate — a re-trained copy is the
+  // same uma), since slots are filled by character (picker/auto-pick) as well as
+  // saved sparks:
+  //   - an uma can't be her own Parent/Legacy (a slot vs its direct parent/child), but
+  //     CAN be her own Grandparent/Sub-Legacy (non-adjacent repeats are fine);
+  //   - the two Parent slots must be DIFFERENT characters (p1 != p2).
+  // Grandparent overlap is allowed (same char across grandparent slots, or Parent +
+  // Grandparent). Returns the conflicting slot for a given (charId, slot), or null.
   var SLOT_ADJ = {
-    foal: ["p1", "p2"], p1: ["foal", "gp11", "gp12"], p2: ["foal", "gp21", "gp22"],
+    foal: ["p1", "p2"], p1: ["foal", "p2", "gp11", "gp12"], p2: ["foal", "p1", "gp21", "gp22"],
     gp11: ["p1"], gp12: ["p1"], gp21: ["p2"], gp22: ["p2"],
   };
   function adjConflict(charId, slot) {
