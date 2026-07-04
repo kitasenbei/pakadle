@@ -461,6 +461,7 @@ body.scrubbing .numc-val::selection { background: transparent; }
 .bd-uma-edit:hover { background: #fff; color: var(--sakura); }
 .bd-uma-row:hover .bd-uma-bg { border-color: #2f6a1a; }
 body.bd-dragging .bd-uma-row { cursor: grabbing; }
+.bd-uma-row.dragging { filter: grayscale(1); opacity: .5; }   /* the saved uma currently being dragged */
 /* drop-target highlight while dragging a saved uma (tree node or graph portrait) */
 .bd-node.assign-hi { border-color: var(--turf); }
 .lm-node.assign-hi { filter: drop-shadow(0 0 5px var(--turf)) drop-shadow(0 0 2px var(--turf)); }
@@ -700,23 +701,24 @@ body.bd-panning .lm-node { pointer-events: none; }
   padding: 6px 8px; cursor: pointer; overflow: hidden;
   transition: border-color .1s, transform .08s;
 }
-.bd-node:hover { border-color: var(--sakura); transform: translateY(-1px); }
+.bd-node:hover { border-color: var(--sakura); }
 .bd-node.empty { border-style: dashed; box-shadow: none; justify-content: center; color: var(--ink3); font-weight: 800; font-size: 12px; }
 /* drag a filled node onto another slot to move/swap */
 .bd-node.drag-src { opacity: .35; }
 .bd-node.drop-hi { border-color: var(--sakura); transform: translateY(-1px); }
 body.bd-dragging, body.bd-dragging .bd-node { cursor: grabbing; user-select: none; }
-.bd-drag-ghost { position: fixed; z-index: 60; pointer-events: none; transform: translate(-50%, -50%);
-  width: 52px; height: 52px; border-radius: 30%; overflow: hidden; border: 3px solid var(--sakura);
-  box-shadow: 0 8px 20px rgba(58,46,57,.35); background: var(--bg); }
-.bd-drag-ghost img { width: 100%; height: 100%; object-fit: cover; object-position: top center; display: block; }
-.bd-drag-ghost.pop { animation: ghost-pop .34s cubic-bezier(.2,1.5,.35,1); }
-@keyframes ghost-pop { 0% { transform: translate(-50%,-50%) scale(.4); } 100% { transform: translate(-50%,-50%) scale(1); } }
+/* drag ghost: a clone of the dragged component (rail row / tree card), scaled to
+   its on-screen size and floated under the cursor */
+.bd-drag-ghost-el { position: fixed; z-index: 60; pointer-events: none; transform: translate(-50%, -50%);
+  filter: drop-shadow(0 8px 18px rgba(58,46,57,.35)); opacity: .96; transition: opacity .18s ease; }
+.bd-drag-ghost-el .bd-uma-edit { display: none; }   /* no edit button on the drag ghost */
 
-/* the previewed slot (real node, tentatively filled) bounces in while you hover */
-.bd-node.pv-in { animation: pv-in .34s cubic-bezier(.2,1.5,.35,1); border-color: var(--turf); }
-.lm-node.pv-in { animation: pv-in .34s cubic-bezier(.2,1.5,.35,1); transform-box: fill-box; transform-origin: center; }
-@keyframes pv-in { 0% { transform: scale(.7); } 100% { transform: scale(1); } }
+/* the previewed slot: its border color fades in to green (no scale, so the node
+   never shifts under the cursor and re-triggers hit-testing / flicker). */
+.bd-node.pv-in { animation: pv-border .22s ease-out; border-color: var(--turf); }
+@keyframes pv-border { from { border-color: var(--divider); } to { border-color: var(--turf); } }
+.lm-node.pv-in { animation: pv-fade .2s ease-out; }
+@keyframes pv-fade { from { opacity: .35; } to { opacity: 1; } }
 .bd-node-img { width: 40px; height: 40px; flex: none; border-radius: 30%; object-fit: cover; object-position: top center;
   background: var(--bg); border: 2px solid var(--divider); }
 .bd-node-meta { min-width: 0; }

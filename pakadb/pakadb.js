@@ -1091,6 +1091,50 @@
     el.style.left = left + "px"; el.style.top = top + "px";
     el.style.maxHeight = (window.innerHeight - top - 8) + "px";   // never past the viewport; list scrolls
   }
+  // the on-screen box the tree ACTUALLY occupies. The stage SVG fills a wide
+  // flex column but scales with preserveAspectRatio="xMidYMid meet", so the
+  // real cards are centered inside it with empty letterbox margins — measure the
+  // rendered content box, not the container, or the picker docks far off to the side.
+  function treeRect() {
+    var main = document.querySelector(".bd-main");
+    if (!main) return null;
+    var svg = main.classList.contains("view-graph")
+      ? main.querySelector("#bd-affinity svg")
+      : main.querySelector("#bd-stage svg");
+    if (!svg) return main.getBoundingClientRect();
+    var er = svg.getBoundingClientRect();
+    var vb = svg.viewBox && svg.viewBox.baseVal;
+    var W = vb && vb.width ? vb.width : er.width, H = vb && vb.height ? vb.height : er.height;
+    if (!W || !H || !er.width || !er.height) return er;
+    var scale = Math.min(er.width / W, er.height / H);   // "meet" fit
+    var cw = W * scale, ch = H * scale;
+    return { left: er.left + (er.width - cw) / 2, right: er.left + (er.width + cw) / 2,
+             top: er.top + (er.height - ch) / 2, height: ch };
+  }
+  // dock the assign-foal picker beside the clicked uma card: always 30% of the
+  // viewport tall, hung off the card's right edge (or its left if there's no
+  // room), with a gap so it never overlaps the card.
+  var slotPickerAnchor = null;
+  function positionSlotPicker(el) {
+    var vw = window.innerWidth, vh = window.innerHeight, gap = 14, edge = 8;
+    var h = Math.min(Math.round(vh * 0.3), vh - edge * 2);
+    el.style.height = h + "px";
+    el.style.maxHeight = h + "px";
+    var w = el.offsetWidth || 290;
+    var r = (slotPickerAnchor && slotPickerAnchor.getBoundingClientRect && slotPickerAnchor.getBoundingClientRect())
+      || treeRect() || { left: vw * 0.35, right: vw * 0.65, top: edge, height: vh - edge * 2 };
+    var fitRight = r.right + gap + w <= vw - edge;   // room to the right of the card?
+    var fitLeft  = r.left  - gap - w >= edge;         // room to its left?
+    var left;
+    if (fitRight) left = r.right + gap;                       // beside the card, to its right
+    else if (fitLeft) left = r.left - gap - w;                // else to its left
+    else if (vw - r.right >= r.left) left = vw - w - edge;    // no gap fits: hug the roomier edge
+    else left = edge;
+    // vertically center the 30%-tall picker against the card, clamped to the viewport
+    var top = Math.max(edge, Math.min(r.top + (r.height - h) / 2, vh - h - edge));
+    el.style.left = left + "px";
+    el.style.top = top + "px";
+  }
   // the uma currently sitting in this slot, shown at the top of the picker
   function pickerCurrentHTML(slot) {
     var id = bstate[slot]; if (id == null) return "";
@@ -1103,16 +1147,17 @@
   }
   function openSlotPicker(slot, anchor) {
     bstate.active = slot;
+    slotPickerAnchor = anchor || null;   // dock against the clicked uma card
     var el = $("bd-picker");
     showEl(el);
     $("bd-picker-title").textContent = "Assign " + (ROLE_LABEL[slot] || slot);
     $("bd-picker-current").innerHTML = pickerCurrentHTML(slot);
     var s = $("bd-picker-search"); s.value = ""; renderSlotList("");
     $("bd-picker-list").scrollTop = 0;                 // always start at the top
-    anchorUnder(el, anchor);
+    positionSlotPicker(el);
     s.focus();
   }
-  function closeSlotPicker() { hideEl($("bd-picker")); closeFilter(); bstate.active = null; }
+  function closeSlotPicker() { hideEl($("bd-picker")); closeFilter(); bstate.active = null; slotPickerAnchor = null; }
 
   // ---- uma filters (aptitude + skills), shared by the mare picker and the uma picker ----
   // shown only when the FILTERS button is pressed
@@ -1699,9 +1744,7 @@
     if (!drag.moved) {
       if (Math.abs(e.clientX - drag.sx) + Math.abs(e.clientY - drag.sy) < 6) return;   // click, not a drag
       drag.moved = true;
-      var th = slotThumb(drag.slot), g = document.createElement("div");
-      g.className = "bd-drag-ghost"; g.innerHTML = th ? '<img src="/pakadb/' + esc(th.thumb) + '" alt="" />' : "";
-      document.body.appendChild(g); drag.ghost = g;
+      drag.ghost = cloneGhost(drag.node);   // ghost mirrors the tree card being dragged
       document.body.classList.add("bd-dragging");
     }
     drag.ghost.style.left = e.clientX + "px";
@@ -1770,9 +1813,20 @@
       if (n) { n.classList.remove("pv-in"); void n.offsetWidth; n.classList.add("pv-in"); }
     });
   }
-  function bounceGhost(g) {
-    if (!g) return;
-    g.style.display = ""; g.classList.remove("pop"); void g.offsetWidth; g.classList.add("pop");
+  // re-show the ghost after leaving a target (it was display:none while previewing the drop)
+  function bounceGhost(g) { if (g) { g.style.display = ""; g.style.opacity = "1"; } }   // fade back in (CSS transition)
+  // build a drag ghost that mirrors the element being dragged (a saved-uma rail
+  // row or a tree card), scaled to the size it appears on screen.
+  function cloneGhost(srcEl) {
+    var rect = srcEl.getBoundingClientRect();
+    var g = document.createElement("div"); g.className = "bd-drag-ghost-el";
+    var clone = srcEl.cloneNode(true); clone.classList.remove("dragging");
+    var natW = srcEl.offsetWidth || rect.width, k = natW ? rect.width / natW : 1;
+    clone.style.width = natW + "px"; clone.style.transformOrigin = "top left";
+    clone.style.transform = "scale(" + k + ")";
+    g.style.width = rect.width + "px"; g.style.height = rect.height + "px";
+    g.appendChild(clone); document.body.appendChild(g);
+    return g;
   }
   $("bd-umas").addEventListener("dragstart", function (e) { e.preventDefault(); });   // kill native image drag
   $("bd-umas").addEventListener("mousedown", function (e) {
@@ -1780,7 +1834,7 @@
     if (e.target.closest(".bd-uma-edit")) return;      // the edit button isn't a drag handle
     var row = e.target.closest(".bd-uma-row"); if (!row) return;
     e.preventDefault();
-    umaDrag = { idx: Number(row.getAttribute("data-uidx")), sx: e.clientX, sy: e.clientY, moved: false, ghost: null };
+    umaDrag = { idx: Number(row.getAttribute("data-uidx")), row: row, sx: e.clientX, sy: e.clientY, moved: false, ghost: null };
   });
   // per-uma edit (pencil button or right-click) + add a new uma
   $("bd-umas").addEventListener("click", function (e) {
@@ -1802,11 +1856,9 @@
     if (!umaDrag.moved) {
       if (Math.abs(e.clientX - umaDrag.sx) + Math.abs(e.clientY - umaDrag.sy) < 6) return;
       umaDrag.moved = true;
-      var s0 = savedUmas[umaDrag.idx], u0 = s0 && BYID[s0.charId];
-      var g = document.createElement("div"); g.className = "bd-drag-ghost";
-      g.innerHTML = u0 ? '<img src="/pakadb/' + esc(u0.thumb) + '" alt="" />' : "";
-      document.body.appendChild(g); umaDrag.ghost = g;
+      umaDrag.ghost = cloneGhost(umaDrag.row);   // ghost mirrors the rail row (clone before graying the source)
       document.body.classList.add("bd-dragging");
+      if (umaDrag.row) umaDrag.row.classList.add("dragging");   // gray out the source row while it's being dragged
     }
     umaDrag.ghost.style.left = e.clientX + "px";
     umaDrag.ghost.style.top = e.clientY + "px";
@@ -1827,6 +1879,7 @@
   document.addEventListener("mouseup", function (e) {
     if (!umaDrag) return;
     document.body.classList.remove("bd-dragging");
+    if (umaDrag.row) umaDrag.row.classList.remove("dragging");
     if (umaDrag.ghost) umaDrag.ghost.remove();
     var dropped = umaDrag.moved ? slotNodeAt(e.clientX, e.clientY) : null;
     if (dropped && dropped.slot === umaDrag.overSlot) {
@@ -1874,6 +1927,10 @@
   });
   $("bd-picker-search").addEventListener("input", function (e) { renderSlotList(e.target.value); $("bd-picker-list").scrollTop = 0; });
   $("bd-picker-close").addEventListener("click", closeSlotPicker);
+  // keep the picker docked at 30% beside the tree when the window resizes
+  window.addEventListener("resize", function () {
+    if (!$("bd-picker").hidden) { positionSlotPicker($("bd-picker")); positionFilter(); }
+  });
   $("bd-filter-toggle").addEventListener("click", function (e) { e.stopPropagation(); toggleFilter(mareFilterCtx()); });
   $("bd-picker-clear").addEventListener("click", function () {
     if (bstate.active) { bstate[bstate.active] = null; slotSpark[bstate.active] = null; slotCard[bstate.active] = null; renderBreeding(); }
