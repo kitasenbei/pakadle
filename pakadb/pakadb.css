@@ -379,6 +379,17 @@ body.scrubbing .numc-val::selection { background: transparent; }
 
 /* breeding layout: a left column (active view stacked over the projected-foal +
    factor-pool panel) beside a permanent, full-height Tree Profiles panel. */
+/* subtle checkerboard behind the breeding TREE CANVAS (not the whole page — its
+   edges are under the side panels), faded out toward the left/right so it
+   dissolves at the sides. Drawn on a ::before layer so only the pattern fades. */
+.bd-main { position: relative; isolation: isolate; }
+.bd-main::before {
+  content: ""; position: absolute; inset: 0; z-index: -1; pointer-events: none;
+  background-image: conic-gradient(rgba(58,46,57,.025) 90deg, transparent 90deg 180deg, rgba(58,46,57,.025) 180deg 270deg, transparent 270deg);
+  background-size: 48px 48px;
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 28%, #000 72%, transparent);
+  mask-image: linear-gradient(90deg, transparent, #000 28%, #000 72%, transparent);
+}
 .bd-workspace { display: flex; flex-direction: column; }
 .bd-left { display: flex; flex-direction: column; min-width: 0; }
 .bd-main { display: flex; flex-direction: column; min-width: 0; }

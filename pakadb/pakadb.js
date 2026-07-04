@@ -1836,12 +1836,14 @@
   // saved sparks:
   //   - an uma can't be her own Parent/Legacy (a slot vs its direct parent/child), but
   //     CAN be her own Grandparent/Sub-Legacy (non-adjacent repeats are fine);
-  //   - the two Parent slots must be DIFFERENT characters (p1 != p2).
-  // Grandparent overlap is allowed (same char across grandparent slots, or Parent +
-  // Grandparent). Returns the conflicting slot for a given (charId, slot), or null.
+  //   - a pair of co-parents must be DIFFERENT characters: the foal's two parents
+  //     (p1 != p2), AND each parent's own two parents (gp11 != gp12, gp21 != gp22).
+  // Still allowed: the same character as a grandparent under BOTH parents (gp11 == gp21
+  // etc.), or as a Parent on one side and a Grandparent on the other. Returns the
+  // conflicting slot for a given (charId, slot), or null.
   var SLOT_ADJ = {
     foal: ["p1", "p2"], p1: ["foal", "p2", "gp11", "gp12"], p2: ["foal", "p1", "gp21", "gp22"],
-    gp11: ["p1"], gp12: ["p1"], gp21: ["p2"], gp22: ["p2"],
+    gp11: ["p1", "gp12"], gp12: ["p1", "gp11"], gp21: ["p2", "gp22"], gp22: ["p2", "gp21"],
   };
   function adjConflict(charId, slot) {
     if (charId == null) return null;
