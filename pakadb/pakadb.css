@@ -389,7 +389,11 @@ body.scrubbing .numc-val::selection { background: transparent; }
 .bd-main.view-graph > .bd-stage    { display: none; }
 
 /* segmented TREE/GRAPH toggle */
-.bd-toolbar { padding: 8px 12px 0; }
+.bd-toolbar { padding: 8px 12px 0; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.bd-tool-btn { font-family: inherit; height: 30px; padding: 0 13px; border-radius: 999px; cursor: pointer;
+  background: var(--panel); color: var(--turf-dark); border: 2px solid var(--divider);
+  font-size: 11px; font-weight: 800; letter-spacing: .3px; text-transform: uppercase; }
+.bd-tool-btn:hover { border-color: var(--sakura); color: var(--sakura); }
 .bd-seg { display: inline-flex; gap: 2px; padding: 2px; border-radius: 999px; background: var(--divider); border: 2px solid var(--divider); }
 .bd-seg-btn { border: none; background: transparent; cursor: pointer; height: 26px; padding: 0 14px; border-radius: 999px;
   font-size: 10.5px; font-weight: 800; letter-spacing: .4px; color: var(--ink3); }
@@ -459,6 +463,9 @@ body.scrubbing .numc-val::selection { background: transparent; }
 .bd-uma-edit { position: absolute; top: 4px; right: 4px; z-index: 2; width: 20px; height: 20px; border-radius: 50%; border: none;
   background: rgba(255,255,255,.92); color: var(--turf-dark); font-size: 11px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
 .bd-uma-edit:hover { background: #fff; color: var(--sakura); }
+.bd-uma-del { position: absolute; top: 4px; right: 26px; z-index: 2; width: 20px; height: 20px; border-radius: 50%; border: none;
+  background: rgba(255,255,255,.92); color: var(--turf-dark); font-size: 11px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+.bd-uma-del:hover { background: #fff; color: var(--sakura); }
 .bd-uma-row:hover .bd-uma-bg { border-color: #2f6a1a; }
 body.bd-dragging .bd-uma-row { cursor: grabbing; }
 .bd-uma-row.dragging { filter: grayscale(1); opacity: .5; }   /* the saved uma currently being dragged */
@@ -481,8 +488,6 @@ body.bd-dragging .bd-uma-row { cursor: grabbing; }
   .bd-main > .bd-affinity .lm-svg { width: 100%; height: 100%; max-height: 100%; }
   .bd-main > .bd-stage { flex: 1 1 auto; min-height: 0; overflow: hidden; display: flex; align-items: center; justify-content: flex-start; }
   .bd-main > .bd-stage .bd-tree-svg { width: 100%; height: 100%; max-width: 100%; max-height: 100%; }
-  /* reserve a constant height so expand/collapse (or empty vs filled) never resizes the tree above */
-  .bd-main > .bd-factors { flex: 0 0 160px; overflow-y: auto; }
 }
 .bd-hint { color: var(--ink3); font-size: 11.5px; font-weight: 700; padding: 0 12px 24px; }
 
@@ -590,7 +595,7 @@ body.bd-panning .lm-node { pointer-events: none; }
 /* collapsible sections (Projected foal / Factor pool) */
 .fac-toggle { display: flex; align-items: center; gap: 6px; width: 100%; text-align: left; background: none; border: none; cursor: pointer; padding: 6px 2px; }
 .fac-toggle:hover { color: var(--turf-dark); }
-.fac-caret { margin-left: auto; color: var(--ink3); font-size: 11px; transition: transform .18s ease; }
+.fac-caret { color: var(--ink3); font-size: 11px; transition: transform .18s ease; }
 .fac-sec.open .fac-caret { transform: rotate(90deg); }
 .fac-body { display: none; }
 .fac-sec.open .fac-body { display: block; animation: fac-open .22s ease; }

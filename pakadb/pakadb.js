@@ -632,7 +632,7 @@
     $("bd-stage").innerHTML = svg;
 
     renderAffinity();
-    renderFactors();
+    renderFacModal();   // keep an open Projected foal / Factor pool modal live
   }
 
   // ---- lineage map: every spark an ancestor passes toward the foal ----
@@ -811,11 +811,10 @@
       '<span class="ftop-rate bd-r-' + r.cls + '">' + r.sym + " " + r.label + "</span></div></div>";
   }
 
-  // Projected foal / Factor pool start collapsed; click a header to expand (state persists across re-renders)
-  var facOpen = { proj: false, pool: false };
-  // inheritable factor pool from the ancestors' sparks
-  function renderFactors() {
-    var host = $("bd-factors");
+  // Projected foal / Factor pool live in modals opened from the toolbar buttons.
+  var facModal = null;   // "proj" | "pool" | null — which readout modal is open
+  // the pooled inheritable factors as chip rows (Factor pool modal body)
+  function poolBody() {
     var f = inheritableFactors();
     var starsBlue = STAT_KEYS.filter(function (k) { return f.blue[k]; })
       .map(function (k) { return '<span class="fac-chip fac-blue"><img class="fac-ico" src="/pakadb/assets/stat_icons/' + k + '.png" alt="" />' + STAT_NAME[k] + " ★" + f.blue[k] + "</span>"; }).join("");
@@ -827,23 +826,28 @@
       if (bid) return '<span class="fac-chip fac-white fac-race">' + raceBannerImg(bid, "fac-banner") + " " + esc(n) + " ★" + f.white[n] + "</span>";
       var ic = iconByName(n); return '<span class="fac-chip fac-white">' + (ic ? skillIconImg(ic) + " " : "") + esc(n) + " ★" + f.white[n] + "</span>";
     }).join("");
-    if (!starsBlue && !starsPink && !green && !white) {
-      host.innerHTML = '<div class="fac-h">Inheritable factors</div><div class="cov-empty">Place saved umas (with sparks) in the parent/grandparent slots to pool their factors here.</div>';
-      return;
-    }
+    if (!starsBlue && !starsPink && !green && !white)
+      return '<div class="cov-empty">Place saved umas (with sparks) in the parent/grandparent slots to pool their factors here.</div>';
     var row = function (label, chips) { return chips ? '<div class="fac-row"><span class="fac-l">' + label + "</span><div class=\"fac-chips\">" + chips + "</div></div>" : ""; };
-    host.innerHTML = projectionHTML() +
-      '<section class="fac-sec' + (facOpen.pool ? " open" : "") + '">' +
-        '<button class="fac-h fac-h2 fac-toggle" data-sec="pool">Factor pool <span class="fac-sub">6 ancestors</span><span class="fac-caret">▸</span></button>' +
-        '<div class="fac-body">' +
-          row("Blue", starsBlue) + row("Pink", starsPink) + row("Green", green) + row("White", white) +
-        "</div></section>";
+    return row("Blue", starsBlue) + row("Pink", starsPink) + row("Green", green) + row("White", white);
   }
+  // open / refresh / close the readout modals (Projected foal, Factor pool)
+  function openFacModal(which) {
+    facModal = which;
+    $("bd-fac-title").textContent = which === "proj" ? "Projected foal" : "Factor pool";
+    renderFacModal();
+    showEl($("bd-fac-modal")); showEl($("cp-scrim"));
+  }
+  function renderFacModal() {
+    if (!facModal) return;   // only re-render while a modal is actually open
+    $("bd-fac-body").innerHTML = facModal === "proj" ? projectionBody() : poolBody();
+  }
+  function closeFacModal() { hideEl($("bd-fac-modal")); hideEl($("cp-scrim")); facModal = null; }
 
   // the projection readout: what the pooled factors actually do to the foal.
-  function projectionHTML() {
+  function projectionBody() {
     var p = projection();
-    if (!p.any) return "";
+    if (!p.any) return '<div class="cov-empty">Place saved umas (with sparks) in the ancestor slots to project the foal.</div>';
     var foal = bstate.foal ? BYID[bstate.foal] : null;
 
     // starting stats
@@ -886,9 +890,7 @@
     }
 
     var note = foal ? "" : '<div class="fp-note">Place a foal to project aptitude grades.</div>';
-    return '<section class="fac-sec' + (facOpen.proj ? " open" : "") + '">' +
-      '<button class="fac-h fac-toggle" data-sec="proj">Projected foal <span class="fac-sub">est.</span><span class="fac-caret">▸</span></button>' +
-      '<div class="fac-body"><div class="fproj">' + stat + apt + skills + note + "</div></div></section>";
+    return '<div class="fproj">' + stat + apt + skills + note + "</div>";
   }
 
   // compact aptitude coverage that floats above the foal card: one tiny cell per
@@ -987,6 +989,7 @@
         '<img class="bd-uma-por" loading="lazy" src="/pakadb/' + esc(u ? u.thumb : "") + '" alt="" onerror="this.src=\'/pakadb/' + esc(u ? u.image : "") + "'\" />" +
         '<div class="bd-uma-info"><div class="bd-uma-name">' + esc(s.name || (u && u.name) || "Uma") + "</div>" +
         '<div class="bd-uma-sub">★' + stars + " factors</div></div>" +
+        '<button class="bd-uma-del" data-del-uma="' + i + '" data-tip="Delete uma">✕</button>' +
         '<button class="bd-uma-edit" data-edit-uma="' + i + '" data-tip="Edit sparks">✎</button></div>';
     }).join("");
   }
@@ -1768,8 +1771,8 @@
   document.addEventListener("mouseup", function (e) {
     if (!drag) return;
     document.body.classList.remove("bd-dragging");
-    if (drag.ghost) drag.ghost.remove();
-    if (!drag.moved) { drag = null; return; }   // plain click; leave it for the click handler
+    var ghost = drag.ghost, originSlot = drag.slot;
+    if (!drag.moved) { if (ghost) ghost.remove(); drag = null; return; }   // plain click
     suppressNodeClick = true; setTimeout(function () { suppressNodeClick = false; }, 0);
     draggingSlot = null;   // un-gray the origin; a render below repaints it
     var hit = document.elementFromPoint(e.clientX, e.clientY), tgt = hit && hit.closest ? hit.closest(".bd-node") : null;
@@ -1777,10 +1780,12 @@
     if (tslot && tslot !== drag.slot) {                         // drop on a target: commit the swap
       if (drag.overSlot === tslot) drag.swap = null;            // already applied tentatively
       else { revertTentativeSwap(); swapSlots(drag.slot, tslot); }
+      if (ghost) ghost.remove();
       renderBreeding();
     } else {                                                    // dropped elsewhere: undo the preview
       revertTentativeSwap();
       renderBreeding();                                         // repaint (also clears the drag gray)
+      flyGhostHome(ghost, slotHomeRect(originSlot));            // animate the ghost back to its slot
     }
     drag = null;
   });
@@ -1833,16 +1838,39 @@
     g.appendChild(clone); document.body.appendChild(g);
     return g;
   }
+  // the on-screen rect of a slot's node in whichever view is visible (the hidden
+  // view's nodes have a zero-size rect), used as the fly-back target
+  function slotHomeRect(slot) {
+    var els = document.querySelectorAll('[data-slot="' + slot + '"]');
+    for (var i = 0; i < els.length; i++) { var r = els[i].getBoundingClientRect(); if (r.width && r.height) return r; }
+    return null;
+  }
+  // drop with no valid target: animate the ghost back to where it came from, then remove it
+  function flyGhostHome(ghost, rect) {
+    if (!ghost) return;
+    if (!rect) { ghost.remove(); return; }
+    ghost.style.display = "";
+    void ghost.offsetWidth;   // commit current position before transitioning
+    ghost.style.transition = "left .26s cubic-bezier(.5,0,.3,1), top .26s cubic-bezier(.5,0,.3,1), opacity .26s ease";
+    ghost.style.left = (rect.left + rect.width / 2) + "px";
+    ghost.style.top = (rect.top + rect.height / 2) + "px";
+    ghost.style.opacity = "0";
+    var done = function () { ghost.remove(); };
+    ghost.addEventListener("transitionend", done, { once: true });
+    setTimeout(done, 340);   // fallback if transitionend never fires
+  }
   $("bd-umas").addEventListener("dragstart", function (e) { e.preventDefault(); });   // kill native image drag
   $("bd-umas").addEventListener("mousedown", function (e) {
     if (e.button !== 0) return;
-    if (e.target.closest(".bd-uma-edit")) return;      // the edit button isn't a drag handle
+    if (e.target.closest(".bd-uma-edit") || e.target.closest(".bd-uma-del")) return;   // buttons aren't drag handles
     var row = e.target.closest(".bd-uma-row"); if (!row) return;
     e.preventDefault();
     umaDrag = { idx: Number(row.getAttribute("data-uidx")), row: row, sx: e.clientX, sy: e.clientY, moved: false, ghost: null };
   });
-  // per-uma edit (pencil button or right-click) + add a new uma
+  // per-uma delete (✕), edit (pencil button or right-click) + add a new uma
   $("bd-umas").addEventListener("click", function (e) {
+    var db = e.target.closest(".bd-uma-del");
+    if (db) { savedUmas.splice(Number(db.getAttribute("data-del-uma")), 1); persistRoster(); return; }
     var eb = e.target.closest(".bd-uma-edit"); if (eb) openEditor(Number(eb.getAttribute("data-edit-uma")));
   });
   $("bd-umas").addEventListener("contextmenu", function (e) {
@@ -1850,12 +1878,10 @@
     e.preventDefault(); openEditor(Number(row.getAttribute("data-uidx")));
   });
   $("bd-umas-add").addEventListener("click", function () { openEditor(null); });
-  // Projected foal / Factor pool collapsible headers
-  $("bd-factors").addEventListener("click", function (e) {
-    var t = e.target.closest(".fac-toggle"); if (!t) return;
-    var sec = t.getAttribute("data-sec"); facOpen[sec] = !facOpen[sec];
-    t.parentNode.classList.toggle("open", facOpen[sec]);
-  });
+  // Projected foal / Factor pool toolbar buttons -> readout modals
+  $("bd-open-proj").addEventListener("click", function () { openFacModal("proj"); });
+  $("bd-open-pool").addEventListener("click", function () { openFacModal("pool"); });
+  $("bd-fac-x").addEventListener("click", closeFacModal);
   document.addEventListener("mousemove", function (e) {
     if (!umaDrag) return;
     if (!umaDrag.moved) {
@@ -1885,14 +1911,16 @@
     if (!umaDrag) return;
     document.body.classList.remove("bd-dragging");
     if (umaDrag.row) umaDrag.row.classList.remove("dragging");
-    if (umaDrag.ghost) umaDrag.ghost.remove();
+    var ghost = umaDrag.ghost, row = umaDrag.row;
     var dropped = umaDrag.moved ? slotNodeAt(e.clientX, e.clientY) : null;
     if (dropped && dropped.slot === umaDrag.overSlot) {
       umaDrag.saved = null;   // dropped on the previewed slot → commit the tentative fill
+      if (ghost) ghost.remove();
       renderBreeding();       // clean final render (drops the bounce marker)
     } else {
       revertTentative();      // dropped elsewhere / not moved → undo the preview
       if (umaDrag.overSlot != null) renderBreeding();
+      flyGhostHome(ghost, row ? row.getBoundingClientRect() : null);   // animate the ghost back to the rail row
     }
     umaDrag = null;
   });
@@ -2075,9 +2103,9 @@
     persistRoster(); closeEditor(); openRoster();
   });
 
-  $("cp-scrim").addEventListener("click", function () { closeRoster(); closeEditor(); });
+  $("cp-scrim").addEventListener("click", function () { closeRoster(); closeEditor(); closeFacModal(); });
   // click the dimmed area outside the modal box to close it
-  [["cp-roster", closeRoster], ["cp-editor", closeEditor]].forEach(function (p) {
+  [["cp-roster", closeRoster], ["cp-editor", closeEditor], ["bd-fac-modal", closeFacModal]].forEach(function (p) {
     $(p[0]).addEventListener("click", function (e) { if (e.target === this) p[1](); });
   });
 

@@ -74,11 +74,12 @@
             <button class="bd-seg-btn on" id="bd-view-tree" data-bview="tree" role="tab">TREE</button>
             <button class="bd-seg-btn" id="bd-view-graph" data-bview="graph" role="tab">GRAPH</button>
           </div>
+          <button class="bd-tool-btn" id="bd-open-proj">Projected foal</button>
+          <button class="bd-tool-btn" id="bd-open-pool">Factor pool</button>
         </div>
         <div class="bd-main view-tree">
           <div class="bd-affinity" id="bd-affinity"></div>
           <div class="bd-stage" id="bd-stage"></div>
-          <div class="bd-factors" id="bd-factors"></div>
         </div>
       </div>
       <!-- tree profiles: permanent right-side panel, flush + full height -->
@@ -178,6 +179,17 @@
         <button class="dh-x" id="cp-editor-x">✕</button>
       </div>
       <div class="cp-picker-list" id="cp-editor-body"></div>
+    </div>
+  </div>
+
+  <!-- projected-foal / factor-pool readout (opened from the toolbar buttons) -->
+  <div class="cp-picker" id="bd-fac-modal" hidden>
+    <div class="cp-picker-box">
+      <div class="cp-picker-head">
+        <b class="cp-modal-title" id="bd-fac-title">Projected foal</b>
+        <button class="dh-x" id="bd-fac-x">✕</button>
+      </div>
+      <div class="cp-picker-list" id="bd-fac-body"></div>
     </div>
   </div>
 
