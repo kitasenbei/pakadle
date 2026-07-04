@@ -1757,6 +1757,7 @@
     drag.ghost.style.left = e.clientX + "px";
     drag.ghost.style.top = e.clientY + "px";
     var hit = document.elementFromPoint(e.clientX, e.clientY), tgt = hit && hit.closest ? hit.closest(".bd-node") : null;
+    if (tgt && !insideNodeCore(tgt, e.clientX, e.clientY)) tgt = null;   // inner-rect drop hitbox
     var tslot = tgt && tgt.getAttribute("data-slot");
     if (tslot && tslot !== drag.slot) {
       if (drag.overSlot !== tslot) {   // entered a (new) target: fade ghost out, preview the swap
@@ -1779,6 +1780,7 @@
     suppressNodeClick = true; setTimeout(function () { suppressNodeClick = false; }, 0);
     draggingSlot = null;   // un-gray the origin; a render below repaints it
     var hit = document.elementFromPoint(e.clientX, e.clientY), tgt = hit && hit.closest ? hit.closest(".bd-node") : null;
+    if (tgt && !insideNodeCore(tgt, e.clientX, e.clientY)) tgt = null;   // inner-rect drop hitbox
     var tslot = tgt && tgt.getAttribute("data-slot");
     if (tslot && tslot !== drag.slot) {                         // drop on a target: commit the swap
       if (drag.overSlot === tslot) drag.swap = null;            // already applied tentatively
@@ -1795,12 +1797,22 @@
 
   // ---- drag a saved uma from the left rail onto a tree OR graph slot to assign it ----
   var umaDrag = null;
+  // the drop hitbox is a centered inner rectangle of a tree card, not its whole
+  // area — dropping feels like aiming at the card's core (the +PARENT / FOAL label,
+  // the portrait) and adjacent cards don't fight over the cursor near their edges.
+  function insideNodeCore(node, x, y) {
+    if (!node.classList.contains("bd-node")) return true;   // graph portraits stay whole
+    var r = node.getBoundingClientRect();
+    var ix = r.width * 0.24, iy = r.height * 0.2;
+    return x >= r.left + ix && x <= r.right - ix && y >= r.top + iy && y <= r.bottom - iy;
+  }
   // a droppable slot node: a filled/empty tree node, or a graph portrait (not a spark leaf)
   function slotNodeAt(x, y) {
     var hit = document.elementFromPoint(x, y); if (!hit || !hit.closest) return null;
     var node = hit.closest(".bd-node, .lm-node"); if (!node) return null;
     var slot = node.getAttribute("data-slot");
     if (!slot || node.getAttribute("data-spark") != null) return null;   // spark leaves aren't slots
+    if (!insideNodeCore(node, x, y)) return null;                         // only the inner rectangle drops
     return { node: node, slot: slot };
   }
   // tentatively place the dragged uma into a slot so the real node renders exactly as it
