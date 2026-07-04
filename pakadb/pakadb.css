@@ -727,8 +727,8 @@ body.bd-dragging, body.bd-dragging .bd-node { cursor: grabbing; user-select: non
 
 /* the previewed slot: its border color fades in to green (no scale, so the node
    never shifts under the cursor and re-triggers hit-testing / flicker). */
-.bd-node.pv-in { animation: pv-border .22s ease-out; border-color: var(--turf); }
-@keyframes pv-border { from { border-color: var(--divider); } to { border-color: var(--turf); } }
+.bd-node.pv-in { animation: pv-border .28s ease-out; border-color: var(--turf); }
+@keyframes pv-border { from { border-color: var(--divider); opacity: .2; } to { border-color: var(--turf); opacity: 1; } }
 .lm-node.pv-in { animation: pv-fade .2s ease-out; }
 @keyframes pv-fade { from { opacity: .35; } to { opacity: 1; } }
 .bd-node-img { width: 40px; height: 40px; flex: none; border-radius: 30%; object-fit: cover; object-position: top center;

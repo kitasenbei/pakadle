@@ -1218,7 +1218,10 @@
   // assign the uma that maximises this slot's affinity given the rest of the tree
   function autoPickSlot(slot) {
     var best = null, bestT = -Infinity;
-    UMAS.forEach(function (u) { var t = affinityWith(slot, u.id); if (t > bestT) { bestT = t; best = u.id; } });
+    UMAS.forEach(function (u) {
+      if (adjConflict(u.id, slot)) return;   // don't let her be her own parent (self-affinity is maximal)
+      var t = affinityWith(slot, u.id); if (t > bestT) { bestT = t; best = u.id; }
+    });
     if (best != null) { bstate[slot] = best; slotSpark[slot] = null; slotCard[slot] = null; renderBreeding(); }
   }
   // inline Tabler icons (MIT), self-hosted as SVG so no external requests
@@ -1756,10 +1759,10 @@
     var hit = document.elementFromPoint(e.clientX, e.clientY), tgt = hit && hit.closest ? hit.closest(".bd-node") : null;
     var tslot = tgt && tgt.getAttribute("data-slot");
     if (tslot && tslot !== drag.slot) {
-      if (drag.overSlot !== tslot) {   // entered a (new) target: hide ghost, preview the swap
+      if (drag.overSlot !== tslot) {   // entered a (new) target: fade ghost out, preview the swap
         revertTentativeSwap();
         drag.overSlot = tslot;
-        drag.ghost.style.display = "none";
+        fadeGhostOut(drag.ghost);
         applyTentativeSwap(drag.slot, tslot);
       }
     } else if (drag.overSlot != null) { // left the target: undo preview, bounce the ghost back
@@ -1803,39 +1806,40 @@
   // tentatively place the dragged uma into a slot so the real node renders exactly as it
   // would if dropped; remember the slot's prior contents so we can revert on leave/cancel.
   // Game rule (Game8): an uma can't be her own Parent (Legacy), but CAN be her own
-  // Grandparent (Sub-Legacy). So the same saved uma is only barred from a slot and
-  // its DIRECT parent/child slot; non-adjacent repeats (e.g. foal == a grandparent)
-  // are allowed. Returns the adjacent slot already holding it, or null.
+  // Grandparent (Sub-Legacy). Enforced by CHARACTER (charId in bstate), since umas
+  // are placed by character (picker outfit rows, auto-pick) as well as saved sparks.
+  // A charId is only barred from a slot and its DIRECT parent/child slot; non-adjacent
+  // repeats (foal == a grandparent) are fine. Returns the conflicting slot, or null.
   var SLOT_ADJ = {
     foal: ["p1", "p2"], p1: ["foal", "gp11", "gp12"], p2: ["foal", "gp21", "gp22"],
     gp11: ["p1"], gp12: ["p1"], gp21: ["p2"], gp22: ["p2"],
   };
-  function slotOfSaved(sp, slot) {
-    if (!sp) return null;
+  function adjConflict(charId, slot) {
+    if (charId == null) return null;
     var adj = SLOT_ADJ[slot] || [];
-    for (var i = 0; i < adj.length; i++) if (slotSpark[adj[i]] === sp) return adj[i];
+    for (var i = 0; i < adj.length; i++) if (bstate[adj[i]] === charId) return adj[i];
     return null;
   }
-  function applyTentative(slot, s) {
-    umaDrag.saved = { slot: slot, uma: bstate[slot], spark: slotSpark[slot], card: slotCard[slot] };
-    bstate[slot] = s.charId; slotSpark[slot] = s; slotCard[slot] = null;
-    renderBreeding();
-    markPreviewNode(slot);
-  }
-  function revertTentative() {
-    if (!umaDrag || !umaDrag.saved) return;
-    var sv = umaDrag.saved; umaDrag.saved = null;
-    bstate[sv.slot] = sv.uma; slotSpark[sv.slot] = sv.spark; slotCard[sv.slot] = sv.card;
-  }
-  // add a one-shot bounce to the freshly-rendered previewed node (tree card + graph portrait)
+  // add a one-shot bounce to the freshly-rendered previewed node (tree card + graph portrait).
+  // Skip the slot being dragged — it stays grayed (.dragging); running the pv-in fade on it
+  // would flash it up to full opacity and then snap back to gray.
   function markPreviewNode(slot) {
+    if (slot === draggingSlot) return;
     ["bd-stage", "bd-affinity"].forEach(function (id) {
       var n = $(id) && $(id).querySelector('[data-slot="' + slot + '"]');
       if (n) { n.classList.remove("pv-in"); void n.offsetWidth; n.classList.add("pv-in"); }
     });
   }
   // re-show the ghost after leaving a target (it was display:none while previewing the drop)
-  function bounceGhost(g) { if (g) { g.style.display = ""; g.style.opacity = "1"; } }   // fade back in (CSS transition)
+  // node-to-node drag: fade the ghost out on a bouncy alpha curve (opacity only —
+  // no move/scale) instead of yanking it away with display:none.
+  function fadeGhostOut(g) {
+    if (!g) return;
+    g.style.display = "";
+    g.style.transition = "opacity .3s cubic-bezier(.34,1.56,.64,1)";   // springy alpha fade-out
+    g.style.opacity = "0";
+  }
+  function bounceGhost(g) { if (g) { g.style.display = ""; g.style.transition = "opacity .18s ease"; g.style.opacity = "1"; } }   // fade back in
   // build a drag ghost that mirrors the element being dragged (a saved-uma rail
   // row or a tree card), scaled to the size it appears on screen.
   function cloneGhost(srcEl) {
@@ -1908,35 +1912,29 @@
     umaDrag.ghost.style.left = e.clientX + "px";
     umaDrag.ghost.style.top = e.clientY + "px";
     var t = slotNodeAt(e.clientX, e.clientY);
-    // treat a slot where this uma would become its own parent as a non-target
-    var valid = t && !slotOfSaved(savedUmas[umaDrag.idx], t.slot);
+    // a slot is a valid target unless this uma would become her own parent there
+    var valid = t && !adjConflict(savedUmas[umaDrag.idx].charId, t.slot);
     if (valid) {
-      if (umaDrag.overSlot !== t.slot) {   // entered a (new) slot: hide ghost, render the real filled node
-        revertTentative();                 // restore any previously-previewed slot first
-        umaDrag.overSlot = t.slot;
-        umaDrag.ghost.style.display = "none";
-        applyTentative(t.slot, savedUmas[umaDrag.idx]);
-      }
-    } else if (umaDrag.overSlot != null) {  // left the slot (or over an invalid one): revert, bounce back
+      umaDrag.overSlot = t.slot;   // remember the target; commit on release
+    } else if (umaDrag.overSlot != null) {   // left the slot (or over an invalid one)
       umaDrag.overSlot = null;
-      revertTentative(); renderBreeding();
-      bounceGhost(umaDrag.ghost);
     }
+    // the ghost stays on the cursor the whole time — no live tree mutation until drop
   });
   document.addEventListener("mouseup", function (e) {
     if (!umaDrag) return;
     document.body.classList.remove("bd-dragging");
     if (umaDrag.row) umaDrag.row.classList.remove("dragging");
     var ghost = umaDrag.ghost, row = umaDrag.row;
-    var dropped = umaDrag.moved ? slotNodeAt(e.clientX, e.clientY) : null;
-    if (dropped && dropped.slot === umaDrag.overSlot) {
-      umaDrag.saved = null;   // dropped on the previewed slot → commit the tentative fill
+    var d = umaDrag.moved ? slotNodeAt(e.clientX, e.clientY) : null;
+    var dropSlot = d && d.slot === umaDrag.overSlot ? d.slot : null;   // overSlot was validated on hover
+    if (dropSlot) {
+      var s = savedUmas[umaDrag.idx];
+      bstate[dropSlot] = s.charId; slotSpark[dropSlot] = s; slotCard[dropSlot] = null;   // commit the fill
       if (ghost) ghost.remove();
-      renderBreeding();       // clean final render (drops the bounce marker)
+      renderBreeding();
     } else {
-      revertTentative();      // dropped elsewhere / not moved → undo the preview
-      if (umaDrag.overSlot != null) renderBreeding();
-      flyGhostHome(ghost, row ? row.getBoundingClientRect() : null);   // animate the ghost back to the rail row
+      flyGhostHome(ghost, row ? row.getBoundingClientRect() : null);   // no valid drop → ghost flies home
     }
     umaDrag = null;
   });
@@ -1989,12 +1987,13 @@
     var row = e.target.closest(".bp-row"); if (!row || !bstate.active) return;
     var slot = bstate.active;
     var savedIdx = row.getAttribute("data-saved");
+    var charId = savedIdx != null ? savedUmas[Number(savedIdx)].charId : Number(row.getAttribute("data-id"));
+    if (adjConflict(charId, slot)) {   // would make her her own parent (Legacy) — block + flash
+      row.classList.remove("bp-dup"); void row.offsetWidth; row.classList.add("bp-dup");
+      return;
+    }
     if (savedIdx != null) {
       var s = savedUmas[Number(savedIdx)];
-      if (slotOfSaved(s, slot)) {   // would make her her own parent (Legacy) — block + flash
-        row.classList.remove("bp-dup"); void row.offsetWidth; row.classList.add("bp-dup");
-        return;
-      }
       bstate[slot] = s.charId; slotSpark[slot] = s; slotCard[slot] = null;
     } else {
       bstate[slot] = Number(row.getAttribute("data-id"));
