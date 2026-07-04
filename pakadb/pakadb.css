@@ -705,6 +705,7 @@ body.bd-panning .lm-node { pointer-events: none; }
 .bd-node.empty { border-style: dashed; box-shadow: none; justify-content: center; color: var(--ink3); font-weight: 800; font-size: 12px; }
 /* drag a filled node onto another slot to move/swap */
 .bd-node.drag-src { opacity: .35; }
+.bd-node.dragging { filter: grayscale(1); opacity: .5; }   /* the node currently being dragged */
 .bd-node.drop-hi { border-color: var(--sakura); transform: translateY(-1px); }
 body.bd-dragging, body.bd-dragging .bd-node { cursor: grabbing; user-select: none; }
 /* drag ghost: a clone of the dragged component (rail row / tree card), scaled to

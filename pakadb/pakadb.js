@@ -551,7 +551,7 @@
     // portrait: the chosen outfit if one was picked, else the base
     var thumb = n.uma.thumb, img = n.uma.image, cid = slotCard[n.key];
     if (cid && n.uma.alts) { var alt = n.uma.alts.filter(function (a) { return a.cardId === cid; })[0]; if (alt) { thumb = alt.thumb; img = alt.image; } }
-    return '<div class="bd-node gen' + n.gen + '" data-slot="' + n.key + '">' +
+    return '<div class="bd-node gen' + n.gen + (n.key === draggingSlot ? " dragging" : "") + '" data-slot="' + n.key + '">' +
       '<img class="bd-node-img" src="/pakadb/' + esc(thumb) + '" alt="" onerror="this.src=\'/pakadb/' + esc(img) + "'\" />" +
       '<div class="bd-node-meta">' +
         '<div class="bd-node-role">' + n.role + (hasSpark ? ' <span class="bd-spark-tag">SPARKS</span>' : "") + "</div>" +
@@ -1714,7 +1714,7 @@
   $("bd-affinity").addEventListener("dblclick", function () { lmReset(); });
 
   // ---- drag a filled tree node onto another slot to move / swap it ----
-  var drag = null, suppressNodeClick = false;
+  var drag = null, suppressNodeClick = false, draggingSlot = null;
   function swapSlots(a, b) {
     var t;
     t = bstate[a]; bstate[a] = bstate[b]; bstate[b] = t;
@@ -1744,8 +1744,9 @@
     if (!drag.moved) {
       if (Math.abs(e.clientX - drag.sx) + Math.abs(e.clientY - drag.sy) < 6) return;   // click, not a drag
       drag.moved = true;
-      drag.ghost = cloneGhost(drag.node);   // ghost mirrors the tree card being dragged
+      drag.ghost = cloneGhost(drag.node);   // clone (mirrors the card) before graying the origin
       document.body.classList.add("bd-dragging");
+      draggingSlot = drag.slot; renderBreeding();   // gray out the dragged node's origin slot
     }
     drag.ghost.style.left = e.clientX + "px";
     drag.ghost.style.top = e.clientY + "px";
@@ -1770,6 +1771,7 @@
     if (drag.ghost) drag.ghost.remove();
     if (!drag.moved) { drag = null; return; }   // plain click; leave it for the click handler
     suppressNodeClick = true; setTimeout(function () { suppressNodeClick = false; }, 0);
+    draggingSlot = null;   // un-gray the origin; a render below repaints it
     var hit = document.elementFromPoint(e.clientX, e.clientY), tgt = hit && hit.closest ? hit.closest(".bd-node") : null;
     var tslot = tgt && tgt.getAttribute("data-slot");
     if (tslot && tslot !== drag.slot) {                         // drop on a target: commit the swap
@@ -1778,7 +1780,7 @@
       renderBreeding();
     } else {                                                    // dropped elsewhere: undo the preview
       revertTentativeSwap();
-      if (drag.overSlot != null) renderBreeding();
+      renderBreeding();                                         // repaint (also clears the drag gray)
     }
     drag = null;
   });
@@ -1821,9 +1823,12 @@
     var rect = srcEl.getBoundingClientRect();
     var g = document.createElement("div"); g.className = "bd-drag-ghost-el";
     var clone = srcEl.cloneNode(true); clone.classList.remove("dragging");
-    var natW = srcEl.offsetWidth || rect.width, k = natW ? rect.width / natW : 1;
-    clone.style.width = natW + "px"; clone.style.transformOrigin = "top left";
-    clone.style.transform = "scale(" + k + ")";
+    // pin natural width AND height: .bd-node is height:100%, which would otherwise
+    // resolve against the ghost wrapper and double-scale
+    var natW = srcEl.offsetWidth || rect.width, natH = srcEl.offsetHeight || rect.height;
+    var k = natW ? rect.width / natW : 1;
+    clone.style.width = natW + "px"; clone.style.height = natH + "px";
+    clone.style.transformOrigin = "top left"; clone.style.transform = "scale(" + k + ")";
     g.style.width = rect.width + "px"; g.style.height = rect.height + "px";
     g.appendChild(clone); document.body.appendChild(g);
     return g;
