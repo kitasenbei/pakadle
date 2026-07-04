@@ -705,13 +705,25 @@ function createApp(options = {}) {
       res.writeHead(403);
       return res.end("forbidden");
     }
-    fs.readFile(filePath, (err, buf) => {
-      if (err) {
-        res.writeHead(404);
-        return res.end("not found");
-      }
-      res.writeHead(200, { "Content-Type": MIME[path.extname(filePath)] || "application/octet-stream" });
-      res.end(buf);
+    // STREAM the file instead of fs.readFile: buffering whole assets into memory
+    // let a burst of image requests balloon past the service's MemoryMax and get
+    // OOM-restarted, dropping images at random. Streaming keeps memory bounded.
+    const ext = path.extname(filePath);
+    // Cache heavy immutable media so a redeploy doesn't make every client re-fetch
+    // the whole asset set at once (the burst that made images flaky). HTML/JS/CSS/
+    // JSON are left uncached so code + data updates land immediately.
+    const media = /\.(png|jpe?g|webp|gif|svg|ico|woff2?|ttf|otf|mp4)$/i.test(ext);
+    const stream = fs.createReadStream(filePath);
+    stream.on("open", () => {
+      const headers = { "Content-Type": MIME[ext] || "application/octet-stream" };
+      if (media) headers["Cache-Control"] = "public, max-age=86400";   // 1 day
+      res.writeHead(200, headers);
+      stream.pipe(res);
+    });
+    stream.on("error", (err) => {
+      if (res.headersSent) return res.destroy();
+      res.writeHead(err.code === "ENOENT" ? 404 : 500);
+      res.end(err.code === "ENOENT" ? "not found" : "error");
     });
   });
 

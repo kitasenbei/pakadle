@@ -71,7 +71,7 @@
   ];
   var KEY_CAT = {}; APT_DEFS.forEach(function (g) { g.keys.forEach(function (k) { KEY_CAT[k[0]] = g.cat; }); });
   var KEY_LABEL = {}; APT_DEFS.forEach(function (g) { g.keys.forEach(function (k) { KEY_LABEL[k[0]] = k[1]; }); });
-  var GRADE_OPTS = ["S", "A", "B", "C", "D"]; // selectable minimum grades
+  var GRADE_OPTS = ["A", "B", "C", "D"]; // selectable minimum grades (base umas can't hold S)
   function aptGrade(u, key) { var c = KEY_CAT[key]; return u.aptitude && u.aptitude[c] && u.aptitude[c][key]; }
   function buildSkillIndex() {
     var seen = {};
@@ -1802,6 +1802,20 @@
   }
   // tentatively place the dragged uma into a slot so the real node renders exactly as it
   // would if dropped; remember the slot's prior contents so we can revert on leave/cancel.
+  // Game rule (Game8): an uma can't be her own Parent (Legacy), but CAN be her own
+  // Grandparent (Sub-Legacy). So the same saved uma is only barred from a slot and
+  // its DIRECT parent/child slot; non-adjacent repeats (e.g. foal == a grandparent)
+  // are allowed. Returns the adjacent slot already holding it, or null.
+  var SLOT_ADJ = {
+    foal: ["p1", "p2"], p1: ["foal", "gp11", "gp12"], p2: ["foal", "gp21", "gp22"],
+    gp11: ["p1"], gp12: ["p1"], gp21: ["p2"], gp22: ["p2"],
+  };
+  function slotOfSaved(sp, slot) {
+    if (!sp) return null;
+    var adj = SLOT_ADJ[slot] || [];
+    for (var i = 0; i < adj.length; i++) if (slotSpark[adj[i]] === sp) return adj[i];
+    return null;
+  }
   function applyTentative(slot, s) {
     umaDrag.saved = { slot: slot, uma: bstate[slot], spark: slotSpark[slot], card: slotCard[slot] };
     bstate[slot] = s.charId; slotSpark[slot] = s; slotCard[slot] = null;
@@ -1894,14 +1908,16 @@
     umaDrag.ghost.style.left = e.clientX + "px";
     umaDrag.ghost.style.top = e.clientY + "px";
     var t = slotNodeAt(e.clientX, e.clientY);
-    if (t) {
+    // treat a slot where this uma would become its own parent as a non-target
+    var valid = t && !slotOfSaved(savedUmas[umaDrag.idx], t.slot);
+    if (valid) {
       if (umaDrag.overSlot !== t.slot) {   // entered a (new) slot: hide ghost, render the real filled node
         revertTentative();                 // restore any previously-previewed slot first
         umaDrag.overSlot = t.slot;
         umaDrag.ghost.style.display = "none";
         applyTentative(t.slot, savedUmas[umaDrag.idx]);
       }
-    } else if (umaDrag.overSlot != null) {  // left the slot: revert the fill, bounce the ghost back
+    } else if (umaDrag.overSlot != null) {  // left the slot (or over an invalid one): revert, bounce back
       umaDrag.overSlot = null;
       revertTentative(); renderBreeding();
       bounceGhost(umaDrag.ghost);
@@ -1975,6 +1991,10 @@
     var savedIdx = row.getAttribute("data-saved");
     if (savedIdx != null) {
       var s = savedUmas[Number(savedIdx)];
+      if (slotOfSaved(s, slot)) {   // would make her her own parent (Legacy) — block + flash
+        row.classList.remove("bp-dup"); void row.offsetWidth; row.classList.add("bp-dup");
+        return;
+      }
       bstate[slot] = s.charId; slotSpark[slot] = s; slotCard[slot] = null;
     } else {
       bstate[slot] = Number(row.getAttribute("data-id"));
