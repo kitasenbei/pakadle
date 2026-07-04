@@ -299,6 +299,114 @@ function createApp(options = {}) {
     return db.prepare("SELECT id, name, rating, wins, losses, draws FROM accounts WHERE id = ?").get(s.account_id) || null;
   }
 
+  // ---- PakaDB QA access gate (temporary, standalone; NOT tied to Duel accounts) --
+  // Testers live in pakadb/qa-access.json as salted scrypt hashes (safe to commit,
+  // no plaintext — generate with `node pakadb/qa-seed.js`). The cookie-signing
+  // secret is a per-deployment meta value, exactly like daily_seed. The gate below
+  // covers the app entry AND every /pakadb/* asset, so the app cannot be reached by
+  // pasting a URL. Lift it by deleting qa-access.json; set PAKADB_QA_OPEN=1 to
+  // bypass in local dev.
+  function loadQaAccess() {
+    try {
+      const raw = JSON.parse(fs.readFileSync(path.join(ROOT, "pakadb", "qa-access.json"), "utf8"));
+      if (!raw || !Array.isArray(raw.testers) || !raw.testers.length) return null;
+      const m = new Map();
+      for (const t of raw.testers) if (t && t.id) m.set(String(t.id), { salt: String(t.salt), hash: String(t.hash) });
+      return m.size ? m : null;
+    } catch { return null; }   // missing/invalid file => gate off (open)
+  }
+  let qaTesters = (process.env.PAKADB_QA_OPEN === "1" || options.qaOpen) ? null : loadQaAccess();
+  let qaSecret = options.qaSecret || process.env.PAKADB_QA_SECRET;
+  if (!qaSecret) {
+    const row = db.prepare("SELECT value FROM meta WHERE key = 'pakadb_qa_secret'").get();
+    if (row) qaSecret = row.value;
+    else { qaSecret = crypto.randomBytes(32).toString("hex"); db.prepare("INSERT INTO meta (key, value) VALUES ('pakadb_qa_secret', ?)").run(qaSecret); }
+  }
+  function qaSign(id) { return crypto.createHmac("sha256", qaSecret).update(String(id)).digest("hex"); }
+  function qaVerify(id, password) {
+    const rec = qaTesters && qaTesters.get(String(id));
+    if (!rec) return false;
+    const got = crypto.scryptSync(String(password), rec.salt, 64);
+    const exp = Buffer.from(rec.hash, "hex");
+    return got.length === exp.length && crypto.timingSafeEqual(got, exp);
+  }
+  function qaAuthed(req) {
+    if (!qaTesters) return true;   // gate disabled (no access file / dev bypass)
+    const m = (req.headers.cookie || "").match(/(?:^|;\s*)pdqa=([^;]+)/);
+    if (!m) return false;
+    let val; try { val = decodeURIComponent(m[1]); } catch { return false; }
+    const dot = val.lastIndexOf(".");
+    if (dot < 1) return false;
+    const id = val.slice(0, dot), sig = val.slice(dot + 1);
+    if (!qaTesters.has(id)) return false;
+    const good = qaSign(id);
+    return sig.length === good.length && crypto.timingSafeEqual(Buffer.from(sig), Buffer.from(good));
+  }
+  function setQaCookie(req, res, id) {
+    const secure = req.headers["x-forwarded-proto"] === "https" ? "; Secure" : "";
+    const val = encodeURIComponent(id + "." + qaSign(id));
+    res.setHeader("Set-Cookie", `pdqa=${val}; Path=/; HttpOnly; SameSite=Lax; Max-Age=1209600${secure}`);   // 14 days
+  }
+  function clearQaCookie(req, res) {
+    const secure = req.headers["x-forwarded-proto"] === "https" ? "; Secure" : "";
+    res.setHeader("Set-Cookie", `pdqa=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0${secure}`);
+  }
+  // which kind of PakaDB URL is this (after normalizing away // and ../ tricks)?
+  // Collapse backslashes and repeated slashes first — path.posix.normalize keeps a
+  // leading "//", which would otherwise dodge the /pakadb/ prefix test.
+  function qaPathKind(url) {
+    let rel; try { rel = decodeURIComponent(url.pathname); } catch { rel = url.pathname; }
+    const norm = path.posix.normalize(rel.replace(/\\/g, "/").replace(/\/{2,}/g, "/"));
+    if (norm === "/pakadb" || norm === "/pakadb/") return "entry";
+    if (norm.startsWith("/pakadb/")) return "asset";
+    return null;
+  }
+  function qaLoginHtml(err) {
+    return `<!doctype html><html lang="en"><head><meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="robots" content="noindex, nofollow" />
+<title>PakaDB — private testing</title>
+<style>
+  :root { --turf:#4CA62E; --turf-dark:#2f6a1a; --sakura:#E85D8B; --ink:#3A2E39; --panel:#fff; --bg:#FBF6EE; }
+  * { box-sizing: border-box; } body { margin:0; min-height:100vh; display:flex; align-items:center; justify-content:center;
+    background: var(--bg); color: var(--ink); font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; padding:20px; }
+  .card { width: 100%; max-width: 340px; background: var(--panel); border: 2px solid var(--turf-dark); border-radius: 16px;
+    box-shadow: 0 14px 30px rgba(58,46,57,.22); padding: 22px 20px; }
+  h1 { margin: 0 0 4px; font-size: 18px; color: var(--turf-dark); letter-spacing: .3px; }
+  p.sub { margin: 0 0 16px; font-size: 12.5px; color: #8b7f88; }
+  label { display:block; font-size: 10.5px; font-weight: 800; text-transform: uppercase; letter-spacing:.4px; color:#8b7f88; margin: 10px 0 4px; }
+  input { width: 100%; height: 40px; padding: 0 12px; font-size: 14px; font-family: inherit; color: var(--ink);
+    background: var(--bg); border: 2px solid #e4dccf; border-radius: 10px; }
+  input:focus { outline: none; border-color: var(--turf); }
+  button { width: 100%; height: 42px; margin-top: 16px; font-family: inherit; font-size: 13px; font-weight: 800; letter-spacing:.4px;
+    text-transform: uppercase; color:#fff; background: var(--turf); border: none; border-radius: 10px; cursor: pointer; box-shadow: 0 3px 0 var(--turf-dark); }
+  button:hover { background: var(--turf-dark); }
+  .err { margin-top: 12px; min-height: 16px; font-size: 12px; font-weight: 700; color: var(--sakura); }
+</style></head><body>
+  <form class="card" id="f" autocomplete="off">
+    <h1>PakaDB · private testing</h1>
+    <p class="sub">Enter the identifier and password sent to you.</p>
+    <label for="id">Identifier</label>
+    <input id="id" name="id" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="paka-tester-01" />
+    <label for="pw">Password</label>
+    <input id="pw" name="pw" type="password" placeholder="••••••••••" />
+    <button type="submit">Enter</button>
+    <div class="err" id="err">${err ? String(err).replace(/[<&]/g, "") : ""}</div>
+  </form>
+<script>
+  var f = document.getElementById("f"), err = document.getElementById("err");
+  f.addEventListener("submit", function (e) {
+    e.preventDefault();
+    err.textContent = "";
+    fetch("/api/pakadb/login", { method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id: f.id.value.trim(), password: f.pw.value }) })
+      .then(function (r) { return r.json().then(function (j) { return { ok: r.ok, j: j }; }); })
+      .then(function (o) { if (o.ok) location.href = "/pakadb"; else err.textContent = (o.j && o.j.error) || "Login failed."; })
+      .catch(function () { err.textContent = "Network error."; });
+  });
+</script></body></html>`;
+  }
+
   // ---- Elo ladder: settle one duel match --------------------------------
   // result: "a" | "b" | "draw"; returns { [accountId]: { rating, delta } }.
   // Win/loss/draw tallies are recorded for any signed-in player; the rating
@@ -397,6 +505,34 @@ function createApp(options = {}) {
         });
         res.end(buf);
       });
+    }
+
+    // ---- PakaDB QA gate: block the app entry AND every /pakadb/* asset unless
+    // the visitor holds a valid tester cookie, so it can't be reached by URL. ----
+    const qaKind = qaPathKind(url);
+    if (qaKind && qaTesters && !qaAuthed(req)) {
+      if (qaKind === "entry") {
+        res.writeHead(200, { "Content-Type": "text/html; charset=utf-8", "Cache-Control": "no-store" });
+        return res.end(qaLoginHtml());
+      }
+      res.writeHead(401, { "Content-Type": "text/plain; charset=utf-8", "Cache-Control": "no-store" });
+      return res.end("PakaDB is in private testing — log in at /pakadb");
+    }
+    // QA gate login / logout (standalone; separate cookie from Duel's sid)
+    if (url.pathname === "/api/pakadb/login" && req.method === "POST") {
+      return readBody(req, (body) => {
+        let data; try { data = JSON.parse(body); } catch { return sendJson(res, { error: "bad json" }, 400); }
+        const id = String(data.id || "").trim();
+        const password = String(data.password || "");
+        if (!qaTesters) return sendJson(res, { ok: true });   // gate disabled
+        if (!qaVerify(id, password)) return sendJson(res, { error: "Wrong identifier or password." }, 401);
+        setQaCookie(req, res, id);
+        return sendJson(res, { ok: true });
+      });
+    }
+    if (url.pathname === "/api/pakadb/logout" && req.method === "POST") {
+      clearQaCookie(req, res);
+      return sendJson(res, { ok: true });
     }
 
     // ---- PakaDB (rich character database + future breeding tool) ----

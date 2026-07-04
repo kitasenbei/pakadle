@@ -1,0 +1,55 @@
+{
+  "generatedAt": "2026-07-04T11:32:58.733Z",
+  "testers": [
+    {
+      "id": "paka-tester-01",
+      "salt": "4c3ec25ad95ef01761330cb8660cb6e5",
+      "hash": "0d61dc15935c0145fe8a8ea6e24f33f08b50ef7968d5737fe34bfc8ad85aec7ac30da0e5012740c29f093a7a0aa30e94c50a3ccf0bd90ea83ec9f5e3993e3f79"
+    },
+    {
+      "id": "paka-tester-02",
+      "salt": "05fd382043a7a9c6e0b97e62904a17cb",
+      "hash": "b2dc7e1e11c2354574fa5704f25ee776c578540864199928368246c57e1c983580a9ba176523c128dcb2639e7580d0d91340eabf8ea121f443f02fd5297e34dc"
+    },
+    {
+      "id": "paka-tester-03",
+      "salt": "617038b11be250e9f964b661e130d719",
+      "hash": "8af594502e68e928d7b00eab025f7b2d614a6c84e6511844c4988461606e1a30b7a09abce429433af47a2a429b787d07f6e153cfcee1255486bcfdfec60e1e83"
+    },
+    {
+      "id": "paka-tester-04",
+      "salt": "5112026ad00d5096ee8f0006836d84a6",
+      "hash": "e3fb4e07033d78c9dc05dbeba6bce4d00e2d388d9c3f76bc68e1cd845651c1ab70c3301deaa565e5fbfa1a1de3217202cff8447f94be32da9f10f0adc4aafafe"
+    },
+    {
+      "id": "paka-tester-05",
+      "salt": "dad8c1d1aa2abdeae8a6ca532e3c8b12",
+      "hash": "80c4bf6815a39a9365ac6ec1301df22cf731bc54820b09095e3a00dca502a0c0188d925798c76ccc1c5c8e1ed05101471d9f1b873a7c1a4ce8e2a27e5e7c0258"
+    },
+    {
+      "id": "paka-tester-06",
+      "salt": "27157197a19b5911fac9c361a219a346",
+      "hash": "e391f05721b76383b3b668423ae4769409a6517fb6c5f2913add1e299d61a7c08507e2d5607d9f9c30c19cae6a2adbcf64d194e6f1e44e7ca3291eab24633de5"
+    },
+    {
+      "id": "paka-tester-07",
+      "salt": "33386a791e844d4c759f0e8071f9878e",
+      "hash": "0f8ddc98f3779c09cf7b28877b365d9cea5fc752a4c7659f3ee2419970539e1e4de03829c7fef13a1906bc8216af7998a5bde9e7a2de8b30cdaa156c5b6b6db7"
+    },
+    {
+      "id": "paka-tester-08",
+      "salt": "c7123dc6109ac78e86bac9257f997a3a",
+      "hash": "0004dc1f10aac047ef37b95a724dc2c79361036eba08b61b00f7fad4d916ac7446e7f31bcd6b3e16f096a9fd8ddb98668e8f28dcfdea4b0669acac071e6cca2f"
+    },
+    {
+      "id": "paka-tester-09",
+      "salt": "d0513256a6320adf28345ac0314aaa81",
+      "hash": "370610a42de586e59489dc9f4ae8c7bcf1583bac4b2de6b968e114818210d64bcbea3f67e692388ed45939068b544497b32fe507f5b999ebb56264bb28336ad6"
+    },
+    {
+      "id": "paka-tester-10",
+      "salt": "b7236d6317bb837c7cc45e70f004821c",
+      "hash": "5afe29a2f596766feb2bf26ed7ecea9c82067b34f4e92473ccb2d64f98acad1956c2b9b9868cd6573a98545c58e38a307a12c596b5a8e80cdecd9d0b64154c48"
+    }
+  ]
+}
