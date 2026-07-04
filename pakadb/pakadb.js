@@ -435,7 +435,8 @@
       APT_KEYS.forEach(function (k) { if (sp.pink && sp.pink[k]) pink[k] = (pink[k] || 0) + sp.pink[k]; });
       if (sp.green) {
         var u = bstate[slot] ? BYID[bstate[slot]] : null;
-        var nm = (u && u.skills && u.skills.unique && u.skills.unique[0]) ? u.skills.unique[0].name : (sp.name || "Unique");
+        var us = outfitUnique(u, slotCard[slot]);
+        var nm = us ? us.name : (sp.name || "Unique");
         green[nm] = (green[nm] || 0) + sp.green;
       }
       (sp.white || []).forEach(function (w) { if (w.name) white[w.name] = (white[w.name] || 0) + (w.lvl || 0); });
@@ -542,11 +543,24 @@
     return { d: "M" + sx + "," + sy + " C" + mx + "," + sy + " " + mx + "," + ty + " " + tx + "," + ty, mx: mx, my: (sy + ty) / 2 };
   }
 
+  // the unique skill (green factor) for a uma wearing a given outfit (cardId).
+  // Each alt outfit can carry its own unique — e.g. Special Week's "Supreme
+  // Commander of the Rising Sun" is "Dreams Donned with Pride!", not the base
+  // "Shooting Star". Falls back to the base card's unique when no outfit is set.
+  function outfitUnique(u, cardId) {
+    if (!u) return null;
+    var sk = u.skills;
+    if (cardId != null && u.alts) {
+      var alt = u.alts.filter(function (a) { return a.cardId === cardId; })[0];
+      if (alt && alt.skills && alt.skills.unique) sk = alt.skills;
+    }
+    return (sk && sk.unique && sk.unique[0]) ? sk.unique[0] : null;
+  }
   function nodeCard(n) {
     if (!n.uma) {
       return '<div class="bd-node empty gen' + n.gen + '" data-slot="' + n.key + '">+ ' + n.role.toUpperCase() + "</div>";
     }
-    var uskill = (n.uma.skills && n.uma.skills.unique && n.uma.skills.unique[0]) ? n.uma.skills.unique[0] : null;
+    var uskill = outfitUnique(n.uma, slotCard[n.key]);
     var hasSpark = !!slotSpark[n.key];
     // portrait: the chosen outfit if one was picked, else the base
     var thumb = n.uma.thumb, img = n.uma.image, cid = slotCard[n.key];
@@ -643,7 +657,7 @@
     STAT_KEYS.forEach(function (k) { if (sp.blue && sp.blue[k]) out.push({ kind: "blue", label: STAT_NAME[k], statk: k, lvl: sp.blue[k] }); });
     APT_KEYS.forEach(function (k) { if (sp.pink && sp.pink[k]) out.push({ kind: "pink", label: KEY_LABEL[k], abbr: APT_ABBR[k], lvl: sp.pink[k] }); });
     if (sp.green) {
-      var u = BYID[bstate[slot]], us = u && u.skills && u.skills.unique && u.skills.unique[0];
+      var us = outfitUnique(BYID[bstate[slot]], slotCard[slot]);
       out.push({ kind: "green", label: us ? us.name : (sp.name || "Unique"), iconId: us ? us.iconId : null, lvl: sp.green });
     }
     (sp.white || []).forEach(function (w) {
