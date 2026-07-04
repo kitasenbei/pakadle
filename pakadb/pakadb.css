@@ -208,12 +208,12 @@ body.scrubbing .numc-val::selection { background: transparent; }
 .unit-star { color: var(--gold); }
 
 /* aptitude micro-matrix on the card */
-.apt-row { display: flex; gap: 3px; }
+.apt-row { display: flex; gap: 6px; }
 .grade {
-  flex: 1; text-align: center; font-size: 9.5px; font-weight: 800;
-  padding: 3px 0; border-radius: 5px; color: #fff; line-height: 1.05;
+  flex: 1; text-align: center; font-size: 15px; font-weight: 800;
+  padding: 6px 0; border-radius: 7px; color: #fff; line-height: 1.05;
 }
-.grade small { display: block; font-size: 7px; opacity: .85; font-weight: 700; letter-spacing: .2px; }
+.grade small { display: block; font-size: 11px; opacity: .85; font-weight: 700; letter-spacing: .2px; }
 .g-S{background:var(--gS)} .g-A{background:var(--gA)} .g-B{background:var(--gB)}
 .g-C{background:var(--gC)} .g-D{background:var(--gD)} .g-E{background:var(--gE)}
 .g-F{background:var(--gF)} .g-G{background:var(--gG)} .g-null{background:var(--divider);color:var(--ink3)}
