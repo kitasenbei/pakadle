@@ -383,28 +383,17 @@ function createApp(options = {}) {
   button:hover { background: var(--turf-dark); }
   .err { margin-top: 12px; min-height: 16px; font-size: 12px; font-weight: 700; color: var(--sakura); }
 </style></head><body>
-  <form class="card" id="f" autocomplete="off">
+  <form class="card" method="POST" action="/api/pakadb/login" autocomplete="off">
     <h1>PakaDB · private testing</h1>
     <p class="sub">Enter the identifier and password sent to you.</p>
     <label for="id">Identifier</label>
     <input id="id" name="id" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="paka-tester-01" />
     <label for="pw">Password</label>
-    <input id="pw" name="pw" type="password" placeholder="••••••••••" />
+    <input id="pw" name="password" type="password" placeholder="••••••••••" />
     <button type="submit">Enter</button>
-    <div class="err" id="err">${err ? String(err).replace(/[<&]/g, "") : ""}</div>
+    <div class="err">${err ? String(err).replace(/[<&>]/g, "") : ""}</div>
   </form>
-<script>
-  var f = document.getElementById("f"), err = document.getElementById("err");
-  f.addEventListener("submit", function (e) {
-    e.preventDefault();
-    err.textContent = "";
-    fetch("/api/pakadb/login", { method: "POST", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ id: f.id.value.trim(), password: f.pw.value }) })
-      .then(function (r) { return r.json().then(function (j) { return { ok: r.ok, j: j }; }); })
-      .then(function (o) { if (o.ok) location.href = "/pakadb"; else err.textContent = (o.j && o.j.error) || "Login failed."; })
-      .catch(function () { err.textContent = "Network error."; });
-  });
-</script></body></html>`;
+</body></html>`;   // plain form POST + server redirect — no JS (CSP is script-src 'self')
   }
 
   // ---- Elo ladder: settle one duel match --------------------------------
@@ -513,21 +502,29 @@ function createApp(options = {}) {
     if (qaKind && qaTesters && !qaAuthed(req)) {
       if (qaKind === "entry") {
         res.writeHead(200, { "Content-Type": "text/html; charset=utf-8", "Cache-Control": "no-store" });
-        return res.end(qaLoginHtml());
+        return res.end(qaLoginHtml(url.searchParams.get("e") ? "Wrong identifier or password." : ""));
       }
       res.writeHead(401, { "Content-Type": "text/plain; charset=utf-8", "Cache-Control": "no-store" });
       return res.end("PakaDB is in private testing — log in at /pakadb");
     }
-    // QA gate login / logout (standalone; separate cookie from Duel's sid)
+    // QA gate login / logout (standalone; separate cookie from Duel's sid).
+    // The login page posts a plain HTML form (CSP forbids inline JS), so we parse
+    // form-urlencoded (or JSON) and answer with a redirect.
     if (url.pathname === "/api/pakadb/login" && req.method === "POST") {
       return readBody(req, (body) => {
-        let data; try { data = JSON.parse(body); } catch { return sendJson(res, { error: "bad json" }, 400); }
-        const id = String(data.id || "").trim();
-        const password = String(data.password || "");
-        if (!qaTesters) return sendJson(res, { ok: true });   // gate disabled
-        if (!qaVerify(id, password)) return sendJson(res, { error: "Wrong identifier or password." }, 401);
-        setQaCookie(req, res, id);
-        return sendJson(res, { ok: true });
+        let id = "", password = "";
+        if ((req.headers["content-type"] || "").indexOf("application/json") !== -1) {
+          try { const d = JSON.parse(body); id = String(d.id || "").trim(); password = String(d.password || ""); } catch {}
+        } else {
+          const p = new URLSearchParams(body); id = String(p.get("id") || "").trim(); password = String(p.get("password") || "");
+        }
+        if (qaTesters && !qaVerify(id, password)) {
+          res.writeHead(302, { Location: "/pakadb?e=1", "Cache-Control": "no-store" });
+          return res.end();
+        }
+        if (qaTesters) setQaCookie(req, res, id);
+        res.writeHead(302, { Location: "/pakadb", "Cache-Control": "no-store" });
+        return res.end();
       });
     }
     if (url.pathname === "/api/pakadb/logout" && req.method === "POST") {
