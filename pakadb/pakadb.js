@@ -263,11 +263,12 @@
       "</div>" + row1 + row2 + "</div>";
   }
 
-  // image-only card: big portrait with the name on a small faded strip at the bottom
-  function galleryCard(u) {
-    return '<div class="unit gunit" data-id="' + u.id + '">' +
-      '<img class="gunit-img" loading="lazy" src="/pakadb/' + esc(u.image) + '" alt="" ' +
-        'onerror="this.src=\'/pakadb/' + esc(u.thumb) + "'\" />" +
+  // image-only card for one outfit (base or alt): big portrait, name on a faded strip
+  function galleryCard(u, o) {
+    o = o || u;
+    return '<div class="unit gunit" data-id="' + u.id + '"' + (o.cardId != null ? ' data-card="' + o.cardId + '"' : "") + ">" +
+      '<img class="gunit-img" loading="lazy" src="/pakadb/' + esc(o.image) + '" alt="" ' +
+        'onerror="this.src=\'/pakadb/' + esc(o.thumb) + "'\" />" +
       '<div class="gunit-cap">' + esc(u.name) + "</div></div>";
   }
 
@@ -275,7 +276,14 @@
     var list = sortUmas(UMAS.filter(passes));
     var grid = $("cp-grid");
     grid.classList.toggle("gallery", gallery);
-    grid.innerHTML = list.map(gallery ? galleryCard : unitCard).join("");
+    if (gallery) {
+      // one card per outfit so alts show up too
+      grid.innerHTML = list.map(function (u) {
+        return ((u.alts && u.alts.length) ? u.alts : [u]).map(function (o) { return galleryCard(u, o); }).join("");
+      }).join("");
+    } else {
+      grid.innerHTML = list.map(unitCard).join("");
+    }
     $("cp-count").textContent = list.length + " / " + UMAS.length + " beautiful mares";
     $("cp-empty").hidden = list.length > 0;
   }
@@ -1526,7 +1534,12 @@
     if (!u) return;
     var prev = document.querySelector(".unit.sel"); if (prev) prev.classList.remove("sel");
     el.classList.add("sel");
-    openDrawer(u);
+    // gallery alt cards carry a cardId — open the drawer on that outfit
+    var cardId = el.getAttribute("data-card"), idx = 0;
+    if (cardId != null && u.alts) {
+      for (var i = 0; i < u.alts.length; i++) { if (String(u.alts[i].cardId) === cardId) { idx = i; break; } }
+    }
+    openDrawer(u, idx);
   });
   $("cp-scrim").addEventListener("click", function () { closeDrawer(); closePicker(); });
   document.addEventListener("keydown", function (e) { if (e.key === "Escape") { if (!$("bd-ctx").hidden) return closeCtx(); if (!$("char-picker").hidden) return closeCharPicker(); if (!$("white-picker").hidden) return closeWhitePicker(); closeDrawer(); closePicker(); closeRoster(); closeEditor(); closeSkillPicker(); closeSlotPicker(); } });
