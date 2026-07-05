@@ -22,8 +22,6 @@
         "<li><b>Database:</b> search and filter every uma by aptitude and skills, with per outfit details.</li>" +
         "<li><b>Breeding planner:</b> drop umas into a foal, parent and grandparent tree, pool their " +
         "factors, and read the projected foal and inherited skills.</li>" +
-        "<li>The real legacy rules are enforced, so an uma cannot be her own parent and the two " +
-        "parents must be different characters.</li>" +
         "</ul>" +
         "Saddle up and start planning. 🐎🐎🐎🐎🐎🐎🐎🐎🐎🐎🐎🐎🐎🐎🐎🐎🐎🐎🐎🐎🐎🐎🐎🐎🐎🐎🐎🐎🐎🐎🐎🐎🐎🐎🐎🐎🐎🐎🐎🐎",
     },
