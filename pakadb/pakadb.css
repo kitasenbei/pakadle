@@ -186,6 +186,17 @@ body.scrubbing .numc-val::selection { background: transparent; }
   grid-template-columns: repeat(auto-fill, minmax(308px, 1fr));
   gap: 14px; padding: 12px;
 }
+/* image-only gallery: big portrait, name on a small faded strip at the bottom */
+.cp-grid.gallery { grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); }
+.gunit { position: relative; display: block; padding: 0; overflow: hidden; aspect-ratio: 3 / 4; }
+.gunit-img { width: 100%; height: 100%; object-fit: cover; object-position: top center; display: block; }
+.gunit-cap {
+  position: absolute; left: 8px; right: 8px; bottom: 8px; text-align: center;
+  padding: 5px 10px; border-radius: 10px;
+  background: rgba(255,255,255,.62); -webkit-backdrop-filter: blur(3px); backdrop-filter: blur(3px);
+  font-size: 14px; font-weight: 800; color: var(--ink);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
 .unit {
   background: var(--panel); padding: 16px; cursor: pointer;
   border: 2px solid var(--divider); border-radius: 18px;

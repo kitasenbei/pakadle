@@ -62,6 +62,9 @@
   // filter state: aptMin[key]=grade (require >=), rarity[] set, growth[] stats,
   // statMin{stat:n}, skill substring.
   var state = { q: "", sort: "name", advOpen: false, aptMin: {}, rarity: [], growth: [], statMin: {}, skills: [] };
+  // gallery = image-only grid (big portrait + name on a faded strip); persisted.
+  var gallery = false;
+  try { gallery = localStorage.getItem("pakadb_gallery") === "1"; } catch (e) {}
 
   // aptitude groups (cat + [key,label]); keys are unique across groups.
   var APT_DEFS = [
@@ -259,10 +262,19 @@
       "</div>" + row1 + row2 + "</div>";
   }
 
+  // image-only card: big portrait with the name on a small faded strip at the bottom
+  function galleryCard(u) {
+    return '<div class="unit gunit" data-id="' + u.id + '">' +
+      '<img class="gunit-img" loading="lazy" src="/pakadb/' + esc(u.image) + '" alt="" ' +
+        'onerror="this.src=\'/pakadb/' + esc(u.thumb) + "'\" />" +
+      '<div class="gunit-cap">' + esc(u.name) + "</div></div>";
+  }
+
   function render() {
     var list = sortUmas(UMAS.filter(passes));
     var grid = $("cp-grid");
-    grid.innerHTML = list.map(unitCard).join("");
+    grid.classList.toggle("gallery", gallery);
+    grid.innerHTML = list.map(gallery ? galleryCard : unitCard).join("");
     $("cp-count").textContent = list.length + " / " + UMAS.length + " beautiful mares";
     $("cp-empty").hidden = list.length > 0;
   }
@@ -1542,6 +1554,16 @@
   })();
   $("cp-search").addEventListener("input", function (e) { state.q = e.target.value.trim().toLowerCase(); render(); });
   initDropdown($("cp-sort"), function (v) { state.sort = v; render(); });
+  (function () {
+    var btn = $("cp-view-toggle");
+    function sync() { btn.textContent = gallery ? "DETAILS" : "IMAGES"; btn.setAttribute("aria-pressed", gallery ? "true" : "false"); btn.classList.toggle("on", gallery); }
+    btn.addEventListener("click", function () {
+      gallery = !gallery;
+      try { localStorage.setItem("pakadb_gallery", gallery ? "1" : "0"); } catch (e) {}
+      sync(); render();
+    });
+    sync();
+  })();
 
   function toggleInArr(arr, val) {
     var i = arr.indexOf(val); if (i >= 0) arr.splice(i, 1); else arr.push(val); return arr;
