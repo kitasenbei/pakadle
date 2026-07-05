@@ -62,9 +62,10 @@
   // filter state: aptMin[key]=grade (require >=), rarity[] set, growth[] stats,
   // statMin{stat:n}, skill substring.
   var state = { q: "", sort: "name", advOpen: false, aptMin: {}, rarity: [], growth: [], statMin: {}, skills: [] };
-  // gallery = image-only grid (big portrait + name on a faded strip); persisted.
-  var gallery = false;
-  try { gallery = localStorage.getItem("pakadb_gallery") === "1"; } catch (e) {}
+  // gallery = image-only grid (big portrait + name on a faded strip); on by default,
+  // persisted (an explicit stored choice wins so anyone who switched to DETAILS keeps it).
+  var gallery = true;
+  try { var g = localStorage.getItem("pakadb_gallery"); if (g !== null) gallery = g === "1"; } catch (e) {}
 
   // aptitude groups (cat + [key,label]); keys are unique across groups.
   var APT_DEFS = [
