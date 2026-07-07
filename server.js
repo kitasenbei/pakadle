@@ -439,13 +439,6 @@ function createApp(options = {}) {
   const server = http.createServer((req, res) => {
     const url = new URL(req.url, `http://${req.headers.host}`);
 
-    // ---- JOKE: serve the fake 500 page on every route. REMOVE THIS BLOCK later. ----
-    {
-      const buf = fs.readFileSync(path.join(ROOT, "500.html"));
-      res.writeHead(500, { "Content-Type": "text/html; charset=utf-8", "Cache-Control": "no-store" });
-      return res.end(buf);
-    }
-
     // ---- Pakapix (bundled game) ----
     if (url.pathname === "/pakapix" || url.pathname.startsWith("/pakapix/")) {
       return pakapix.handle(req, res, url);
