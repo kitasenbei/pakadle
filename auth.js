@@ -1,7 +1,7 @@
 // Pakadle account auth for the main page. Self-contained: injects its own modal
 // + styles, wires the header "Sign in" button, and talks to the shared /api/auth
 // endpoints (the same accounts used by Pakachess and Duel). Three flows live in
-// one modal — Sign in, Create account, and Forgot password (recovery code OR an
+// one modal: Sign in, Create account, and Forgot password (recovery code OR an
 // admin-enabled recovery mode). CSP allows 'self' scripts + inline styles.
 (function () {
   "use strict";
@@ -133,7 +133,7 @@
     els.tabs.forEach(function (t) { t.classList.toggle("on", t.getAttribute("data-mode") === m); });
     if (m === "forgot") {
       els.hint.hidden = false;
-      els.hint.textContent = "Enter your name. If an admin enabled recovery for you, you can set a new password right away — otherwise enter your recovery code.";
+      els.hint.textContent = "Enter your name. If an admin enabled recovery for you, you can set a new password right away; otherwise enter your recovery code.";
       els.codeRow.hidden = true;      // revealed after we learn the mode
       els.passRow.hidden = true;      // revealed after we learn the mode
       els.forgot.style.display = "none";
@@ -172,12 +172,12 @@
       if (!r.ok) { els.err.textContent = r.d.error || "Something went wrong."; return; }
       account = r.d.account; renderAccount();
       if (r.d.recovery) {
-        // brand-new (or backfilled) code — keep the modal open so they can copy it
+        // brand-new (or backfilled) code: keep the modal open so they can copy it
         showCode(r.d.recovery);
         els.nameRow.hidden = true; els.passRow.hidden = true;
         els.forgot.style.display = "none"; els.tabsWrap.style.display = "none";
         els.hint.hidden = false;
-        els.hint.textContent = "Welcome, " + account.name + "! Write this code down — it's the only way to reset your password if you forget it. It won't be shown again.";
+        els.hint.textContent = "Welcome, " + account.name + "! Write this code down; it's the only way to reset your password if you forget it. It won't be shown again.";
         els.go.textContent = "Done";
         mode = "done";
       } else {
@@ -203,7 +203,7 @@
           els.passI.focus();
         } else {
           els.codeRow.hidden = false;
-          els.hint.textContent = "Enter the recovery code you saved, plus a new password.";
+          els.hint.textContent = "Recovery isn't enabled for “" + name + "”. Enter the recovery code you saved (plus a new password), or ask an administrator to turn on recovery for your account.";
           els.codeI.focus();
         }
       }).catch(function () { els.go.disabled = false; els.err.textContent = "Connection error."; });
@@ -221,7 +221,7 @@
       account = r.d.account; renderAccount();
       els.nameRow.hidden = true; els.codeRow.hidden = true; els.passRow.hidden = true;
       els.hint.hidden = false;
-      els.hint.textContent = "Password reset for " + account.name + ". You're signed in. Here's your new recovery code — save it.";
+      els.hint.textContent = "Password reset for " + account.name + ". You're signed in. Here's your new recovery code; save it.";
       if (r.d.recovery) showCode(r.d.recovery);
       els.go.textContent = "Done";
       mode = "done";
