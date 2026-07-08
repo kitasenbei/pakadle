@@ -1,15 +1,19 @@
-// Pakadle account auth for the main page. Self-contained: injects its own modal
-// + styles, wires the header "Sign in" button, and talks to the shared /api/auth
-// endpoints (the same accounts used by Pakachess and Duel). Three flows live in
-// one modal: Sign in, Create account, and Forgot password (recovery code OR an
-// admin-enabled recovery mode). CSP allows 'self' scripts + inline styles.
+// Pakadle account auth for the main page. Self-contained: injects its own styles
+// and TWO separate modals (one for Sign in / Create account, one for account
+// Recovery), then wires the header "Sign in" button. Accounts are shared with
+// Pakachess and Duel via the /api/auth endpoints. CSP allows 'self' scripts +
+// inline styles.
+//
+// Recovery has no email and no codes: an admin flips recovery mode on an account
+// with `pakadle --recover <name>`, then the owner opens the recovery modal, types
+// just their account name, and (if enabled) sets a new password.
 (function () {
   "use strict";
 
   var authBtn = document.getElementById("auth-btn");
   var chip = document.getElementById("acct-chip");
   var chipName = document.getElementById("acct-name");
-  if (!authBtn) return; // header not present -> nothing to do
+  if (!authBtn) return;
 
   var account = null;
 
@@ -32,72 +36,40 @@
     "  font-family:inherit;color:var(--ink)}",
     ".pa-x{position:absolute;top:10px;right:12px;border:none;background:none;",
     "  font-size:1.5rem;line-height:1;cursor:pointer;color:var(--ink-soft)}",
+    ".pa-title{font-weight:800;font-size:1.15rem;margin:0 0 14px;color:var(--ink)}",
     ".pa-tabs{display:flex;gap:6px;margin-bottom:16px}",
     ".pa-tab{flex:1;font-family:inherit;font-weight:800;font-size:.85rem;cursor:pointer;",
     "  padding:8px 4px;border:none;border-radius:10px;background:var(--key-bg);color:var(--ink-soft)}",
     ".pa-tab.on{background:var(--turf);color:#fff;box-shadow:0 2px 0 var(--turf-dark)}",
-    ".pa-body label{display:block;font-weight:700;font-size:.85rem;margin:0 0 12px}",
-    ".pa-body input{display:block;width:100%;box-sizing:border-box;margin-top:5px;",
+    ".pa-card label{display:block;font-weight:700;font-size:.85rem;margin:0 0 12px}",
+    ".pa-card input{display:block;width:100%;box-sizing:border-box;margin-top:5px;",
     "  font-family:inherit;font-size:1rem;padding:10px 12px;border:2px solid var(--tile-line);",
     "  border-radius:10px;background:var(--bg);color:var(--ink)}",
-    ".pa-body input:focus{outline:none;border-color:var(--turf)}",
+    ".pa-card input:focus{outline:none;border-color:var(--turf)}",
     ".pa-err{color:var(--err);font-weight:700;font-size:.82rem;min-height:1.1em;margin:0 0 10px}",
+    ".pa-hint{font-size:.82rem;color:var(--ink-soft);margin:0 0 12px;line-height:1.4}",
     ".pa-go{width:100%;font-family:inherit;font-weight:800;font-size:1rem;cursor:pointer;",
     "  color:#fff;background:var(--sakura);border:none;border-radius:12px;padding:12px;",
     "  box-shadow:0 3px 0 #c94a74}",
     ".pa-go:active{transform:translateY(3px);box-shadow:0 0 0 #c94a74}",
     ".pa-link{display:block;width:100%;text-align:center;margin-top:12px;background:none;",
     "  border:none;font-family:inherit;font-weight:700;font-size:.82rem;color:var(--ink-soft);",
-    "  cursor:pointer;text-decoration:underline}",
-    ".pa-hint{font-size:.82rem;color:var(--ink-soft);margin:-4px 0 12px;line-height:1.4}",
-    ".pa-code{margin:14px 0;padding:14px;border-radius:12px;background:var(--gold);color:var(--ink);",
-    "  text-align:center;font-weight:800;letter-spacing:.06em;font-size:1.15rem;word-break:break-all}",
-    ".pa-code small{display:block;font-size:.72rem;font-weight:700;letter-spacing:0;margin-bottom:6px;opacity:.8}"
+    "  cursor:pointer;text-decoration:underline}"
   ].join("");
   document.head.appendChild(css);
 
-  // ---------- modal DOM ----------
-  var overlay = document.createElement("div");
-  overlay.className = "pa-overlay";
-  overlay.hidden = true;
-  overlay.innerHTML =
-    '<div class="pa-card" role="dialog" aria-modal="true">' +
-    '  <button class="pa-x" data-close aria-label="Close">×</button>' +
-    '  <div class="pa-tabs">' +
-    '    <button class="pa-tab on" data-mode="login">Sign in</button>' +
-    '    <button class="pa-tab" data-mode="register">Create account</button>' +
-    '  </div>' +
-    '  <div class="pa-body">' +
-    '    <p class="pa-hint" data-hint hidden></p>' +
-    '    <div data-code-box hidden></div>' +
-    '    <label data-name-row>Trainer name<input data-name type="text" maxlength="24" autocomplete="username" spellcheck="false" /></label>' +
-    '    <label data-code-row hidden>Recovery code<input data-code type="text" autocomplete="off" spellcheck="false" placeholder="XXXX-XXXX-XXXX" /></label>' +
-    '    <label data-pass-row>Password<input data-pass type="password" maxlength="200" autocomplete="current-password" /></label>' +
-    '    <p class="pa-err" data-err></p>' +
-    '    <button class="pa-go" data-go>Sign in</button>' +
-    '    <button class="pa-link" data-forgot>Forgot password?</button>' +
-    '  </div>' +
-    '</div>';
-  document.body.appendChild(overlay);
-
-  var q = function (sel) { return overlay.querySelector(sel); };
-  var els = {
-    card: q(".pa-card"), tabs: overlay.querySelectorAll(".pa-tab"),
-    hint: q("[data-hint]"), codeBox: q("[data-code-box]"),
-    nameRow: q("[data-name-row]"), nameI: q("[data-name]"),
-    codeRow: q("[data-code-row]"), codeI: q("[data-code]"),
-    passRow: q("[data-pass-row]"), passI: q("[data-pass]"),
-    err: q("[data-err]"), go: q("[data-go]"), forgot: q("[data-forgot]"),
-    tabsWrap: q(".pa-tabs")
-  };
-
   // ---------- helpers ----------
+  function el(tag, attrs, html) {
+    var e = document.createElement(tag);
+    if (attrs) for (var k in attrs) e.setAttribute(k, attrs[k]);
+    if (html != null) e.innerHTML = html;
+    return e;
+  }
   function toast(msg) {
     if (typeof window.pakadleToast === "function") return window.pakadleToast(msg);
     var wrap = document.getElementById("toast-wrap");
-    if (!wrap) { return; }
-    var t = document.createElement("div");
-    t.className = "toast"; t.textContent = msg;
+    if (!wrap) return;
+    var t = el("div", { class: "toast" }); t.textContent = msg;
     wrap.appendChild(t); setTimeout(function () { t.remove(); }, 2600);
   }
   function api(path, payload) {
@@ -107,12 +79,6 @@
       body: JSON.stringify(payload || {})
     }).then(function (r) { return r.json().then(function (d) { return { ok: r.ok, d: d }; }); });
   }
-  function showCode(code) {
-    els.codeBox.hidden = false;
-    els.codeBox.className = "pa-code";
-    els.codeBox.innerHTML = "<small>SAVE YOUR RECOVERY CODE</small>" + code;
-  }
-
   function renderAccount() {
     if (account) {
       if (chip) { chip.hidden = false; chipName.textContent = account.name; }
@@ -123,134 +89,169 @@
     }
   }
 
-  // mode: "login" | "register" | "forgot"
-  var mode = "login";
-  function setMode(m) {
-    mode = m;
-    els.err.textContent = "";
-    els.codeBox.hidden = true;
-    els.tabsWrap.style.display = m === "forgot" ? "none" : "flex";
-    els.tabs.forEach(function (t) { t.classList.toggle("on", t.getAttribute("data-mode") === m); });
-    if (m === "forgot") {
-      els.hint.hidden = false;
-      els.hint.textContent = "Enter your name. If an admin enabled recovery for you, you can set a new password right away; otherwise enter your recovery code.";
-      els.codeRow.hidden = true;      // revealed after we learn the mode
-      els.passRow.hidden = true;      // revealed after we learn the mode
-      els.forgot.style.display = "none";
-      els.go.textContent = "Continue";
-      els.passI.setAttribute("autocomplete", "new-password");
-      forgotStage = "begin";
-    } else {
-      els.hint.hidden = true;
-      els.codeRow.hidden = true;
-      els.passRow.hidden = false;
-      els.forgot.style.display = m === "login" ? "block" : "none";
-      els.go.textContent = m === "login" ? "Sign in" : "Create account";
-      els.passI.setAttribute("autocomplete", m === "login" ? "current-password" : "new-password");
-    }
-  }
+  // ==================== sign-in / register modal ====================
+  var loginOverlay = el("div", { class: "pa-overlay" });
+  loginOverlay.hidden = true;
+  loginOverlay.innerHTML =
+    '<div class="pa-card" role="dialog" aria-modal="true">' +
+    '  <button class="pa-x" data-close aria-label="Close">×</button>' +
+    '  <div class="pa-tabs">' +
+    '    <button class="pa-tab on" data-mode="login">Sign in</button>' +
+    '    <button class="pa-tab" data-mode="register">Create account</button>' +
+    '  </div>' +
+    '  <label>Trainer name<input data-name type="text" maxlength="24" autocomplete="username" spellcheck="false" /></label>' +
+    '  <label>Password<input data-pass type="password" maxlength="200" autocomplete="current-password" /></label>' +
+    '  <p class="pa-err" data-err></p>' +
+    '  <button class="pa-go" data-go>Sign in</button>' +
+    '  <button class="pa-link" data-forgot>Forgot password?</button>' +
+    '</div>';
+  document.body.appendChild(loginOverlay);
 
-  var forgotStage = "begin"; // "begin" -> ask name; "code"/"recovery-mode" -> set pw
-  function open(m) {
-    setMode(m || "login");
-    overlay.hidden = false;
-    setTimeout(function () { els.nameI.focus(); }, 30);
+  var L = {
+    tabs: loginOverlay.querySelectorAll(".pa-tab"),
+    nameI: loginOverlay.querySelector("[data-name]"),
+    passI: loginOverlay.querySelector("[data-pass]"),
+    err: loginOverlay.querySelector("[data-err]"),
+    go: loginOverlay.querySelector("[data-go]"),
+    forgot: loginOverlay.querySelector("[data-forgot]")
+  };
+  var loginMode = "login";
+  function setLoginMode(m) {
+    loginMode = m;
+    L.err.textContent = "";
+    L.tabs.forEach(function (t) { t.classList.toggle("on", t.getAttribute("data-mode") === m); });
+    L.go.textContent = m === "login" ? "Sign in" : "Create account";
+    L.passI.setAttribute("autocomplete", m === "login" ? "current-password" : "new-password");
   }
-  function close() { overlay.hidden = true; els.passI.value = ""; els.codeI.value = ""; }
+  function openLogin() {
+    setLoginMode("login");
+    loginOverlay.hidden = false;
+    setTimeout(function () { L.nameI.focus(); }, 30);
+  }
+  function closeLogin() { loginOverlay.hidden = true; L.passI.value = ""; }
 
-  // ---------- submit ----------
-  function submit() {
-    var name = (els.nameI.value || "").trim();
-    els.err.textContent = "";
-    if (mode === "forgot") return submitForgot(name);
-    var password = els.passI.value || "";
-    if (!name || !password) { els.err.textContent = "Enter a name and password."; return; }
-    var path = mode === "login" ? "/api/auth/login" : "/api/auth/register";
-    els.go.disabled = true;
+  function submitLogin() {
+    var name = (L.nameI.value || "").trim();
+    var password = L.passI.value || "";
+    L.err.textContent = "";
+    if (!name || !password) { L.err.textContent = "Enter a name and password."; return; }
+    var path = loginMode === "login" ? "/api/auth/login" : "/api/auth/register";
+    L.go.disabled = true;
     api(path, { name: name, password: password }).then(function (r) {
-      els.go.disabled = false;
-      if (!r.ok) { els.err.textContent = r.d.error || "Something went wrong."; return; }
-      account = r.d.account; renderAccount();
-      if (r.d.recovery) {
-        // brand-new (or backfilled) code: keep the modal open so they can copy it
-        showCode(r.d.recovery);
-        els.nameRow.hidden = true; els.passRow.hidden = true;
-        els.forgot.style.display = "none"; els.tabsWrap.style.display = "none";
-        els.hint.hidden = false;
-        els.hint.textContent = "Welcome, " + account.name + "! Write this code down; it's the only way to reset your password if you forget it. It won't be shown again.";
-        els.go.textContent = "Done";
-        mode = "done";
-      } else {
-        close();
-        toast("Welcome back, " + account.name + "!");
-      }
-    }).catch(function () { els.go.disabled = false; els.err.textContent = "Connection error."; });
+      L.go.disabled = false;
+      if (!r.ok) { L.err.textContent = r.d.error || "Something went wrong."; return; }
+      account = r.d.account; renderAccount(); closeLogin();
+      toast(loginMode === "login" ? "Welcome back, " + account.name + "!" : "Account created. Good luck out there!");
+    }).catch(function () { L.go.disabled = false; L.err.textContent = "Connection error."; });
   }
 
-  function submitForgot(name) {
-    if (forgotStage === "begin") {
-      if (!name) { els.err.textContent = "Enter your trainer name."; return; }
-      els.go.disabled = true;
+  // ==================== recovery modal (separate) ====================
+  var recOverlay = el("div", { class: "pa-overlay" });
+  recOverlay.hidden = true;
+  recOverlay.innerHTML =
+    '<div class="pa-card" role="dialog" aria-modal="true">' +
+    '  <button class="pa-x" data-close aria-label="Close">×</button>' +
+    '  <p class="pa-title">Recover account</p>' +
+    '  <p class="pa-hint" data-hint>Enter your account name to recover it.</p>' +
+    '  <label data-name-row>Account name<input data-name type="text" maxlength="24" autocomplete="username" spellcheck="false" /></label>' +
+    '  <label data-pass-row hidden>New password<input data-pass type="password" maxlength="200" autocomplete="new-password" /></label>' +
+    '  <p class="pa-err" data-err></p>' +
+    '  <button class="pa-go" data-go>Continue</button>' +
+    '</div>';
+  document.body.appendChild(recOverlay);
+
+  var R = {
+    hint: recOverlay.querySelector("[data-hint]"),
+    nameRow: recOverlay.querySelector("[data-name-row]"),
+    nameI: recOverlay.querySelector("[data-name]"),
+    passRow: recOverlay.querySelector("[data-pass-row]"),
+    passI: recOverlay.querySelector("[data-pass]"),
+    err: recOverlay.querySelector("[data-err]"),
+    go: recOverlay.querySelector("[data-go]")
+  };
+  var recStage = "name"; // "name" -> ask name; "setpw" -> set new password; "done"
+  function openRecovery(prefill) {
+    recStage = "name";
+    R.hint.textContent = "Enter your account name to recover it.";
+    R.nameRow.hidden = false; R.passRow.hidden = true;
+    R.passI.value = ""; R.err.textContent = "";
+    R.go.textContent = "Continue"; R.go.disabled = false;
+    if (prefill) R.nameI.value = prefill;
+    recOverlay.hidden = false;
+    setTimeout(function () { R.nameI.focus(); }, 30);
+  }
+  function closeRecovery() { recOverlay.hidden = true; R.passI.value = ""; }
+
+  function submitRecovery() {
+    R.err.textContent = "";
+    var name = (R.nameI.value || "").trim();
+    if (recStage === "done") { closeRecovery(); return; }
+    if (recStage === "name") {
+      if (!name) { R.err.textContent = "Enter your account name."; return; }
+      R.go.disabled = true;
       api("/api/auth/reset-begin", { name: name }).then(function (r) {
-        els.go.disabled = false;
-        forgotStage = r.d.mode === "recovery-mode" ? "recovery-mode" : "code";
-        els.nameRow.hidden = true;
-        els.passRow.hidden = false;
-        els.go.textContent = "Set new password";
-        if (forgotStage === "recovery-mode") {
-          els.codeRow.hidden = true;
-          els.hint.textContent = "Recovery is enabled for “" + name + "”. Choose a new password below.";
-          els.passI.focus();
-        } else {
-          els.codeRow.hidden = false;
-          els.hint.textContent = "Recovery isn't enabled for “" + name + "”. Enter the recovery code you saved (plus a new password), or ask an administrator to turn on recovery for your account.";
-          els.codeI.focus();
+        R.go.disabled = false;
+        if (!r.d.enabled) {
+          // not in recovery mode -> only an admin can enable it
+          R.hint.textContent = "Recovery isn't enabled for “" + name + "”. Ask an administrator to turn on recovery for your account, then try again.";
+          R.nameRow.hidden = true; R.passRow.hidden = true;
+          R.go.textContent = "Close"; recStage = "done";
+          return;
         }
-      }).catch(function () { els.go.disabled = false; els.err.textContent = "Connection error."; });
+        recStage = "setpw";
+        R.hint.textContent = "Recovery is enabled for “" + name + "”. Choose a new password.";
+        R.nameRow.hidden = true; R.passRow.hidden = false;
+        R.go.textContent = "Set new password";
+        setTimeout(function () { R.passI.focus(); }, 20);
+      }).catch(function () { R.go.disabled = false; R.err.textContent = "Connection error."; });
       return;
     }
-    // stage: set the new password
-    var password = els.passI.value || "";
-    var code = els.codeI.value || "";
-    if (password.length < 6) { els.err.textContent = "New password must be at least 6 characters."; return; }
-    if (forgotStage === "code" && !code.trim()) { els.err.textContent = "Enter your recovery code."; return; }
-    els.go.disabled = true;
-    api("/api/auth/reset", { name: name, code: code, password: password }).then(function (r) {
-      els.go.disabled = false;
-      if (!r.ok) { els.err.textContent = r.d.error || "Could not reset."; return; }
+    // recStage === "setpw"
+    var password = R.passI.value || "";
+    if (password.length < 6) { R.err.textContent = "New password must be at least 6 characters."; return; }
+    R.go.disabled = true;
+    api("/api/auth/reset", { name: name, password: password }).then(function (r) {
+      R.go.disabled = false;
+      if (!r.ok) { R.err.textContent = r.d.error || "Could not reset."; return; }
       account = r.d.account; renderAccount();
-      els.nameRow.hidden = true; els.codeRow.hidden = true; els.passRow.hidden = true;
-      els.hint.hidden = false;
-      els.hint.textContent = "Password reset for " + account.name + ". You're signed in. Here's your new recovery code; save it.";
-      if (r.d.recovery) showCode(r.d.recovery);
-      els.go.textContent = "Done";
-      mode = "done";
-    }).catch(function () { els.go.disabled = false; els.err.textContent = "Connection error."; });
+      toast("Password reset. Welcome back, " + account.name + "!");
+      closeRecovery();
+    }).catch(function () { R.go.disabled = false; R.err.textContent = "Connection error."; });
   }
 
-  // ---------- wiring ----------
+  // ==================== wiring ====================
   authBtn.addEventListener("click", function () {
     if (account) {
       api("/api/auth/logout", {}).catch(function () {});
       account = null; renderAccount(); toast("Signed out");
     } else {
-      open("login");
+      openLogin();
     }
   });
-  overlay.addEventListener("click", function (e) {
-    if (e.target === overlay || e.target.hasAttribute("data-close")) close();
+
+  loginOverlay.addEventListener("click", function (e) {
+    if (e.target === loginOverlay || e.target.hasAttribute("data-close")) closeLogin();
   });
-  els.go.addEventListener("click", function () {
-    if (mode === "done") { close(); return; }
-    submit();
+  L.tabs.forEach(function (t) {
+    t.addEventListener("click", function () { setLoginMode(t.getAttribute("data-mode")); });
   });
-  els.forgot.addEventListener("click", function () { setMode("forgot"); });
-  els.tabs.forEach(function (t) {
-    t.addEventListener("click", function () { setMode(t.getAttribute("data-mode")); });
+  L.go.addEventListener("click", submitLogin);
+  L.forgot.addEventListener("click", function () {
+    var prefill = (L.nameI.value || "").trim();
+    closeLogin(); openRecovery(prefill);
   });
-  overlay.addEventListener("keydown", function (e) {
-    if (e.key === "Enter" && mode !== "done") { e.preventDefault(); submit(); }
-    if (e.key === "Escape") close();
+  loginOverlay.addEventListener("keydown", function (e) {
+    if (e.key === "Enter") { e.preventDefault(); submitLogin(); }
+    if (e.key === "Escape") closeLogin();
+  });
+
+  recOverlay.addEventListener("click", function (e) {
+    if (e.target === recOverlay || e.target.hasAttribute("data-close")) closeRecovery();
+  });
+  R.go.addEventListener("click", submitRecovery);
+  recOverlay.addEventListener("keydown", function (e) {
+    if (e.key === "Enter") { e.preventDefault(); submitRecovery(); }
+    if (e.key === "Escape") closeRecovery();
   });
 
   // ---------- boot: who am I? ----------
