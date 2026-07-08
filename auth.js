@@ -27,6 +27,7 @@
     "#acct-chip{display:inline-flex;align-items:center;gap:6px;font-weight:800;",
     "  color:var(--ink);background:var(--key-bg);border:2px solid var(--tile-line);",
     "  border-radius:12px;padding:6px 12px}",
+    "#acct-chip[hidden]{display:none}",
     "#acct-chip::before{content:'\\1F40E'}",
     ".pa-overlay{position:fixed;inset:0;z-index:60;display:flex;align-items:center;",
     "  justify-content:center;background:rgba(58,46,57,.45);padding:16px}",
