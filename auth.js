@@ -263,6 +263,17 @@
     if (e.key === "Escape") closeRecovery();
   });
 
+  // ---------- games dropdown: close on outside click / Escape ----------
+  var gamesMenu = document.getElementById("games-menu");
+  if (gamesMenu) {
+    document.addEventListener("click", function (e) {
+      if (gamesMenu.open && !gamesMenu.contains(e.target)) gamesMenu.open = false;
+    });
+    document.addEventListener("keydown", function (e) {
+      if (e.key === "Escape" && gamesMenu.open) gamesMenu.open = false;
+    });
+  }
+
   // ---------- boot: who am I? ----------
   fetch("/api/auth/me", { credentials: "same-origin" })
     .then(function (r) { return r.json(); })

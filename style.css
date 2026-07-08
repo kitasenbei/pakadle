@@ -69,16 +69,50 @@ header .actions {
   justify-content: flex-end;
   gap: 8px;
 }
-/* The buttons + account controls form their own group, kept separate from the
-   tall vertical cross-links column so that when the account chip/Sign in has to
-   wrap it drops just under the buttons (right-aligned) rather than below the
-   full-height column. */
-.action-buttons {
-  display: flex;
+/* Games dropdown: collapses the three cross-links into one pill so the header
+   stays a single tidy row of same-height controls instead of a tall column that
+   forces the account controls to wrap onto a disconnected line. */
+.games-menu { position: relative; }
+.games-menu > summary {
+  list-style: none;
+  cursor: pointer;
+  display: inline-flex;
   align-items: center;
-  flex-wrap: wrap;
-  justify-content: flex-end;
+  gap: 6px;
+  height: 38px;
+  padding: 0 14px;
+  border-radius: 999px;
+  font-weight: 700;
+  font-size: 0.9rem;
+  color: var(--sakura);
+  background: transparent;
+  border: 2px solid var(--sakura);
+  white-space: nowrap;
+  transition: background 0.12s ease, color 0.12s ease;
+}
+.games-menu > summary::-webkit-details-marker { display: none; }
+.games-menu > summary::marker { content: ""; }
+.games-menu > summary:hover,
+.games-menu[open] > summary { background: var(--sakura); color: #fff; }
+.games-menu .caret { font-size: 0.75rem; transition: transform 0.15s ease; }
+.games-menu[open] .caret { transform: rotate(180deg); }
+.games-pop {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  z-index: 30;
+  display: flex;
+  flex-direction: column;
   gap: 8px;
+  padding: 10px;
+  border-radius: 16px;
+  background: var(--panel);
+  box-shadow: 0 12px 32px var(--shadow);
+  animation: games-pop-in 0.16s ease both;
+}
+@keyframes games-pop-in {
+  from { opacity: 0; transform: translateY(-6px); }
+  to   { opacity: 1; transform: translateY(0); }
 }
 
 /* Small screens: the actions cluster is dense (cross-links + several buttons +
