@@ -43,6 +43,7 @@
     "  padding:8px 4px;border:none;border-radius:10px;background:var(--key-bg);color:var(--ink-soft)}",
     ".pa-tab.on{background:var(--turf);color:#fff;box-shadow:0 2px 0 var(--turf-dark)}",
     ".pa-card label{display:block;font-weight:700;font-size:.85rem;margin:0 0 12px}",
+    ".pa-card [hidden]{display:none}",
     ".pa-card input{display:block;width:100%;box-sizing:border-box;margin-top:5px;",
     "  font-family:inherit;font-size:1rem;padding:10px 12px;border:2px solid var(--tile-line);",
     "  border-radius:10px;background:var(--bg);color:var(--ink)}",
