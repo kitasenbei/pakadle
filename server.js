@@ -167,6 +167,16 @@ function createApp(options = {}) {
   // when this pid first loaded today's puzzle, so we can measure time-to-first-guess.
   // (ALTER throws if the column already exists; harmless on an up-to-date DB.)
   try { db.exec("ALTER TABLE plays ADD COLUMN started_at TEXT"); } catch {}
+  // Password recovery on accounts. Two independent paths, both landing on the
+  // site's "Forgot password?" screen:
+  //   1. recovery code   — a one-time code shown at registration (hashed here).
+  //   2. recovery_mode   — an admin flag flipped via the `pakadle` CLI; while set,
+  //                        the owner can pick a new password with NO code (true
+  //                        self-service is impossible without email on file, so an
+  //                        admin vouches instead).
+  try { db.exec("ALTER TABLE accounts ADD COLUMN recovery_salt TEXT"); } catch {}
+  try { db.exec("ALTER TABLE accounts ADD COLUMN recovery_hash TEXT"); } catch {}
+  try { db.exec("ALTER TABLE accounts ADD COLUMN recovery_mode INTEGER NOT NULL DEFAULT 0"); } catch {}
 
   // ---- daily-answer secret ----------------------------------------------
   // words.js is public (it's in the repo), so the old "idx = dayNumber % N"
@@ -273,6 +283,31 @@ function createApp(options = {}) {
     const got = crypto.scryptSync(String(password), salt, 64);
     const exp = Buffer.from(expectedHex, "hex");
     return got.length === exp.length && crypto.timingSafeEqual(got, exp);
+  }
+  // Recovery codes: 12 chars from an unambiguous alphabet (no 0/O/1/I/L), shown
+  // once as XXXX-XXXX-XXXX. Stored only as a salted scrypt hash, like passwords.
+  const RECOVERY_ALPHABET = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";
+  function makeRecoveryCode() {
+    const bytes = crypto.randomBytes(12);
+    let out = "";
+    for (let i = 0; i < 12; i++) {
+      out += RECOVERY_ALPHABET[bytes[i] % RECOVERY_ALPHABET.length];
+      if (i === 3 || i === 7) out += "-";
+    }
+    return out;
+  }
+  // normalize what the user types back (case, stray spaces/dashes) to the stored form
+  function normalizeRecoveryCode(s) {
+    const clean = String(s || "").toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 12);
+    return clean.replace(/(.{4})(.{4})(.{0,4})/, (_, a, b, c) => [a, b, c].filter(Boolean).join("-"));
+  }
+  // set (or rotate) an account's recovery code; returns the plaintext to show once
+  function issueRecoveryCode(accountId) {
+    const code = makeRecoveryCode();
+    const salt = makeSalt();
+    const hash = hashPassword(code, salt);
+    db.prepare("UPDATE accounts SET recovery_salt = ?, recovery_hash = ? WHERE id = ?").run(salt, hash, accountId);
+    return code;
   }
   function sessionToken(req) {
     const m = (req.headers.cookie || "").match(/(?:^|;\s*)sid=([A-Fa-f0-9]+)/);
@@ -653,8 +688,10 @@ function createApp(options = {}) {
         const token = crypto.randomBytes(32).toString("hex");
         db.prepare("INSERT INTO sessions (token, account_id, created_at) VALUES (?, ?, ?)").run(token, id, new Date().toISOString());
         setSessionCookie(req, res, token);
+        // one-time recovery code, shown once so the trainer can reset later
+        const recovery = issueRecoveryCode(id);
         const acc = db.prepare("SELECT id, name, rating, wins, losses, draws FROM accounts WHERE id = ?").get(id);
-        return sendJson(res, { account: publicAccount(acc) });
+        return sendJson(res, { account: publicAccount(acc), recovery });
       });
     }
 
@@ -670,7 +707,58 @@ function createApp(options = {}) {
         const token = crypto.randomBytes(32).toString("hex");
         db.prepare("INSERT INTO sessions (token, account_id, created_at) VALUES (?, ?, ?)").run(token, acc.id, new Date().toISOString());
         setSessionCookie(req, res, token);
-        return sendJson(res, { account: publicAccount(acc) });
+        // Accounts created before recovery codes existed have no code on file.
+        // Mint one on this successful login and hand it back so they can save it.
+        let recovery;
+        if (!acc.recovery_hash) recovery = issueRecoveryCode(acc.id);
+        return sendJson(res, { account: publicAccount(acc), recovery });
+      });
+    }
+
+    // Step 1 of "Forgot password?": the site asks how this name can reset. If an
+    // admin has flipped the account into recovery mode (via cli.js), no code is
+    // needed. Otherwise a recovery code is required. Unknown names look identical
+    // to code-required accounts so this can't be used to enumerate trainers.
+    if (url.pathname === "/api/auth/reset-begin" && req.method === "POST") {
+      return readBody(req, (body) => {
+        let data; try { data = JSON.parse(body); } catch { return sendJson(res, { error: "bad json" }, 400); }
+        const name = String(data.name || "").trim();
+        const acc = db.prepare("SELECT recovery_mode FROM accounts WHERE name_lower = ?").get(name.toLowerCase());
+        const mode = acc && acc.recovery_mode ? "recovery-mode" : "code";
+        return sendJson(res, { mode });
+      });
+    }
+
+    // Step 2: actually set the new password. Passes if EITHER the account is in
+    // admin recovery mode, OR a correct recovery code is supplied. On success the
+    // recovery code rotates, recovery mode clears, and all old sessions are killed.
+    if (url.pathname === "/api/auth/reset" && req.method === "POST") {
+      return readBody(req, (body) => {
+        let data; try { data = JSON.parse(body); } catch { return sendJson(res, { error: "bad json" }, 400); }
+        const name = String(data.name || "").trim();
+        const code = normalizeRecoveryCode(data.code);
+        const password = String(data.password || "");
+        if (password.length < 6 || password.length > 200) {
+          return sendJson(res, { error: "New password must be at least 6 characters." }, 400);
+        }
+        const acc = db.prepare("SELECT * FROM accounts WHERE name_lower = ?").get(name.toLowerCase());
+        if (!acc) return sendJson(res, { error: "Could not reset. Check the name and code." }, 400);
+        const byMode = !!acc.recovery_mode;
+        const byCode = !!acc.recovery_hash && verifyPassword(code, acc.recovery_salt, acc.recovery_hash);
+        if (!byMode && !byCode) {
+          return sendJson(res, { error: "Could not reset. Check the name and code, or ask an admin to enable recovery." }, 401);
+        }
+        const salt = makeSalt();
+        const hash = hashPassword(password, salt);
+        db.prepare("UPDATE accounts SET salt = ?, hash = ?, recovery_mode = 0 WHERE id = ?").run(salt, hash, acc.id);
+        db.prepare("DELETE FROM sessions WHERE account_id = ?").run(acc.id); // sign out everywhere
+        const recovery = issueRecoveryCode(acc.id); // rotate: the old code is spent
+        // sign them straight in on the new password
+        const token = crypto.randomBytes(32).toString("hex");
+        db.prepare("INSERT INTO sessions (token, account_id, created_at) VALUES (?, ?, ?)").run(token, acc.id, new Date().toISOString());
+        setSessionCookie(req, res, token);
+        const fresh = db.prepare("SELECT id, name, rating, wins, losses, draws FROM accounts WHERE id = ?").get(acc.id);
+        return sendJson(res, { account: publicAccount(fresh), recovery });
       });
     }
 
