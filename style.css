@@ -43,6 +43,8 @@ header {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  flex-wrap: wrap;
+  row-gap: 8px;
   padding: 14px 16px 10px;
   position: relative;
   z-index: 1;
@@ -63,7 +65,25 @@ h1 .en   { color: var(--turf); }
 header .actions {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
+  justify-content: flex-end;
   gap: 8px;
+}
+
+/* Small screens: the actions cluster is dense (cross-links + several buttons +
+   the account controls). Shrink the pills/icons so more fit per row and let the
+   whole cluster wrap under the title instead of overflowing the viewport. */
+@media (max-width: 560px) {
+  header { padding: 12px 12px 8px; }
+  header .actions { gap: 6px; }
+  #new-game,
+  #pakadb {
+    height: 34px;
+    padding: 0 12px;
+    font-size: 0.85rem;
+  }
+  .icon-btn { width: 34px; height: 34px; font-size: 1rem; }
+  .cross-link { font-size: 0.78rem; padding: 5px 10px; }
 }
 .cross-links {
   display: flex;
