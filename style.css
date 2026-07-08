@@ -69,6 +69,17 @@ header .actions {
   justify-content: flex-end;
   gap: 8px;
 }
+/* The buttons + account controls form their own group, kept separate from the
+   tall vertical cross-links column so that when the account chip/Sign in has to
+   wrap it drops just under the buttons (right-aligned) rather than below the
+   full-height column. */
+.action-buttons {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+}
 
 /* Small screens: the actions cluster is dense (cross-links + several buttons +
    the account controls). Shrink the pills/icons so more fit per row and let the
