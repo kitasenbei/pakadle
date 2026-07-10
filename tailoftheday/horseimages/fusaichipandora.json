@@ -1,0 +1,15 @@
+{
+  "image": "fusaichipandora.png",
+  "pixel": {
+    "x": 14.85,
+    "y": 1123.65,
+    "width": 470.25,
+    "height": 564.3
+  },
+  "uv": {
+    "x": 0.0132,
+    "y": 0.5675,
+    "width": 0.418,
+    "height": 0.285
+  }
+}

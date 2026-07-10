@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta
+            name="viewport"
+            content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+        />
+        <title>Tail Of The Day</title>
+        <meta name="description" content="Guess the horse tail" />
+        <link rel="canonical" href="https://pakadle.fun/tailoftheday" />
+        <meta name="theme-color" content="#FBF5EA" />
+
+        <meta property="og:type" content="website" />
+        <meta property="og:site_name" content="Pakadle" />
+        <meta
+            property="og:title"
+            content="tailoftheday - Daily pixelated Umamusume guess"
+        />
+        <meta
+            property="og:description"
+            content="Guess the hidden Umamusume as the portrait un-pixelates. A daily picture puzzle for Umamusume fans."
+        />
+        <meta property="og:url" content="https://pakadle.fun/tailoftheday" />
+        <meta
+            property="og:image"
+            content="https://pakadle.fun/tailoftheday-og.png"
+        />
+        <meta property="og:image:width" content="1200" />
+        <meta property="og:image:height" content="630" />
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta
+            name="twitter:title"
+            content="tailoftheday - Daily pixelated Umamusume guess"
+        />
+        <meta
+            name="twitter:image"
+            content="https://pakadle.fun/tailoftheday-og.png"
+        />
+
+        <link rel="icon" type="image/png" href="/favicon.png" />
+        <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+        <link
+            href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&display=swap"
+            rel="stylesheet"
+        />
+        <link rel="stylesheet" href="/tailoftheday/style.css" />
+    </head>
+    <body>
+        <div id="petals" aria-hidden="true"></div>
+        <div id="confetti" aria-hidden="true"></div>
+
+        <header>
+            <h1><span class="en">Tail Of The Day</span></h1>
+            <div class="actions">
+                <a class="cross-link" href="/">← Pakadle</a>
+                <button
+                    id="how-to"
+                    class="icon-btn"
+                    aria-label="How to play"
+                    title="How to Play"
+                >
+                    ?
+                </button>
+                <button id="stats-btn">Stats</button>
+            </div>
+        </header>
+
+        <main class="game">
+            <div id="subtitle"></div>
+
+            <div id="portrait-frame">
+                <img id="portrait" alt="Mystery Umamusume" />
+            </div>
+
+            <div id="dots" aria-hidden="true"></div>
+
+            <form id="guess-form" autocomplete="off">
+                <div class="input-wrap">
+                    <input
+                        id="guess-input"
+                        type="text"
+                        placeholder="Which Umamusume?"
+                        autocomplete="off"
+                        autocapitalize="off"
+                        spellcheck="false"
+                        role="combobox"
+                        aria-autocomplete="list"
+                        aria-expanded="false"
+                    />
+                    <ul id="suggest" class="suggest" role="listbox"></ul>
+                </div>
+                <button type="submit" id="guess-btn">Guess</button>
+            </form>
+
+            <div id="guesses"></div>
+        </main>
+
+        <div id="toast-wrap"></div>
+        <div id="modal"></div>
+        <div id="howto"></div>
+
+        <script src="/tailoftheday/game.js"></script>
+    </body>
+</html>
