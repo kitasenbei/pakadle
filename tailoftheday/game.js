@@ -109,11 +109,10 @@
 
         const d = await r.json();
 
-        guesses = d.guesses.map((g) => ({
+        guesses = d.guesses.map((g, i) => ({
             text: g,
-            correct: false,
+            correct: d.won && i === d.guesses.length - 1,
         }));
-
         finished = d.finished;
 
         subtitleEl.innerHTML = `Tail Of The Day #${d.number}: guess the Umamusume`;
