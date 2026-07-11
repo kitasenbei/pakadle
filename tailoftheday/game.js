@@ -115,7 +115,7 @@
         }));
         finished = d.finished;
 
-        subtitleEl.innerHTML = `Tail Of The Day #${d.number}: guess the Umamusume`;
+        subtitleEl.innerHTML = `Tail Of The Day #${d.number}: guess the Umamusume Tail`;
 
         guessesEl.innerHTML = "";
 
