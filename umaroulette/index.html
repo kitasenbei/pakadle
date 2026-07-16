@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta
+            name="viewport"
+            content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+        />
+        <title>Uma Roulette</title>
+        <meta name="description" content="Spin the wheel for a random Umamusume" />
+        <link rel="canonical" href="https://pakadle.fun/umaroulette" />
+        <meta name="theme-color" content="#FBF5EA" />
+
+        <meta property="og:type" content="website" />
+        <meta property="og:site_name" content="Pakadle" />
+        <meta property="og:title" content="Uma Roulette — Spin for a random Umamusume" />
+        <meta
+            property="og:description"
+            content="Give the wheel a spin and see which Umamusume it lands on."
+        />
+        <meta property="og:url" content="https://pakadle.fun/umaroulette" />
+        <meta name="twitter:card" content="summary_large_image" />
+
+        <link rel="icon" type="image/png" href="/favicon.png" />
+        <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+        <link
+            href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&display=swap"
+            rel="stylesheet"
+        />
+        <link rel="stylesheet" href="/umaroulette/style.css" />
+    </head>
+    <body>
+        <div id="petals" aria-hidden="true"></div>
+        <div id="confetti" aria-hidden="true"></div>
+
+        <header>
+            <h1><span class="en">Uma Roulette</span></h1>
+            <div class="actions">
+                <a class="cross-link" href="/">← Pakadle</a>
+                <button
+                    id="how-to"
+                    class="icon-btn"
+                    aria-label="How to play"
+                    title="How it works"
+                >
+                    ?
+                </button>
+            </div>
+        </header>
+
+        <main class="game">
+            <div id="subtitle">Spin the wheel for a random Umamusume 🎡</div>
+
+            <div id="wheel-wrap">
+                <div id="pointer" aria-hidden="true"></div>
+                <canvas id="wheel" width="640" height="640" role="img"
+                    aria-label="Umamusume roulette wheel"></canvas>
+                <button id="spin-btn" aria-label="Spin">SPIN</button>
+            </div>
+
+            <div id="result" aria-live="polite"></div>
+
+            <button id="again-btn" class="cta" hidden>Spin again 🎡</button>
+        </main>
+
+        <div id="toast-wrap"></div>
+        <div id="howto"></div>
+
+        <script src="/umaroulette/game.js"></script>
+    </body>
+</html>

@@ -999,10 +999,13 @@
         ? '<img class="tp-por" loading="lazy" src="/pakadb/' + esc(foal.thumb) + '" alt="" onerror="this.src=\'/pakadb/' + esc(foal.image) + "'\" />"
         : '<span class="tp-por tp-empty">?</span>';
       var when = fmtStamp(t.at);
+      var title = t.name || (foal ? foal.name : "No foal");
+      var sub = foal ? foal.name : "No foal placed";
       return '<div class="tp-card" data-load="' + i + '" data-tip="Load this pedigree">' +
         '<span class="tp-bg"></span>' + por +
         '<div class="tp-info">' + (when ? '<div class="tp-date">' + when + "</div>" : "") +
-        '<div class="tp-name">' + esc(foal ? foal.name : (t.name || "No foal")) + "</div></div>" +
+        '<div class="tp-name">' + esc(title) + "</div>" +
+        (esc(title) !== esc(sub) ? '<div class="tp-foal">' + esc(sub) + "</div>" : "") + "</div>" +
         '<button class="tp-del" data-deltree="' + i + '" data-tip="Delete">✕</button></div>';
     }).join("") : '<div class="cov-empty">No saved pedigrees yet. Build a tree, name it, and hit SAVE.</div>';
     host.innerHTML = save + list;
@@ -1686,15 +1689,18 @@
 
   // view toggle
   function setView(v) {
-    var breed = v === "breed";
-    $("view-db").hidden = breed;
-    $("view-breed").hidden = !breed;
-    $("cp-db-controls").hidden = breed;
-    $("cp-breed-controls").hidden = !breed;
+    if (v !== "db" && v !== "breed" && v !== "share") v = "db";
+    $("view-db").hidden = v !== "db";
+    $("view-breed").hidden = v !== "breed";
+    $("view-share").hidden = v !== "share";
+    $("cp-db-controls").hidden = v !== "db";
+    $("cp-breed-controls").hidden = v !== "breed";
+    $("cp-share-controls").hidden = v !== "share";
     Array.prototype.forEach.call(document.querySelectorAll(".cp-tab"), function (t) {
       t.classList.toggle("on", t.getAttribute("data-view") === v);
     });
-    if (breed) { $("cp-count").textContent = "PEDIGREE PLANNER"; renderBreeding(); }
+    if (v === "breed") { $("cp-count").textContent = "PEDIGREE PLANNER"; renderBreeding(); }
+    else if (v === "share") { $("cp-count").textContent = "HORSESHARE"; hsRefreshFeed(); }
     else render();
   }
   $("cp-tabs").addEventListener("click", function (e) {
@@ -2193,6 +2199,429 @@
   // click the dimmed area outside the modal box to close it
   [["cp-roster", closeRoster], ["cp-editor", closeEditor], ["bd-fac-modal", closeFacModal]].forEach(function (p) {
     $(p[0]).addEventListener("click", function (e) { if (e.target === this) p[1](); });
+  });
+
+  // =========================================================================
+  // Horseshare: a social feed for bred horses. Press "Share a horse", enter your
+  // trainer ID and pick a saved pedigree; each post can be rated 1–5 stars by
+  // others. All validation is server-side (pakadb/horseshare.js).
+  // =========================================================================
+  var HS = { account: null, posts: [], composerOpen: false, tid: "", pickTree: null, note: "", busy: false,
+    filter: { umaId: "", umaName: "", owner: "", skill: "", sort: "new", minRating: 0, stats: {}, apts: {}, green: false, race: "", minAnc: 0 },
+    confirmDelete: null };
+  function hsNorm(s) { return String(s == null ? "" : s).toLowerCase().replace(/[^a-z0-9]/g, ""); }
+  var HS_SKILL_NAME = null, HS_SKILL_ICON = null, HS_RACE_NAME = null;
+  function hsSkillMaps() {
+    if (HS_SKILL_NAME) return;
+    HS_SKILL_NAME = {}; HS_SKILL_ICON = {};
+    ALL_SKILLS.forEach(function (s) {
+      if (s && s.id != null) { HS_SKILL_NAME[String(s.id)] = s.name; if (s.iconId) HS_SKILL_ICON[String(s.id)] = s.iconId; }
+    });
+  }
+  function hsSkillName(id) { hsSkillMaps(); return HS_SKILL_NAME[String(id)] || ("Skill #" + id); }
+  function hsSkillIcon(id) { hsSkillMaps(); return HS_SKILL_ICON[String(id)] || null; }
+  function hsRaceName(id) {
+    if (!HS_RACE_NAME) { HS_RACE_NAME = {}; RACES.forEach(function (r) { HS_RACE_NAME[String(r.id)] = r.name; }); }
+    return HS_RACE_NAME[String(id)] || ("Race #" + id);
+  }
+
+  function hsShareableTrees() {
+    return savedTrees
+      .map(function (t, i) { return { t: t, i: i }; })
+      .filter(function (o) { return o.t && o.t.slots && o.t.slots.foal != null; });
+  }
+
+  // saved tree -> horse payload (server re-validates & strips everything else)
+  function hsTreeToHorse(t) {
+    var slots = {}, sparks = {}, cards = {};
+    SLOTS.forEach(function (s) {
+      if (t.slots && t.slots[s] != null) slots[s] = String(t.slots[s]);
+      var sp = t.sparks && t.sparks[s];
+      if (sp) {
+        var o = {};
+        if (sp.blue) o.blue = sp.blue;
+        if (sp.pink) o.pink = sp.pink;
+        if (sp.green) o.green = sp.green;
+        if (sp.white && sp.white.length)
+          o.white = sp.white.map(function (w) { return { name: w.name, lvl: w.lvl }; });
+        sparks[s] = o;
+      }
+      if (t.cards && t.cards[s] != null) cards[s] = String(t.cards[s]);
+    });
+    return { slots: slots, sparks: sparks, cards: cards };
+  }
+
+  // spark chips for any slot's factor block
+  function hsSparkChips(sp) {
+    if (!sp) return "";
+    var bits = [];
+    if (sp.blue) STAT_KEYS.forEach(function (k) { if (sp.blue[k]) bits.push('<span class="fac-chip fac-blue">' + esc(STAT_NAME[k]) + " ★" + sp.blue[k] + "</span>"); });
+    if (sp.pink) APT_KEYS.forEach(function (k) { if (sp.pink[k]) bits.push('<span class="fac-chip fac-pink">' + esc(KEY_LABEL[k]) + " ★" + sp.pink[k] + "</span>"); });
+    if (sp.green) bits.push('<span class="fac-chip fac-green">Unique ★' + sp.green + "</span>");
+    if (sp.white) sp.white.forEach(function (w) {
+      if (w.kind === "race") {
+        bits.push('<span class="fac-chip fac-white fac-race">' + raceBannerImg(w.id, "fac-banner") + " " + esc(hsRaceName(w.id)) + " ★" + w.lvl + "</span>");
+      } else {
+        var ic = hsSkillIcon(w.id);
+        bits.push('<span class="fac-chip fac-white">' + (ic ? skillIconImg(ic) + " " : "") + esc(hsSkillName(w.id)) + " ★" + w.lvl + "</span>");
+      }
+    });
+    return bits.length ? '<div class="hs-facs">' + bits.join("") + "</div>" : "";
+  }
+  function hsFactorLine(h) { return hsSparkChips(h.sparks && h.sparks.foal); }
+
+  function hsSlotPortrait(h, slot, cls) {
+    var u = h.slots && h.slots[slot] != null ? BYID[h.slots[slot]] : null;
+    if (!u) return '<span class="' + cls + ' tp-empty">?</span>';
+    return '<img class="' + cls + '" loading="lazy" src="/pakadb/' + esc(u.thumb) +
+      '" alt="" onerror="this.src=\'/pakadb/' + esc(u.image) + "'\" />";
+  }
+  function hsSlotName(h, slot) {
+    var u = h.slots && h.slots[slot] != null ? BYID[h.slots[slot]] : null;
+    return u ? u.name : "Unknown";
+  }
+  // back-compat aliases used by the composer / feed header
+  function hsFoalPortrait(h, cls) { return hsSlotPortrait(h, "foal", cls); }
+  function hsFoalName(h) { return hsSlotName(h, "foal"); }
+
+  // one ancestor cell: portrait + labelled name + its sparks
+  function hsAncCell(h, slot, label) {
+    if (!(h.slots && h.slots[slot] != null)) return "";
+    return '<div class="hs-anc">' + hsSlotPortrait(h, slot, "hs-anc-por") +
+      '<div class="hs-anc-info"><div class="hs-anc-name"><span class="hs-anc-lbl">' + label + "</span> " +
+      esc(hsSlotName(h, slot)) + "</div>" + hsSparkChips(h.sparks && h.sparks[slot]) + "</div></div>";
+  }
+  // two parent branches, each with its two grandparents
+  function hsPedigree(h) {
+    function branch(pk, g1, g2) {
+      var has = (h.slots && (h.slots[pk] != null || h.slots[g1] != null || h.slots[g2] != null));
+      if (!has) return "";
+      var gps = hsAncCell(h, g1, "GP") + hsAncCell(h, g2, "GP");
+      return '<div class="hs-branch">' + hsAncCell(h, pk, "Parent") +
+        (gps ? '<div class="hs-gps">' + gps + "</div>" : "") + "</div>";
+    }
+    var body = branch("p1", "gp11", "gp12") + branch("p2", "gp21", "gp22");
+    return body ? '<div class="hs-ped"><div class="hs-lbl">Pedigree</div>' + body + "</div>" : "";
+  }
+
+  // 5-star widget. Interactive only when logged in and not your own post.
+  function hsStars(p) {
+    var interactive = HS.account && !p.mine;
+    var fill = p.myRating || Math.round(p.avg);
+    var stars = "";
+    for (var k = 1; k <= 5; k++) {
+      var on = k <= fill ? " on" : "";
+      var mine = p.myRating && k <= p.myRating ? " you" : "";
+      stars += interactive
+        ? '<button type="button" class="hs-star' + on + mine + '" data-rate="' + esc(p.id) + '" data-stars="' + k + '">★</button>'
+        : '<span class="hs-star' + on + '">★</span>';
+    }
+    var label = p.count
+      ? '<span class="hs-rate-num">' + p.avg.toFixed(1) + "</span> · " + p.count + " rating" + (p.count === 1 ? "" : "s")
+      : "no ratings yet";
+    if (p.mine) label += " · your post";
+    else if (p.myRating) label += " · you rated " + p.myRating + "★";
+    else if (!HS.account) label += " · log in to rate";
+    return '<div class="hs-stars">' + stars + '<span class="hs-rate-lbl">' + label + "</span></div>";
+  }
+
+  // build the ?query for the feed from the active filter (server does the work)
+  function hsFilterQuery() {
+    var f = HS.filter, p = [];
+    function add(k, v) { if (v !== "" && v != null && v !== 0 && v !== false) p.push(encodeURIComponent(k) + "=" + encodeURIComponent(v)); }
+    add("uma", f.umaId);
+    add("owner", (f.owner || "").trim());
+    add("skill", (f.skill || "").trim());
+    if (f.sort && f.sort !== "new") add("sort", f.sort);
+    add("minRating", f.minRating);
+    var st = Object.keys(f.stats).filter(function (k) { return f.stats[k]; }); if (st.length) add("stats", st.join(","));
+    var ap = Object.keys(f.apts).filter(function (k) { return f.apts[k]; }); if (ap.length) add("apts", ap.join(","));
+    if (f.green) add("green", "1");
+    add("race", f.race);
+    add("minAnc", f.minAnc);
+    return p.length ? "?" + p.join("&") : "";
+  }
+  function hsAnyFilter() {
+    var f = HS.filter;
+    return !!(f.umaId || (f.owner || "").trim() || (f.skill || "").trim() || f.minRating || f.green || f.race || f.minAnc ||
+      Object.keys(f.stats).some(function (k) { return f.stats[k]; }) || Object.keys(f.apts).some(function (k) { return f.apts[k]; }));
+  }
+
+  var hsFeedSeq = 0;
+  function hsRefreshFeed() {
+    HS.busy = true; renderShareView();
+    var seq = ++hsFeedSeq;
+    fetch("/api/pakadb/horseshare/feed" + hsFilterQuery())
+      .then(function (r) { return r.json(); })
+      .then(function (d) {
+        if (seq !== hsFeedSeq) return; // a newer request superseded this one
+        HS.busy = false;
+        HS.account = d && d.account ? d.account : null;
+        HS.posts = (d && d.posts) || [];
+        renderShareView();
+      })
+      .catch(function () { if (seq !== hsFeedSeq) return; HS.busy = false; HS.note = "Couldn't load the feed."; renderShareView(); });
+  }
+  var hsDebTimer = null;
+  function hsDebFetch() { clearTimeout(hsDebTimer); hsDebTimer = setTimeout(hsRefreshFeed, 300); }
+
+  function renderShareView() { renderCompose(); renderFilters(); renderFeed(); }
+
+  // a .pd-dd dropdown from [value,label] pairs
+  function hsDD(id, prefix, aria, value, opts) {
+    return '<div class="pd-dd hs-dd" id="' + id + '" data-value="' + esc(String(value)) + '" data-prefix="' + esc(prefix) + '">' +
+      '<button class="pd-dd-btn" type="button" aria-haspopup="listbox" aria-expanded="false">' +
+        '<span class="pd-dd-label"></span><span class="pd-dd-caret" aria-hidden="true"></span></button>' +
+      '<ul class="pd-dd-menu" role="listbox" aria-label="' + esc(aria) + '">' +
+        opts.map(function (o) { return '<li class="pd-dd-opt" role="option" data-value="' + esc(String(o[0])) + '">' + esc(o[1]) + "</li>"; }).join("") +
+      "</ul></div>";
+  }
+
+  // Built once (initDropdown wires document listeners, so we don't rebuild on
+  // every feed refresh). All control state persists in the live DOM.
+  function renderFilters() {
+    var host = $("hs-filters"); if (!host) return;
+    if (!HS.posts.length) { host.style.display = "none"; return; }
+    host.style.display = "";
+    if (HS.filtersBuilt) return;
+    var f = HS.filter;
+    var statChips = STAT_KEYS.map(function (k) { return '<button type="button" class="hs-chip" data-stat="' + k + '">' + esc(STAT_NAME[k]) + "</button>"; }).join("");
+    var aptChips = APT_KEYS.map(function (k) { return '<button type="button" class="hs-chip" data-apt="' + k + '">' + esc(KEY_LABEL[k]) + "</button>"; }).join("");
+    var raceOpts = [["", "Any race"]].concat(RACES.map(function (r) { return [String(r.id), r.name]; }));
+    host.innerHTML =
+      '<div class="hs-filterbar">' +
+        '<div class="hs-fq-wrap">' +
+          '<input id="hs-fq" class="cp-input hs-fq" type="search" autocomplete="off" spellcheck="false" placeholder="Filter by uma…" value="' + esc(f.umaName) + '" role="combobox" aria-expanded="false" aria-autocomplete="list" />' +
+          '<ul id="hs-fq-sug" class="hs-sug" role="listbox" hidden></ul>' +
+        "</div>" +
+        hsDD("hs-sort", "SORT: ", "Sort", f.sort, [["new", "Newest"], ["old", "Oldest"], ["top", "Top rated"], ["mostrated", "Most rated"]]) +
+        hsDD("hs-fmin", "RATING: ", "Minimum rating", f.minRating, [["0", "Any"], ["3", "3★+"], ["4", "4★+"], ["5", "5★"]]) +
+        '<button type="button" class="cp-ghost hs-more" id="hs-more">MORE ▾</button>' +
+      "</div>" +
+      '<div class="hs-adv" id="hs-adv" hidden>' +
+        '<div class="hs-adv-row">' +
+          '<input id="hs-owner" class="cp-input" type="search" autocomplete="off" spellcheck="false" placeholder="Trainer name…" value="' + esc(f.owner) + '" />' +
+          '<input id="hs-skill" class="cp-input" type="search" autocomplete="off" spellcheck="false" placeholder="White skill…" value="' + esc(f.skill) + '" />' +
+        "</div>" +
+        '<div class="hs-adv-grp"><span class="hs-lbl">Stat sparks</span><div class="hs-chips">' + statChips + "</div></div>" +
+        '<div class="hs-adv-grp"><span class="hs-lbl">Aptitude sparks</span><div class="hs-chips">' + aptChips + "</div></div>" +
+        '<div class="hs-adv-row">' +
+          '<button type="button" class="hs-chip hs-chip-green" data-green="1">Has unique ★</button>' +
+          hsDD("hs-race", "RACE: ", "Race spark", f.race, raceOpts) +
+          hsDD("hs-anc", "PEDIGREE: ", "Ancestors", f.minAnc, [["0", "Any"], ["2", "2+ ancestors"], ["4", "4+ ancestors"], ["6", "Full pedigree"]]) +
+        "</div>" +
+        '<button type="button" class="cp-ghost hs-clear" id="hs-clear">CLEAR FILTERS</button>' +
+      "</div>";
+    initDropdown($("hs-sort"), function (v) { HS.filter.sort = v; hsRefreshFeed(); });
+    initDropdown($("hs-fmin"), function (v) { HS.filter.minRating = Number(v) || 0; hsRefreshFeed(); });
+    initDropdown($("hs-race"), function (v) { HS.filter.race = v || ""; hsRefreshFeed(); });
+    initDropdown($("hs-anc"), function (v) { HS.filter.minAnc = Number(v) || 0; hsRefreshFeed(); });
+    HS.filtersBuilt = true;
+  }
+
+  // uma autocomplete over the full roster (like the breeding picker)
+  function renderUmaSuggest(q) {
+    var el = $("hs-fq-sug"); if (!el) return;
+    var qq = hsNorm(q);
+    if (!qq) { el.hidden = true; el.innerHTML = ""; return; }
+    var list = UMAS.filter(function (u) { return hsNorm(u.name).indexOf(qq) >= 0; }).slice(0, 8);
+    if (!list.length) { el.hidden = true; el.innerHTML = ""; return; }
+    el.innerHTML = list.map(function (u) {
+      return '<li class="hs-sug-row" role="option" data-uma-id="' + esc(u.id) + '" data-uma-name="' + esc(u.name) + '">' +
+        '<img class="hs-sug-img" loading="lazy" src="/pakadb/' + esc(u.thumb) + '" alt="" onerror="this.src=\'/pakadb/' + esc(u.image) + "'\" />" +
+        '<span class="hs-sug-name">' + esc(u.name) + "</span></li>";
+    }).join("");
+    el.hidden = false;
+  }
+  function hsPickUma(id, name) {
+    HS.filter.umaId = String(id); HS.filter.umaName = name;
+    var inp = $("hs-fq"); if (inp) inp.value = name;
+    var sug = $("hs-fq-sug"); if (sug) { sug.hidden = true; sug.innerHTML = ""; }
+    hsRefreshFeed();
+  }
+
+  function hsResetDD(id, val) { var el = $(id); if (!el) return; var o = el.querySelector('.pd-dd-opt[data-value="' + val + '"]'); if (o) o.click(); }
+  function hsClearFilters() {
+    HS.filter = { umaId: "", umaName: "", owner: "", skill: "", sort: "new", minRating: 0, stats: {}, apts: {}, green: false, race: "", minAnc: 0 };
+    ["hs-fq", "hs-owner", "hs-skill"].forEach(function (id) { var el = $(id); if (el) el.value = ""; });
+    [].forEach.call($("hs-filters").querySelectorAll(".hs-chip.on"), function (c) { c.classList.remove("on"); });
+    hsResetDD("hs-sort", "new"); hsResetDD("hs-fmin", "0"); hsResetDD("hs-race", ""); hsResetDD("hs-anc", "0");
+    hsRefreshFeed();
+  }
+
+  function renderCompose() {
+    var host = $("hs-compose"); if (!host) return;
+    if (!HS.account) {
+      host.innerHTML =
+        '<div class="hs-guard"><span>Sign in with your <b>Pakadle account</b> to post and rate horses.</span>' +
+        '<a class="cp-ghost hs-login" href="/" target="_blank" rel="noopener">LOG IN ▸</a></div>';
+      return;
+    }
+    if (!HS.composerOpen) {
+      host.innerHTML = '<button class="hs-compose-btn" id="hs-open-composer" type="button">＋ Share a horse</button>';
+      return;
+    }
+    var trees = hsShareableTrees();
+    var picks = trees.length
+      ? trees.map(function (o) {
+          var sel = HS.pickTree === o.i ? " sel" : "";
+          var foalNm = o.t.slots.foal != null && BYID[o.t.slots.foal] ? BYID[o.t.slots.foal].name : "";
+          var nm = o.t.name || foalNm || "Foal";
+          var sub = o.t.name && foalNm && foalNm !== o.t.name ? '<span class="hs-treepick-sub">' + esc(foalNm) + "</span>" : "";
+          return '<button type="button" class="hs-treepick' + sel + '" data-pick="' + o.i + '">' +
+            hsFoalPortrait(o.t, "hs-treepick-por") + '<span class="hs-treepick-name">' + esc(nm) + sub + "</span></button>";
+        }).join("")
+      : '<div class="cov-empty">No saved pedigrees with a foal yet. Build one in BREEDING and SAVE it first.</div>';
+    var note = HS.note ? '<div class="hs-note">' + esc(HS.note) + "</div>" : "";
+    host.innerHTML =
+      '<div class="hs-composer">' +
+        '<div class="hs-composer-head">Share a horse <button class="dh-x" id="hs-cancel" type="button">✕</button></div>' +
+        '<label class="hs-lbl" for="hs-tid">Trainer ID</label>' +
+        '<input id="hs-tid" class="cp-input" inputmode="numeric" autocomplete="off" spellcheck="false" placeholder="12 digits" value="' + esc(HS.tid) + '" maxlength="14" />' +
+        '<div class="hs-lbl">Pick a horse</div><div class="hs-treepicks">' + picks + "</div>" +
+        note +
+        '<button class="hs-post-btn" id="hs-post" type="button">POST</button>' +
+      "</div>";
+  }
+
+  function renderFeed() {
+    var host = $("hs-feed"); if (!host) return;
+    if (HS.busy && !HS.posts.length) { host.innerHTML = '<div class="cov-empty">Loading feed…</div>'; return; }
+    if (!HS.posts.length) {
+      host.innerHTML = '<div class="cov-empty">' + (hsAnyFilter() ? "No horses match your filters." : "No horses shared yet. Be the first!") + "</div>";
+      return;
+    }
+    host.innerHTML = HS.posts.map(function (p) {
+      var when = fmtStamp(Date.parse(p.createdAt));
+      var del = "";
+      if (p.mine) {
+        del = HS.confirmDelete === p.id
+          ? '<span class="hs-del-confirm">Delete?' +
+              '<button class="hs-del-yes" data-delyes="' + esc(p.id) + '" type="button">Yes</button>' +
+              '<button class="hs-del-no" data-delno="1" type="button">No</button></span>'
+          : '<button class="hs-del" data-del="' + esc(p.id) + '" type="button" title="Delete">✕</button>';
+      }
+      return '<article class="hs-post">' +
+        '<div class="hs-post-head"><span class="hs-owner">' + esc(p.owner) + "</span>" +
+          '<button class="cp-ghost hs-tid-copy" data-copy-tid="' + esc(p.trainerId) + '">ID ' + esc(p.trainerId) + " ⧉</button>" +
+          (when ? '<span class="hs-when">' + esc(when) + "</span>" : "") + del + "</div>" +
+        '<div class="hs-post-body">' + hsFoalPortrait(p.horse, "hs-post-por") +
+          '<div class="hs-post-info"><div class="hs-post-name">' + esc(hsFoalName(p.horse)) + "</div>" +
+          hsFactorLine(p.horse) + "</div></div>" +
+        hsPedigree(p.horse) +
+        hsStars(p) + "</article>";
+    }).join("");
+  }
+
+  function hsPost() {
+    if (HS.busy) return;
+    var tidEl = $("hs-tid");
+    var tid = tidEl ? tidEl.value.replace(/\D/g, "") : "";
+    if (tid.length !== 12) { HS.note = "Trainer ID must be exactly 12 digits."; return renderCompose(); }
+    if (HS.pickTree == null || !savedTrees[HS.pickTree]) { HS.note = "Pick a horse to share."; return renderCompose(); }
+    HS.busy = true; HS.note = "Posting…"; renderCompose();
+    fetch("/api/pakadb/horseshare/posts", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ trainerId: tid, horse: hsTreeToHorse(savedTrees[HS.pickTree]) }),
+    })
+      .then(function (r) { return r.json().then(function (b) { return { ok: r.ok, b: b }; }); })
+      .then(function (res) {
+        HS.busy = false;
+        if (!res.ok) { HS.note = (res.b && res.b.error) || "Couldn't post."; return renderCompose(); }
+        HS.tid = tid; HS.composerOpen = false; HS.pickTree = null; HS.note = "";
+        hsRefreshFeed();
+      })
+      .catch(function () { HS.busy = false; HS.note = "Network error."; renderCompose(); });
+  }
+
+  function hsRate(id, stars) {
+    if (HS.busy) return;
+    HS.busy = true;
+    fetch("/api/pakadb/horseshare/posts/" + encodeURIComponent(id) + "/rate", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ stars: stars }),
+    })
+      .then(function (r) { return r.json(); })
+      .then(function () { HS.busy = false; hsRefreshFeed(); })
+      .catch(function () { HS.busy = false; });
+  }
+
+  function hsDelete(id) {
+    if (HS.busy) return;
+    HS.confirmDelete = null;
+    HS.busy = true;
+    fetch("/api/pakadb/horseshare/posts/" + encodeURIComponent(id), { method: "DELETE" })
+      .then(function (r) { return r.json(); })
+      .then(function () { HS.busy = false; hsRefreshFeed(); })
+      .catch(function () { HS.busy = false; });
+  }
+
+  // ---- horseshare wiring (Horseshare is a top-level view; see setView) ----
+  $("hs-compose").addEventListener("click", function (e) {
+    if (e.target.closest("#hs-open-composer")) { HS.composerOpen = true; HS.note = ""; return renderCompose(); }
+    if (e.target.closest("#hs-cancel")) { HS.composerOpen = false; HS.note = ""; return renderCompose(); }
+    if (e.target.closest("#hs-post")) return hsPost();
+    var pk = e.target.closest("[data-pick]");
+    if (pk) { HS.pickTree = Number(pk.getAttribute("data-pick")); return renderCompose(); }
+  });
+  $("hs-feed").addEventListener("click", function (e) {
+    var star = e.target.closest("[data-rate]");
+    if (star) return hsRate(star.getAttribute("data-rate"), Number(star.getAttribute("data-stars")));
+    var del = e.target.closest("[data-del]");
+    if (del) { HS.confirmDelete = del.getAttribute("data-del"); return renderFeed(); }
+    var delYes = e.target.closest("[data-delyes]");
+    if (delYes) return hsDelete(delYes.getAttribute("data-delyes"));
+    if (e.target.closest("[data-delno]")) { HS.confirmDelete = null; return renderFeed(); }
+    var copy = e.target.closest("[data-copy-tid]");
+    if (copy) {
+      var tid = copy.getAttribute("data-copy-tid");
+      if (navigator.clipboard) navigator.clipboard.writeText(tid).catch(function () {});
+      copy.textContent = "Copied ✓";
+      setTimeout(function () { copy.textContent = "ID " + tid + " ⧉"; }, 1200);
+    }
+  });
+  // filter bar → server-side filtering. Text inputs are debounced; the uma box
+  // is an autocomplete (pick a uma to filter by its charId).
+  $("hs-filters").addEventListener("input", function (e) {
+    var id = e.target.id;
+    if (id === "hs-fq") {
+      renderUmaSuggest(e.target.value);
+      if (!e.target.value.trim() && HS.filter.umaId) { HS.filter.umaId = ""; HS.filter.umaName = ""; hsRefreshFeed(); }
+    } else if (id === "hs-owner") { HS.filter.owner = e.target.value; hsDebFetch(); }
+    else if (id === "hs-skill") { HS.filter.skill = e.target.value; hsDebFetch(); }
+  });
+  $("hs-filters").addEventListener("keydown", function (e) {
+    if (e.target.id !== "hs-fq") return;
+    if (e.key === "Enter") {
+      var first = $("hs-fq-sug") && $("hs-fq-sug").querySelector("[data-uma-id]");
+      if (first) { e.preventDefault(); hsPickUma(first.getAttribute("data-uma-id"), first.getAttribute("data-uma-name")); }
+    } else if (e.key === "Escape") {
+      var sug = $("hs-fq-sug"); if (sug) { sug.hidden = true; sug.innerHTML = ""; }
+    }
+  });
+  $("hs-filters").addEventListener("click", function (e) {
+    var sug = e.target.closest("[data-uma-id]");
+    if (sug) return hsPickUma(sug.getAttribute("data-uma-id"), sug.getAttribute("data-uma-name"));
+    if (e.target.closest("#hs-more")) {
+      var adv = $("hs-adv"), btn = $("hs-more");
+      adv.hidden = !adv.hidden;
+      btn.textContent = adv.hidden ? "MORE ▾" : "LESS ▴";
+      btn.classList.toggle("on", !adv.hidden);
+      return;
+    }
+    if (e.target.closest("#hs-clear")) return hsClearFilters();
+    var st = e.target.closest("[data-stat]");
+    if (st) { var sk = st.getAttribute("data-stat"); HS.filter.stats[sk] = !HS.filter.stats[sk]; st.classList.toggle("on", HS.filter.stats[sk]); return hsRefreshFeed(); }
+    var ap = e.target.closest("[data-apt]");
+    if (ap) { var ak = ap.getAttribute("data-apt"); HS.filter.apts[ak] = !HS.filter.apts[ak]; ap.classList.toggle("on", HS.filter.apts[ak]); return hsRefreshFeed(); }
+    var gr = e.target.closest("[data-green]");
+    if (gr) { HS.filter.green = !HS.filter.green; gr.classList.toggle("on", HS.filter.green); return hsRefreshFeed(); }
+  });
+  // close the uma autocomplete when clicking outside it
+  document.addEventListener("click", function (e) {
+    if (!e.target.closest(".hs-fq-wrap")) { var s = $("hs-fq-sug"); if (s && !s.hidden) { s.hidden = true; s.innerHTML = ""; } }
   });
 
   loadRoster();

@@ -232,6 +232,7 @@ function createApp(options = {}) {
     // Pakapix (bundled sibling game) mounted under /pakapix, sharing this DB handle.
     const pakapix = require("./pakapix/routes.js")(db);
     const tailoftheday = require("./tailoftheday/routes.js")(db);
+    const umaroulette = require("./umaroulette/routes.js")(db);
 
     // Pakachess online multiplayer (server-authoritative, over WebSockets).
     const pakachessWs = require("./pakachess/ws.js");
@@ -391,6 +392,9 @@ function createApp(options = {}) {
                 .get(s.account_id) || null
         );
     }
+
+    // Horseshare: publish bred horses + trainer ID, keyed to a Pakadle account.
+    const horseShare = require("./pakadb/horseshare.js")(db, accountFromReq);
 
     // ---- PakaDB QA access gate (temporary, standalone; NOT tied to Duel accounts) --
     // Testers live in pakadb/qa-access.json as salted scrypt hashes (safe to commit,
@@ -627,6 +631,12 @@ function createApp(options = {}) {
         ) {
             return tailoftheday.handle(req, res, url);
         }
+        if (
+            url.pathname === "/umaroulette" ||
+            url.pathname.startsWith("/umaroulette/")
+        ) {
+            return umaroulette.handle(req, res, url);
+        }
 
         // ---- Pakachess (bundled static game, no API) ----
         if (
@@ -749,6 +759,11 @@ function createApp(options = {}) {
             });
             return res.end("PakaDB is in private testing — log in at /pakadb");
         }
+        // Horseshare API (share bred horses + trainer ID via a Pakadle account).
+        if (url.pathname.startsWith("/api/pakadb/horseshare")) {
+            return horseShare.handle(req, res, url);
+        }
+
         // QA gate login / logout (standalone; separate cookie from Duel's sid).
         // The login page posts a plain HTML form (CSP forbids inline JS), so we parse
         // form-urlencoded (or JSON) and answer with a redirect.

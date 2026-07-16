@@ -22,6 +22,7 @@
       <div class="cp-tabs" id="cp-tabs">
         <button class="cp-tab on" data-view="db">DATABASE</button>
         <button class="cp-tab" data-view="breed">BREEDING</button>
+        <button class="cp-tab" data-view="share">HORSESHARE</button>
       </div>
       <span class="cp-meta" id="cp-count">--</span>
     </div>
@@ -48,6 +49,10 @@
     <div class="cp-controls" id="cp-breed-controls" hidden>
       <button class="cp-ghost" id="cp-roster-open">SAVED UMAS</button>
       <button class="cp-ghost" id="cp-breed-reset">RESET TREE</button>
+      <a class="cp-exit" href="/">EXIT ▸</a>
+    </div>
+    <div class="cp-controls" id="cp-share-controls" hidden>
+      <span class="cp-meta">Share bred horses + your trainer ID</span>
       <a class="cp-exit" href="/">EXIT ▸</a>
     </div>
   </header>
@@ -107,6 +112,15 @@
     <div class="bd-filter" id="bd-filter" hidden>
       <div class="bd-filter-head">Filter mares</div>
       <div class="bd-filter-body" id="bd-filter-body"></div>
+    </div>
+  </div>
+
+  <!-- ===== HORSESHARE view ===== -->
+  <div id="view-share" hidden>
+    <div class="hs-view">
+      <div id="hs-compose"></div>
+      <div id="hs-filters"></div>
+      <div id="hs-feed"></div>
     </div>
   </div>
 
