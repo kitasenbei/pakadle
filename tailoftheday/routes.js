@@ -357,12 +357,20 @@ module.exports = function tailoftheday(db) {
                     finished: play.finished,
                     won: play.won,
                     maxGuesses: MAX_GUESSES,
+                    secondsUntilRollover: secondsUntilRollover(),
+                    stats: computeStats(pid),
                 };
 
                 if (play.finished) {
+                    const horse = WORDS.find(
+                        (h) => h.id === puzzle.horse_id,
+                    );
+
                     out.reveal = {
                         id: puzzle.horse_id,
-                        image: `/tailoftheday/api/horse/${puzzle.horse_id}`,
+                        name: horse.name,
+                        word: horse.word,
+                        image: `/tailoftheday/api/horse/${horse.word}`,
                     };
                 }
 
