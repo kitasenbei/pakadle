@@ -689,6 +689,9 @@
 
   // ===== physical keyboard =====
   document.addEventListener("keydown", (e) => {
+    // Don't hijack typing in login/recovery inputs or any other text field.
+    const t = e.target;
+    if (t && (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.isContentEditable)) return;
     if (e.key === "5") { horsePads(); return; }   // TODO: trigger on first-try win instead
     if (howtoEl.classList.contains("open")) {
       if (e.key === "Escape") closeHowto();
