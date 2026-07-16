@@ -78,7 +78,7 @@
     } catch (e) {
       boardEl.innerHTML = "";
       subtitleEl.innerHTML =
-        '⚠️ Backend not reachable. Run <b>node server.js</b> and open <b>http://localhost:3000</b>';
+        '⚠️ Couldn\'t load today\'s puzzle. Check your connection and <a href="" onclick="location.reload();return false;"><b>try again</b></a>.';
       return;
     }
 
