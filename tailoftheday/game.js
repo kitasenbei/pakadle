@@ -595,7 +595,8 @@
         </div>
         `;
 
-        howtoEl.style.display = "flex";
+        howtoEl.style.cssText =
+            "position:fixed;inset:0;background:rgba(58,46,57,.45);display:flex;align-items:center;justify-content:center;padding:20px;z-index:50";
 
         document.getElementById("how-close").onclick = () => {
             howtoEl.innerHTML = "";

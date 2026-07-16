@@ -244,7 +244,7 @@ const UMA_WORDS = [
         name: "Kawakami Princess",
     },
     {
-        word: "kingshalo",
+        word: "kinghalo",
         name: "King Halo",
     },
     {

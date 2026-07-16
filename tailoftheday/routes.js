@@ -119,6 +119,29 @@ module.exports = function tailoftheday(db) {
         return row;
     }
 
+    // Resolve the horse for a stored puzzle row. If the stored horse_id no
+    // longer matches a word (e.g. a word was corrected after the row was
+    // written), fall back to recomputing it from the puzzle number and
+    // self-heal the stored id so future lookups are clean.
+    function horseForPuzzle(puzzle) {
+        let horse = WORDS.find((h) => h.id === puzzle.horse_id);
+
+        if (!horse) {
+            const idx =
+                (((puzzle.number * 7 + 3) % WORDS.length) + WORDS.length) %
+                WORDS.length;
+
+            horse = WORDS[idx];
+
+            db.prepare("UPDATE tail_puzzles SET horse_id=? WHERE date=?").run(
+                horse.id,
+                puzzle.date,
+            );
+        }
+
+        return horse;
+    }
+
     function ensurePid(req, res) {
         const cookie = req.headers.cookie || "";
 
@@ -362,9 +385,7 @@ module.exports = function tailoftheday(db) {
                 };
 
                 if (play.finished) {
-                    const horse = WORDS.find(
-                        (h) => h.id === puzzle.horse_id,
-                    );
+                    const horse = horseForPuzzle(puzzle);
 
                     out.reveal = {
                         id: puzzle.horse_id,
@@ -395,7 +416,7 @@ module.exports = function tailoftheday(db) {
                 } else {
                     const puzzle = puzzleForDate(todayStr());
 
-                    horse = WORDS.find((h) => h.id === puzzle.horse_id);
+                    horse = horseForPuzzle(puzzle);
                 }
 
                 return serveHorseImage(res, horse.word);
@@ -449,7 +470,7 @@ module.exports = function tailoftheday(db) {
 
                         const puzzle = puzzleForDate(date);
 
-                        horse = WORDS.find((h) => h.id === puzzle.horse_id);
+                        horse = horseForPuzzle(puzzle);
 
                         const play = getPlay(pid, date);
 
