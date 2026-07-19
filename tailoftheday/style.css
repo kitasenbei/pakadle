@@ -201,9 +201,9 @@ header .actions {
 .suggest {
     list-style: none;
     position: absolute;
-    bottom: calc(0%);
-    right: calc(100%);
-    left: calc(-100%);
+    bottom: calc(100% + 8px);
+    left: 0;
+    right: 0;
     background: var(--panel);
     border: 2px solid var(--line);
     border-radius: 14px;
@@ -213,6 +213,14 @@ header .actions {
     z-index: 20;
     padding: 5px;
     display: none;
+}
+@media (min-width: 721px) {
+    .suggest {
+        bottom: 0;
+        left: auto;
+        right: calc(100% + 8px);
+        width: 100%;
+    }
 }
 .suggest.open {
     display: block;

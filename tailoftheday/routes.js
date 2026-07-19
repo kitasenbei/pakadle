@@ -462,6 +462,15 @@ module.exports = function tailoftheday(db) {
                                 409,
                             );
 
+                        if (session.finished)
+                            return sendJson(
+                                res,
+                                {
+                                    error: "already finished",
+                                },
+                                409,
+                            );
+
                         horse = WORDS[session.idx];
 
                         guesses = session.guesses;
@@ -473,6 +482,15 @@ module.exports = function tailoftheday(db) {
                         horse = horseForPuzzle(puzzle);
 
                         const play = getPlay(pid, date);
+
+                        if (play.finished)
+                            return sendJson(
+                                res,
+                                {
+                                    error: "already finished",
+                                },
+                                409,
+                            );
 
                         guesses = play.guesses;
                     }

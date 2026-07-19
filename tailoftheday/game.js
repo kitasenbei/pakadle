@@ -314,6 +314,23 @@
             return;
         }
 
+        if (d.error) {
+            if (d.error === "already finished") {
+                finished = true;
+                lockInput(true);
+                toast("Come back tomorrow");
+            } else {
+                toast(
+                    d.error === "already guessed"
+                        ? "Already guessed"
+                        : "Something went wrong",
+                );
+                busy = false;
+                lockInput(false);
+            }
+            return;
+        }
+
         const g = {
             text: match ? match.name : text,
 
