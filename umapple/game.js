@@ -15,7 +15,7 @@
     const BASE = "/umapple";
 
     // Fixed settings. No dynamic sizing.
-    const COLS_FIXED = 48; // Columns in the chunk grid.
+    const COLS_FIXED = 96; // Columns in the chunk grid.
     const B = 6; // Darkness bands.
     const MW = 2.5; // Motion weight in the direction blend.
     const GVF_MU = 0.15; // GVF diffusion strength.
