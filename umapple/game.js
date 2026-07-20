@@ -21,7 +21,7 @@
     const GVF_MU = 0.15; // GVF diffusion strength.
     const GVF_ITER = 12; // GVF iterations per warm frame.
     const TANGENT = true; // Flow along the contour, not across it.
-    const CELL = 32; // Canvas pixels per chunk. It keeps tiles crisp when the page scales up.
+    const CELL = 64; // Canvas pixels per chunk. It keeps tiles crisp when the page scales up.
 
     const video = document.getElementById("src");
     const screen = document.getElementById("screen");
@@ -214,8 +214,9 @@
     // Browsers block autoplay with sound. Start muted, then unmute on the first
     // user action so the music plays.
     function unmute() {
+        video.currentTime = 0; // Start the sound with the motion, from the top.
         video.muted = false;
-        if (video.paused) video.play();
+        video.play();
         window.removeEventListener("pointerdown", unmute);
         window.removeEventListener("keydown", unmute);
     }
