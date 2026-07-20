@@ -21,6 +21,7 @@
     const GVF_MU = 0.15; // GVF diffusion strength.
     const GVF_ITER = 12; // GVF iterations per warm frame.
     const TANGENT = true; // Flow along the contour, not across it.
+    const CELL = 32; // Canvas pixels per chunk. It keeps tiles crisp when the page scales up.
 
     const video = document.getElementById("src");
     const screen = document.getElementById("screen");
@@ -149,6 +150,8 @@
         if (!video.videoWidth) return;
         ROWS = Math.max(1, Math.round(COLS * video.videoHeight / video.videoWidth));
         low.width = COLS; low.height = ROWS;
+        screen.width = COLS * CELL;
+        screen.height = ROWS * CELL;
         prevDark = null; gvfU = null; gvfV = null;
     }
 
@@ -194,11 +197,7 @@
     }
 
     // ---- boot ----
-    video.addEventListener("loadedmetadata", () => {
-        screen.width = video.videoWidth;
-        screen.height = video.videoHeight;
-        applyGrid();
-    });
+    video.addEventListener("loadedmetadata", applyGrid);
 
     Promise.all([
         fetch(BASE + "/horses.json").then((r) => r.json()),
@@ -212,6 +211,17 @@
     requestAnimationFrame(render);
 
     // ---- control ----
+    // Browsers block autoplay with sound. Start muted, then unmute on the first
+    // user action so the music plays.
+    function unmute() {
+        video.muted = false;
+        if (video.paused) video.play();
+        window.removeEventListener("pointerdown", unmute);
+        window.removeEventListener("keydown", unmute);
+    }
+    window.addEventListener("pointerdown", unmute);
+    window.addEventListener("keydown", unmute);
+
     // Press P to pause. Press P again to play.
     document.addEventListener("keydown", (e) => {
         if (e.key === "p" || e.key === "P") {
