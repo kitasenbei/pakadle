@@ -233,6 +233,7 @@ function createApp(options = {}) {
     const pakapix = require("./pakapix/routes.js")(db);
     const tailoftheday = require("./tailoftheday/routes.js")(db);
     const umaroulette = require("./umaroulette/routes.js")(db);
+    const umapple = require("./umapple/routes.js")(db);
 
     // Pakachess online multiplayer (server-authoritative, over WebSockets).
     const pakachessWs = require("./pakachess/ws.js");
@@ -636,6 +637,12 @@ function createApp(options = {}) {
             url.pathname.startsWith("/umaroulette/")
         ) {
             return umaroulette.handle(req, res, url);
+        }
+        if (
+            url.pathname === "/umapple" ||
+            url.pathname.startsWith("/umapple/")
+        ) {
+            return umapple.handle(req, res, url);
         }
 
         // ---- Pakachess (bundled static game, no API) ----
