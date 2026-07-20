@@ -44,6 +44,7 @@ jobs:
             --exclude '.github' \
             --exclude 'node_modules' \
             --exclude '*.db' --exclude '*.db-journal' --exclude '*.db-wal' --exclude '*.db-shm' \
+            --exclude '*.mp4' \
             ./ "$APP_USER@$HOST:/srv/pakadle/app/"
 
       - name: Restart service

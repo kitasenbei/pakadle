@@ -211,25 +211,11 @@
     video.play().catch(() => {});
     requestAnimationFrame(render);
 
-    // ---- controls ----
-    const playBtn = document.getElementById("play");
-    const soundBtn = document.getElementById("sound");
-
-    function refreshPlay() { playBtn.textContent = video.paused ? "Play" : "Pause"; }
-    function refreshSound() { soundBtn.textContent = video.muted ? "Sound on" : "Sound off"; }
-
-    playBtn.addEventListener("click", () => {
-        if (video.paused) video.play(); else video.pause();
-        refreshPlay();
+    // ---- control ----
+    // Press P to pause. Press P again to play.
+    document.addEventListener("keydown", (e) => {
+        if (e.key === "p" || e.key === "P") {
+            if (video.paused) video.play(); else video.pause();
+        }
     });
-    soundBtn.addEventListener("click", () => {
-        video.muted = !video.muted;
-        if (!video.muted && video.paused) video.play();
-        refreshPlay();
-        refreshSound();
-    });
-    video.addEventListener("play", refreshPlay);
-    video.addEventListener("pause", refreshPlay);
-    refreshPlay();
-    refreshSound();
 })();

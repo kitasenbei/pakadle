@@ -9,45 +9,16 @@
         <title>Umapple</title>
         <meta name="description" content="Bad Apple redrawn live from Umamusume portraits" />
         <link rel="canonical" href="https://pakadle.fun/umapple" />
-        <meta name="theme-color" content="#111214" />
-
-        <meta property="og:type" content="website" />
-        <meta property="og:site_name" content="Pakadle" />
-        <meta property="og:title" content="Umapple — Bad Apple in Umamusume portraits" />
-        <meta
-            property="og:description"
-            content="The Bad Apple silhouette redrawn every frame from Umamusume portraits."
-        />
-        <meta property="og:url" content="https://pakadle.fun/umapple" />
-        <meta name="twitter:card" content="summary_large_image" />
-
+        <meta name="theme-color" content="#000000" />
         <link rel="icon" type="image/png" href="/favicon.png" />
         <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
         <link rel="stylesheet" href="/umapple/style.css" />
     </head>
     <body>
-        <header>
-            <h1>Umapple 🍎</h1>
-            <div class="actions">
-                <a class="cross-link" href="/">← Pakadle</a>
-            </div>
-        </header>
-
-        <main>
-            <div id="subtitle">Bad Apple, redrawn every frame from Umamusume portraits</div>
-
-            <div id="stage">
-                <canvas id="screen" role="img" aria-label="Umamusume portrait mosaic"></canvas>
-            </div>
-
-            <div id="controls">
-                <button id="play" type="button">Pause</button>
-                <button id="sound" type="button">Sound on</button>
-            </div>
-        </main>
+        <canvas id="screen" role="img" aria-label="Umamusume portrait mosaic"></canvas>
+        <p id="hint">Press P to pause.</p>
 
         <video id="src" src="/umapple/badapple.mp4" preload="auto"></video>
-
         <script src="/umapple/game.js"></script>
     </body>
 </html>
