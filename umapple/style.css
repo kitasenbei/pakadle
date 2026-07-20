@@ -5,15 +5,63 @@ html, body {
     overflow: hidden;
 }
 
+/* The canvas backing store is sized to the display in device pixels, so the
+   browser never rescales it. The result stays crisp on every screen. */
 #screen {
     position: fixed;
     inset: 0;
     width: 100vw;
     height: 100vh;
-    object-fit: cover;
     display: block;
     background: #000;
 }
+
+#boot {
+    position: fixed;
+    inset: 0;
+    z-index: 2;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 18px;
+    background: rgba(0, 0, 0, 0.72);
+    font-family: system-ui, sans-serif;
+    color: #cfcdc7;
+}
+#boot[hidden] { display: none; }
+
+#checks {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    font-size: 15px;
+    letter-spacing: 0.5px;
+    color: #8a877f;
+}
+#checks li { padding: 5px 0; }
+#checks li::before { content: "\25CB  "; }
+#checks li.ok { color: #7ad07a; }
+#checks li.ok::before { content: "\2713  "; }
+
+#loading {
+    margin: 0;
+    color: #6f6c65;
+    font-size: 14px;
+}
+
+#start {
+    font-family: inherit;
+    font-weight: 700;
+    font-size: 1.2rem;
+    color: #111;
+    background: #e8e6e1;
+    border: none;
+    border-radius: 12px;
+    padding: 14px 34px;
+    cursor: pointer;
+}
+#start:hover { background: #fff; }
 
 #hint {
     position: fixed;
@@ -21,6 +69,7 @@ html, body {
     left: 0;
     right: 0;
     margin: 0;
+    z-index: 1;
     text-align: center;
     color: rgba(255, 255, 255, 0.45);
     font-family: system-ui, sans-serif;
@@ -29,6 +78,7 @@ html, body {
     pointer-events: none;
     user-select: none;
 }
+#hint[hidden] { display: none; }
 
 /* The source video decodes off-screen. The canvas shows the result. */
 #src { display: none; }

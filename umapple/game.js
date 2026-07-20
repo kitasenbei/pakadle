@@ -21,7 +21,6 @@
     const GVF_MU = 0.15; // GVF diffusion strength.
     const GVF_ITER = 12; // GVF iterations per warm frame.
     const TANGENT = true; // Flow along the contour, not across it.
-    const CELL = 64; // Canvas pixels per chunk. It keeps tiles crisp when the page scales up.
 
     const video = document.getElementById("src");
     const screen = document.getElementById("screen");
@@ -51,11 +50,26 @@
         return [dx / gm, dy / gm];
     }
 
+    // Draw the video into the grid with a cover crop, so a 4:3 source fills a
+    // wider grid. The grid keeps the display aspect, so chunks stay square.
+    function drawCover(ctx, W, H) {
+        const vw = video.videoWidth, vh = video.videoHeight;
+        if (!vw) return;
+        const targetAR = W / H, videoAR = vw / vh;
+        let sx, sy, sw, sh;
+        if (videoAR > targetAR) {
+            sh = vh; sw = vh * targetAR; sx = (vw - sw) / 2; sy = 0;
+        } else {
+            sw = vw; sh = vw / targetAR; sx = 0; sy = (vh - sh) / 2;
+        }
+        ctx.drawImage(video, sx, sy, sw, sh, 0, 0, W, H);
+    }
+
     // Read the mean darkness of each chunk from the browser downsample.
     function lowDarkness() {
         const W = COLS, H = ROWS;
         if (low.width !== W || low.height !== H) { low.width = W; low.height = H; }
-        lowctx.drawImage(video, 0, 0, W, H);
+        drawCover(lowctx, W, H);
         const p = lowctx.getImageData(0, 0, W, H).data;
         const dark = new Float32Array(W * H);
         for (let i = 0; i < W * H; i++) {
@@ -146,12 +160,15 @@
         return seg[slot];
     }
 
-    function applyGrid() {
-        if (!video.videoWidth) return;
-        ROWS = Math.max(1, Math.round(COLS * video.videoHeight / video.videoWidth));
+    // Size the canvas backing store to the display in device pixels. The grid
+    // keeps the display aspect. This avoids any rescale, so the result is crisp.
+    function resize() {
+        const dpr = Math.min(2, window.devicePixelRatio || 1);
+        screen.width = Math.max(1, Math.round(window.innerWidth * dpr));
+        screen.height = Math.max(1, Math.round(window.innerHeight * dpr));
+        COLS = COLS_FIXED;
+        ROWS = Math.max(1, Math.round(COLS * screen.height / screen.width));
         low.width = COLS; low.height = ROWS;
-        screen.width = COLS * CELL;
-        screen.height = ROWS * CELL;
         prevDark = null; gvfU = null; gvfV = null;
     }
 
@@ -196,36 +213,64 @@
         requestAnimationFrame(render);
     }
 
-    // ---- boot ----
-    video.addEventListener("loadedmetadata", applyGrid);
+    // ---- readiness checks ----
+    // The app starts only after the portraits and the video are both ready.
+    const boot = document.getElementById("boot");
+    const chkP = document.getElementById("chkP");
+    const chkV = document.getElementById("chkV");
+    const loading = document.getElementById("loading");
+    const startBtn = document.getElementById("start");
+    const hint = document.getElementById("hint");
 
+    let portraitsReady = false, videoReady = false, started = false;
+
+    function checkReady() {
+        chkP.classList.toggle("ok", portraitsReady);
+        chkV.classList.toggle("ok", videoReady);
+        if (portraitsReady && videoReady && ready) {
+            loading.hidden = true;
+            startBtn.hidden = false;
+        }
+    }
+
+    // Portrait check: the atlas image and the descriptors load.
     Promise.all([
         fetch(BASE + "/horses.json").then((r) => r.json()),
         new Promise((res) => { const im = new Image(); im.onload = () => res(im); im.src = BASE + "/atlas.png"; }),
-    ]).then(([data, img]) => { buildSet(data, img); ready = true; });
+    ]).then(([data, img]) => {
+        buildSet(data, img);
+        ready = true; portraitsReady = true;
+        checkReady();
+    });
 
-    video.loop = true;
-    video.muted = true;
-    video.playsInline = true;
-    video.play().catch(() => {});
+    // Video check: the browser buffers enough to play. Poll as a fallback in
+    // case the canplaythrough event does not fire.
+    function markVideoReady() { videoReady = true; checkReady(); }
+    video.addEventListener("canplaythrough", markVideoReady);
+    const vpoll = setInterval(() => {
+        if (video.readyState >= 3) { markVideoReady(); clearInterval(vpoll); }
+    }, 250);
+
+    resize();
+    window.addEventListener("resize", resize);
     requestAnimationFrame(render);
 
-    // ---- control ----
-    // Browsers block autoplay with sound. Start muted, then unmute on the first
-    // user action so the music plays.
-    function unmute() {
+    // ---- start ----
+    function start() {
+        if (started || !portraitsReady || !videoReady) return;
+        started = true;
+        boot.hidden = true;
+        hint.hidden = false;
         video.currentTime = 0; // Start the sound with the motion, from the top.
         video.muted = false;
         video.play();
-        window.removeEventListener("pointerdown", unmute);
-        window.removeEventListener("keydown", unmute);
     }
-    window.addEventListener("pointerdown", unmute);
-    window.addEventListener("keydown", unmute);
+    startBtn.addEventListener("click", start);
 
     // Press P to pause. Press P again to play.
     document.addEventListener("keydown", (e) => {
         if (e.key === "p" || e.key === "P") {
+            if (!started) return;
             if (video.paused) video.play(); else video.pause();
         }
     });

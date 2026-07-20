@@ -16,9 +16,19 @@
     </head>
     <body>
         <canvas id="screen" role="img" aria-label="Umamusume portrait mosaic"></canvas>
-        <p id="hint">Click for sound. Press P to pause.</p>
 
-        <video id="src" src="/umapple/badapple.mp4" preload="auto"></video>
+        <div id="boot">
+            <ul id="checks">
+                <li id="chkP">Portraits</li>
+                <li id="chkV">Video</li>
+            </ul>
+            <p id="loading">Loading.</p>
+            <button id="start" type="button" hidden>Click to start</button>
+        </div>
+
+        <p id="hint" hidden>Press P to pause.</p>
+
+        <video id="src" src="/umapple/badapple.mp4" preload="auto" muted loop playsinline></video>
         <script src="/umapple/game.js"></script>
     </body>
 </html>
