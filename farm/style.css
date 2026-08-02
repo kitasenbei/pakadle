@@ -22,7 +22,13 @@ body {
     height: 100%;
 }
 body {
-    background: var(--bg);
+    /* the geese tile the page; a cream wash on top keeps the text readable */
+    background-image:
+        linear-gradient(rgba(251, 245, 234, 0.78), rgba(251, 245, 234, 0.78)),
+        url("/farm/geese.jpg");
+    background-repeat: no-repeat, repeat;
+    background-size: auto, 240px 240px;
+    background-attachment: fixed, scroll;
     color: var(--ink);
     font-family: "Baloo 2", "Segoe UI", system-ui, sans-serif;
     display: flex;

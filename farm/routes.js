@@ -11,9 +11,10 @@ module.exports = function farm(_db) {
     const MIME = {
         ".html": "text/html; charset=utf-8",
         ".css": "text/css; charset=utf-8",
+        ".jpg": "image/jpeg",
     };
 
-    const ALLOWED = new Set(["index.html", "style.css"]);
+    const ALLOWED = new Set(["index.html", "style.css", "geese.jpg"]);
 
     function serveFile(res, name) {
         fs.readFile(path.join(ROOT, name), (err, buf) => {
