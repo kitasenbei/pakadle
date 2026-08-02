@@ -1,0 +1,48 @@
+:root {
+    --bg: #fbf5ea;
+    --panel: #ffffff;
+    --ink: #3a2e39;
+    --ink-soft: #6e6470;
+    --turf: #4ca62e;
+    --turf-dark: #3c8523;
+    --sakura: #e85d8b;
+    --gold: #f2a93b;
+    --line: #dad0c2;
+    --divider: #efe8dc;
+    --shadow: rgba(58, 46, 57, 0.18);
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+html,
+body {
+    height: 100%;
+}
+body {
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "Baloo 2", "Segoe UI", system-ui, sans-serif;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-height: 100%;
+    -webkit-tap-highlight-color: transparent;
+}
+
+header {
+    width: 100%;
+    max-width: 560px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 18px 6px;
+}
+header h1 {
+    font-size: 1.6rem;
+    font-weight: 800;
+    color: var(--turf);
+    letter-spacing: 0.5px;
+}
