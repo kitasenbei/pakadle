@@ -46,3 +46,63 @@ header h1 {
     color: var(--turf);
     letter-spacing: 0.5px;
 }
+
+main {
+    width: 100%;
+    max-width: 560px;
+    padding: 10px 18px 48px;
+}
+
+.news h2 {
+    font-size: 1rem;
+    font-weight: 800;
+    color: var(--ink-soft);
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+}
+
+.notice {
+    background: var(--panel);
+    border: 2px solid var(--line);
+    border-radius: 12px;
+    overflow: hidden;
+}
+.notice + .notice {
+    margin-top: 10px;
+}
+
+.notice summary {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 14px;
+    font-weight: 700;
+    color: var(--ink);
+    cursor: pointer;
+    list-style: none;
+}
+.notice summary::-webkit-details-marker {
+    display: none;
+}
+.notice summary::before {
+    content: "▸";
+    color: var(--sakura);
+    transition: transform 0.15s ease;
+}
+.notice[open] summary::before {
+    transform: rotate(90deg);
+}
+.notice summary:hover {
+    background: #f6f1e6;
+}
+
+.notice-body {
+    padding: 0 14px 14px 30px;
+    border-top: 1px solid var(--divider);
+    color: var(--ink-soft);
+    font-weight: 600;
+}
+.notice-body p {
+    padding-top: 10px;
+}
