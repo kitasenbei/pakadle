@@ -1,0 +1,241 @@
+:root {
+    --bg: #fbf5ea;
+    --panel: #ffffff;
+    --ink: #3a2e39;
+    --ink-soft: #6e6470;
+    --turf: #4ca62e;
+    --turf-dark: #3c8523;
+    --sakura: #e85d8b;
+    --gold: #f2a93b;
+    --line: #dad0c2;
+    --divider: #efe8dc;
+    --shadow: rgba(58, 46, 57, 0.18);
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+body {
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "Baloo 2", "Segoe UI", system-ui, sans-serif;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    -webkit-tap-highlight-color: transparent;
+}
+
+header {
+    width: 100%;
+    max-width: 900px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 18px 6px;
+}
+header h1 {
+    font-size: 1.6rem;
+    font-weight: 800;
+    color: var(--turf);
+    letter-spacing: 0.5px;
+}
+
+main {
+    width: 100%;
+    max-width: 900px;
+    padding: 0 18px 48px;
+}
+#subtitle {
+    color: var(--ink-soft);
+    font-weight: 600;
+    margin-bottom: 14px;
+}
+
+.search input {
+    width: 100%;
+    padding: 12px 14px;
+    font: inherit;
+    font-size: 1.05rem;
+    color: var(--ink);
+    background: var(--panel);
+    border: 2px solid var(--line);
+    border-radius: 12px;
+    outline: none;
+}
+.search input:focus {
+    border-color: var(--turf);
+}
+
+.cols {
+    display: grid;
+    grid-template-columns: 260px 1fr;
+    gap: 16px;
+    margin-top: 16px;
+    align-items: start;
+}
+@media (max-width: 720px) {
+    .cols {
+        grid-template-columns: 1fr;
+    }
+}
+
+#list {
+    list-style: none;
+    background: var(--panel);
+    border: 2px solid var(--line);
+    border-radius: 12px;
+    max-height: 62vh;
+    overflow-y: auto;
+}
+#list li + li {
+    border-top: 1px solid var(--divider);
+}
+#list button {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 9px 12px;
+    background: none;
+    border: 0;
+    font: inherit;
+    font-weight: 600;
+    color: var(--ink);
+    text-align: left;
+    cursor: pointer;
+}
+#list button:hover {
+    background: #f6f1e6;
+}
+.fe {
+    font-size: 1.2rem;
+    line-height: 1;
+}
+.fn {
+    flex: 1;
+}
+.fc {
+    color: var(--ink-soft);
+    font-size: 0.8rem;
+    letter-spacing: 1px;
+}
+#list .empty {
+    padding: 14px 12px;
+    color: var(--ink-soft);
+    font-weight: 600;
+}
+
+#detail {
+    background: var(--panel);
+    border: 2px solid var(--line);
+    border-radius: 12px;
+    padding: 14px;
+}
+.placeholder {
+    color: var(--ink-soft);
+    font-weight: 600;
+}
+.detail-head {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--divider);
+}
+.detail-head .big {
+    font-size: 2rem;
+    line-height: 1;
+}
+.detail-head h2 {
+    flex: 1;
+    font-size: 1.3rem;
+    font-weight: 800;
+}
+
+.sizes {
+    display: flex;
+    gap: 6px;
+    margin: 10px 0 4px;
+}
+.sizes button {
+    padding: 4px 12px;
+    font: inherit;
+    font-weight: 700;
+    color: var(--ink-soft);
+    background: var(--bg);
+    border: 2px solid var(--line);
+    border-radius: 8px;
+    cursor: pointer;
+}
+.sizes button.on {
+    color: #fff;
+    background: var(--turf);
+    border-color: var(--turf-dark);
+}
+
+.block {
+    margin-top: 14px;
+}
+.block-head {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 6px;
+}
+.block-head h3 {
+    font-size: 0.95rem;
+    font-weight: 800;
+}
+.hint {
+    flex: 1;
+    color: var(--ink-soft);
+    font-size: 0.78rem;
+    font-weight: 600;
+}
+.copy {
+    padding: 4px 12px;
+    font: inherit;
+    font-weight: 700;
+    font-size: 0.85rem;
+    color: #fff;
+    background: var(--sakura);
+    border: 0;
+    border-radius: 8px;
+    cursor: pointer;
+}
+.copy.ok {
+    background: var(--turf);
+}
+
+.art {
+    background: #fffdf8;
+    border: 1px solid var(--divider);
+    border-radius: 8px;
+    padding: 10px;
+    overflow-x: auto;
+    white-space: pre;
+}
+.art.emoji {
+    font-size: 0.95rem;
+    line-height: 1;
+    letter-spacing: 0;
+}
+.art.mono {
+    font-family: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+    font-size: 0.72rem;
+    line-height: 1.05;
+}
+.one-line {
+    font-size: 2rem;
+    line-height: 1.2;
+}
+
+.note {
+    margin-top: 18px;
+    color: var(--ink-soft);
+    font-size: 0.82rem;
+    font-weight: 600;
+}
