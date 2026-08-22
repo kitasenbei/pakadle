@@ -210,8 +210,17 @@
 
   <div class="cp-scrim" id="cp-scrim" hidden></div>
 
-  <!-- breeding tree right-click context menu -->
+  <!-- right-click context menu, shared by the breeding tree and the database grid -->
   <div class="bd-ctx" id="bd-ctx" hidden></div>
+
+  <!-- full-size portrait viewer, opened from a card's right-click menu -->
+  <div class="cp-lb" id="cp-lb" role="dialog" aria-modal="true" aria-label="Portrait" aria-hidden="true" hidden>
+    <button class="cp-lb-x" id="cp-lb-x" type="button" aria-label="Close">✕</button>
+    <figure class="cp-lb-fig">
+      <img class="cp-lb-img" id="cp-lb-img" alt="" />
+      <figcaption class="cp-lb-cap" id="cp-lb-cap"></figcaption>
+    </figure>
+  </div>
 
   <!-- pakadle tooltip (single floating bubble, driven by [data-tip]) -->
   <div class="pk-tip" id="pk-tip" hidden></div>

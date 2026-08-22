@@ -262,6 +262,45 @@ body.scrubbing .numc-val::selection { background: transparent; }
   font-size: 13px; letter-spacing: .5px; padding: 60px 0; }
 
 /* ---- breeding tree right-click context menu ---- */
+/* full-size portrait viewer: blurred page behind, portrait centred, X top right */
+.cp-lb {
+  position: fixed; inset: 0; z-index: 90;
+  display: flex; align-items: center; justify-content: center;
+  padding: 52px 16px 16px;
+  background: rgba(58,46,57,.55);
+  -webkit-backdrop-filter: blur(10px) saturate(.9);
+          backdrop-filter: blur(10px) saturate(.9);
+  animation: lb-in .16s ease both;
+}
+.cp-lb[hidden] { display: none; }
+.cp-lb-fig { display: flex; flex-direction: column; align-items: center; gap: 12px; max-height: 100%; }
+.cp-lb-img {
+  width: min(96vw, calc(100vh - 116px), 1024px); height: auto;
+  max-width: 96vw; max-height: calc(100vh - 116px);
+  object-fit: contain; display: block;
+  border-radius: 18px; background: var(--panel);
+  box-shadow: 0 24px 60px rgba(0,0,0,.42);
+  animation: lb-pop .2s cubic-bezier(.2,.8,.3,1) both;
+}
+.cp-lb-cap {
+  padding: 6px 14px; border-radius: 999px;
+  background: rgba(255,255,255,.9);
+  font-size: 14px; font-weight: 800; color: var(--ink); text-align: center;
+}
+.cp-lb-x {
+  position: fixed; top: 16px; right: 16px; z-index: 1;
+  width: 40px; height: 40px; border-radius: 50%; cursor: pointer;
+  border: 2px solid rgba(255,255,255,.5); background: rgba(58,46,57,.55); color: #fff;
+  font-size: 18px; line-height: 1; display: flex; align-items: center; justify-content: center;
+}
+.cp-lb-x:hover { background: var(--sakura); border-color: #fff; }
+.cp-lb-x:active { transform: translateY(1px); }
+@keyframes lb-in { from { opacity: 0 } to { opacity: 1 } }
+@keyframes lb-pop { from { transform: scale(.97); opacity: 0 } to { transform: none; opacity: 1 } }
+@media (prefers-reduced-motion: reduce) {
+  .cp-lb, .cp-lb-img { animation: none; }
+}
+
 .bd-ctx { position: fixed; z-index: 55; min-width: 186px; padding: 5px;
   background: var(--panel); border: 2px solid var(--turf-dark); border-radius: 12px;
   box-shadow: 0 12px 28px rgba(58,46,57,.28); transform-origin: top left; }

@@ -381,6 +381,47 @@
       (e.new && e.new.desc ? '<div class="skill-d">' + esc(e.new.desc) + "</div>" : "") + "</div>";
   }
 
+  // A grid card carries the uma id, and in gallery mode the outfit's card id too.
+  function cardTarget(el) {
+    var u = UMAS.find(function (x) { return String(x.id) === el.getAttribute("data-id"); });
+    if (!u) return null;
+    var cardId = el.getAttribute("data-card"), idx = 0;
+    if (cardId != null && u.alts) {
+      for (var i = 0; i < u.alts.length; i++) { if (String(u.alts[i].cardId) === cardId) { idx = i; break; } }
+    }
+    return { u: u, idx: idx };
+  }
+  // full-size portrait for one outfit, or null when there is no card behind it
+  function cardImage(u, idx) {
+    var alts = (u.alts && u.alts.length) ? u.alts : [u];
+    var cur = alts[idx] || alts[0];
+    return (cur && cur.image) || null;
+  }
+  function cardLabel(u, idx) {
+    var alts = (u.alts && u.alts.length) ? u.alts : [u];
+    var cur = alts[idx] || alts[0];
+    return u.name + (cur && cur.title ? " · " + cur.title : "");
+  }
+
+  // ---- full-size portrait viewer ----
+  function openLightbox(u, idx) {
+    var src = cardImage(u, idx); if (!src) return;
+    $("cp-lb-img").src = "/pakadb/" + src;
+    $("cp-lb-img").alt = u.name;
+    $("cp-lb-cap").textContent = cardLabel(u, idx);
+    var lb = $("cp-lb");
+    lb.hidden = false;
+    lb.setAttribute("aria-hidden", "false");
+    $("cp-lb-x").focus();
+  }
+  function closeLightbox() {
+    var lb = $("cp-lb");
+    if (lb.hidden) return;
+    lb.hidden = true;
+    lb.setAttribute("aria-hidden", "true");
+    $("cp-lb-img").removeAttribute("src");   // drop the decoded bitmap
+  }
+
   function bioRow(k, v) { return '<div class="bio-row"><span class="bio-k">' + k + '</span><span class="bio-v">' + esc(v) + "</span></div>"; }
 
   function openDrawer(u, idx) {
@@ -1305,7 +1346,8 @@
   }
 
   // ---- breeding tree right-click context menu ----
-  var ctxSlot = null, ctxAnchor = null;
+  var ctxSlot = null, ctxAnchor = null;   // breeding tree slot
+  var ctxUma = null, ctxIdx = 0;          // database grid card
   // assign the uma that maximises this slot's affinity given the rest of the tree
   function autoPickSlot(slot) {
     var best = null, bestT = -Infinity;
@@ -1321,6 +1363,7 @@
     auto: '<path d="M16 18a2 2 0 0 1 2 2a2 2 0 0 1 2 -2a2 2 0 0 1 -2 -2a2 2 0 0 1 -2 2z"/><path d="M16 6a2 2 0 0 1 2 2a2 2 0 0 1 2 -2a2 2 0 0 1 -2 -2a2 2 0 0 1 -2 2z"/><path d="M9 18a6 6 0 0 1 6 -6a6 6 0 0 1 -6 -6a6 6 0 0 1 -6 6a6 6 0 0 1 6 6z"/>',
     outfit: '<path d="M15 4l6 2v5h-3v8a1 1 0 0 1 -1 1h-10a1 1 0 0 1 -1 -1v-8h-3v-5l6 -2a3 3 0 0 0 6 0"/>',
     view: '<path d="M10 12a2 2 0 1 0 4 0a2 2 0 0 0 -4 0"/><path d="M21 12c-2.4 4 -5.4 6 -9 6c-3.6 0 -6.6 -2 -9 -6c2.4 -4 5.4 -6 9 -6c3.6 0 6.6 2 9 6"/>',
+    image: '<path d="M15 8h.01"/><path d="M3 6a3 3 0 0 1 3 -3h12a3 3 0 0 1 3 3v12a3 3 0 0 1 -3 3h-12a3 3 0 0 1 -3 -3z"/><path d="M3 16l5 -5c.928 -.893 2.072 -.893 3 0l5 5"/><path d="M14 14l1 -1c.928 -.893 2.072 -.893 3 0l3 3"/>',
     clear: '<path d="M4 7l16 0"/><path d="M10 11l0 6"/><path d="M14 11l0 6"/><path d="M5 7l1 12a2 2 0 0 0 2 2h8a2 2 0 0 0 2 -2l1 -12"/><path d="M9 7v-3a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v3"/>',
   };
   function tablerIco(act) {
@@ -1330,8 +1373,15 @@
     return '<button type="button" class="bd-ctx-item' + (cls ? " " + cls : "") + '" data-act="' + act + '">' +
       '<span class="bd-ctx-ico">' + tablerIco(act) + "</span>" + label + "</button>";
   }
+  // clamp the floating menu inside the viewport, wherever the pointer was
+  function placeCtx(el, x, y) {
+    var w = el.offsetWidth || 190, h = el.offsetHeight || 160;
+    el.style.left = Math.max(8, Math.min(x, window.innerWidth - w - 8)) + "px";
+    el.style.top = Math.max(8, Math.min(y, window.innerHeight - h - 8)) + "px";
+  }
+
   function openCtx(slot, anchor, x, y) {
-    ctxSlot = slot; ctxAnchor = anchor;
+    ctxSlot = slot; ctxAnchor = anchor; ctxUma = null;
     var filled = !!bstate[slot];
     var canRank = SLOTS.some(function (k) { return k !== slot && bstate[k]; });
     var items = ctxItem("pick", filled ? "Change uma" : "Pick uma");
@@ -1343,11 +1393,19 @@
       items += '<div class="bd-ctx-sep"></div>' + ctxItem("clear", "Clear slot", "danger");
     }
     var el = $("bd-ctx"); el.innerHTML = items; showEl(el);
-    var w = el.offsetWidth || 190, h = el.offsetHeight || 160;
-    el.style.left = Math.max(8, Math.min(x, window.innerWidth - w - 8)) + "px";
-    el.style.top = Math.max(8, Math.min(y, window.innerHeight - h - 8)) + "px";
+    placeCtx(el, x, y);
   }
-  function closeCtx() { hideEl($("bd-ctx")); ctxSlot = null; ctxAnchor = null; }
+
+  // right-click menu for a database grid card: the drawer, or the portrait full size.
+  // Announced umas have no portrait, so they only get the first entry.
+  function openCardCtx(u, idx, x, y) {
+    ctxSlot = null; ctxAnchor = null; ctxUma = u; ctxIdx = idx;
+    var items = ctxItem("view", "Open details");
+    if (cardImage(u, idx)) items += ctxItem("image", "View image full size");
+    var el = $("bd-ctx"); el.innerHTML = items; showEl(el);
+    placeCtx(el, x, y);
+  }
+  function closeCtx() { hideEl($("bd-ctx")); ctxSlot = null; ctxAnchor = null; ctxUma = null; }
 
   // ---- skill filter picker (mare-picker style, for the advanced SKILL filter) ----
   var skillCtx = null;   // null = database filter (state.skills); "picker" = mare-picker filter
@@ -1582,23 +1640,28 @@
   }
 
   // ---- wiring ----
+  $("cp-grid").addEventListener("contextmenu", function (e) {
+    var el = e.target.closest(".unit"); if (!el) return;
+    e.preventDefault();
+    var t = cardTarget(el); if (!t) return;
+    openCardCtx(t.u, t.idx, e.clientX, e.clientY);
+  });
   $("cp-grid").addEventListener("click", function (e) {
     var el = e.target.closest(".unit"); if (!el) return;
     // clicking the already-open mare toggles the drawer shut
     if (el.classList.contains("sel") && $("cp-drawer").classList.contains("open")) { closeDrawer(); return; }
-    var u = UMAS.find(function (x) { return String(x.id) === el.getAttribute("data-id"); });
-    if (!u) return;
+    var t = cardTarget(el); if (!t) return;
     var prev = document.querySelector(".unit.sel"); if (prev) prev.classList.remove("sel");
     el.classList.add("sel");
-    // gallery alt cards carry a cardId — open the drawer on that outfit
-    var cardId = el.getAttribute("data-card"), idx = 0;
-    if (cardId != null && u.alts) {
-      for (var i = 0; i < u.alts.length; i++) { if (String(u.alts[i].cardId) === cardId) { idx = i; break; } }
-    }
-    openDrawer(u, idx);
+    openDrawer(t.u, t.idx);
+  });
+  $("cp-lb-x").addEventListener("click", closeLightbox);
+  // clicking the dimmed surround closes; clicking the portrait itself does not
+  $("cp-lb").addEventListener("click", function (e) {
+    if (!e.target.closest(".cp-lb-fig")) closeLightbox();
   });
   $("cp-scrim").addEventListener("click", function () { closeDrawer(); closePicker(); });
-  document.addEventListener("keydown", function (e) { if (e.key === "Escape") { if (!$("bd-ctx").hidden) return closeCtx(); if (!$("char-picker").hidden) return closeCharPicker(); if (!$("white-picker").hidden) return closeWhitePicker(); closeDrawer(); closePicker(); closeRoster(); closeEditor(); closeSkillPicker(); closeSlotPicker(); } });
+  document.addEventListener("keydown", function (e) { if (e.key === "Escape") { if (!$("cp-lb").hidden) return closeLightbox(); if (!$("bd-ctx").hidden) return closeCtx(); if (!$("char-picker").hidden) return closeCharPicker(); if (!$("white-picker").hidden) return closeWhitePicker(); closeDrawer(); closePicker(); closeRoster(); closeEditor(); closeSkillPicker(); closeSlotPicker(); } });
 
   // ---- pakadle tooltip: one floating bubble driven by [data-tip], clip-proof ----
   (function () {
@@ -2065,8 +2128,16 @@
     umaDrag = null;
   });
   $("bd-ctx").addEventListener("click", function (e) {
-    var it = e.target.closest(".bd-ctx-item"); if (!it || !ctxSlot) return;
+    var it = e.target.closest(".bd-ctx-item"); if (!it) return;
     e.stopPropagation();   // don't let this click reach the picker's outside-click closer
+    if (ctxUma) {          // opened from a database grid card
+      var cu = ctxUma, ci = ctxIdx, ca = it.getAttribute("data-act");
+      closeCtx();
+      if (ca === "view") openDrawer(cu, ci);
+      else if (ca === "image") openLightbox(cu, ci);
+      return;
+    }
+    if (!ctxSlot) return;
     var act = it.getAttribute("data-act"), slot = ctxSlot, anchor = ctxAnchor;
     closeCtx();
     if (act === "pick") openSlotPicker(slot, anchor);
