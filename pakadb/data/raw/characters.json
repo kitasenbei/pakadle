@@ -1196,6 +1196,7 @@
     "name_ko": "유키노 비진",
     "name_tw": "雪之美人",
     "playable": true,
+    "playable_en": true,
     "playable_ko": true,
     "playable_zh_tw": true,
     "race": "uma",
@@ -1753,6 +1754,7 @@
     "name_ko": "시킹 더 펄",
     "name_tw": "採珠",
     "playable": true,
+    "playable_en": true,
     "playable_ko": true,
     "playable_zh_tw": true,
     "race": "uma",
@@ -1810,7 +1812,7 @@
     "rl": {
       "active": "1995-1999",
       "country": "jp",
-      "death": null,
+      "death": "2023-09-27",
       "earnings": 225440000,
       "races": 17,
       "record": "5-3-1-8",
@@ -2233,6 +2235,7 @@
     "name_ko": "뱀부 메모리",
     "name_tw": "青竹回憶",
     "playable": true,
+    "playable_en": true,
     "playable_ko": true,
     "playable_zh_tw": true,
     "race": "uma",
@@ -3087,7 +3090,7 @@
     "rl": {
       "active": "1997-2001",
       "country": "jp",
-      "death": null,
+      "death": "2026-08-02",
       "earnings": 174282000,
       "races": 11,
       "record": "5-0-1-5",
@@ -3151,6 +3154,8 @@
   },
   {
     "active": true,
+    "active_ko": true,
+    "active_zh_tw": true,
     "birth_day": 15,
     "birth_month": 4,
     "birth_year": 2017,
@@ -3537,6 +3542,7 @@
   },
   {
     "active": true,
+    "active_en": true,
     "active_ko": true,
     "active_zh_tw": true,
     "birth_day": 15,
@@ -3872,6 +3878,7 @@
   },
   {
     "active": true,
+    "active_en": true,
     "active_ko": true,
     "active_zh_tw": true,
     "birth_day": 16,
@@ -3985,6 +3992,8 @@
     "name_ko": "노 리즌",
     "name_tw": "無需理由",
     "playable": true,
+    "playable_ko": true,
+    "playable_zh_tw": true,
     "rl": {
       "active": "2002-2004",
       "country": "jp",
@@ -4047,6 +4056,7 @@
   },
   {
     "active": true,
+    "active_en": true,
     "active_ko": true,
     "active_zh_tw": true,
     "birth_day": 24,
@@ -4059,6 +4069,7 @@
     "name_ko": "코파노 리키",
     "name_tw": "小林歷奇",
     "playable": true,
+    "playable_en": true,
     "playable_ko": true,
     "playable_zh_tw": true,
     "race": "uma",
@@ -4586,6 +4597,8 @@
   },
   {
     "active": true,
+    "active_ko": true,
+    "active_zh_tw": true,
     "birth_day": 9,
     "birth_month": 3,
     "birth_year": 2002,
@@ -4620,6 +4633,8 @@
   },
   {
     "active": true,
+    "active_ko": true,
+    "active_zh_tw": true,
     "birth_day": 27,
     "birth_month": 2,
     "birth_year": 2003,
@@ -4711,6 +4726,7 @@
     "name_tw": "黃金巨匠",
     "playable": true,
     "playable_ko": true,
+    "playable_zh_tw": true,
     "rl": {
       "active": "2010-2013",
       "country": "jp",
@@ -4825,6 +4841,8 @@
   },
   {
     "active": true,
+    "active_ko": true,
+    "active_zh_tw": true,
     "birth_day": 30,
     "birth_month": 4,
     "birth_year": 2000,
@@ -4832,12 +4850,16 @@
     "en_name": "Admire Groove",
     "height": 165,
     "jp_name": "アドマイヤグルーヴ",
+    "name_ko": "어드마이어 그루브",
+    "name_tw": "愛慕律動",
     "playable": true,
     "rl": {},
     "sex": 2,
     "tid": "1S",
     "url_name": "admire-groove",
-    "va_ja": "鈴木日菜"
+    "va_ja": "鈴木日菜",
+    "va_ko": "스즈키 히나",
+    "va_zh_tw": "鈴木日菜"
   },
   {
     "active": true,
@@ -5006,6 +5028,7 @@
   },
   {
     "active": true,
+    "active_ko": true,
     "birth_day": 11,
     "birth_month": 5,
     "birth_year": 1990,
@@ -5013,14 +5036,17 @@
     "en_name": "Sakura Chitose O",
     "height": 164,
     "jp_name": "サクラチトセオー",
+    "name_ko": "사쿠라 치토세 오",
     "rl": {},
     "sex": 1,
     "tid": "1X",
     "url_name": "sakura-chitose-o",
-    "va_ja": "明智璃子"
+    "va_ja": "明智璃子",
+    "va_ko": "아케치 리코"
   },
   {
     "active": true,
+    "active_ko": true,
     "birth_day": 20,
     "birth_month": 4,
     "birth_year": 2009,
@@ -5031,6 +5057,7 @@
     "name_ko": "페노메노",
     "name_tw": "超常駿驥",
     "playable": true,
+    "playable_ko": true,
     "race": false,
     "rl": {
       "active": "2011-2015",
@@ -5187,6 +5214,8 @@
     "name_ko": "그란 알레그리아",
     "name_tw": "放聲歡呼",
     "playable": true,
+    "playable_ko": true,
+    "playable_zh_tw": true,
     "rl": {
       "active": "2018-2021",
       "country": "jp",
@@ -5256,6 +5285,8 @@
   },
   {
     "active": true,
+    "active_ko": true,
+    "active_zh_tw": true,
     "birth_day": 6,
     "birth_month": 3,
     "birth_year": 2016,
@@ -5291,6 +5322,8 @@
   },
   {
     "active": true,
+    "active_ko": true,
+    "active_zh_tw": true,
     "birth_day": 23,
     "birth_month": 4,
     "birth_year": 2016,
@@ -5325,6 +5358,8 @@
   },
   {
     "active": true,
+    "active_ko": true,
+    "active_zh_tw": true,
     "birth_day": 24,
     "birth_month": 3,
     "birth_year": 1994,
@@ -5332,15 +5367,20 @@
     "en_name": "Stay Gold",
     "height": 142,
     "jp_name": "ステイゴールド",
+    "name_ko": "스테이 골드",
+    "name_tw": "黃金旅程",
     "playable": true,
     "rl": {},
     "sex": 1,
     "tid": "26",
     "url_name": "stay-gold",
-    "va_ja": "松田颯水"
+    "va_ja": "松田颯水",
+    "va_ko": "마츠다 사츠미",
+    "va_zh_tw": "松田颯水"
   },
   {
     "active": true,
+    "active_ko": true,
     "birth_day": 19,
     "birth_month": 4,
     "birth_year": 2006,
@@ -5348,12 +5388,14 @@
     "en_name": "Red Desire",
     "height": 160,
     "jp_name": "レッドディザイア",
+    "name_ko": "레드 디자이어",
     "playable": true,
     "rl": {},
     "sex": 2,
     "tid": "2s",
     "url_name": "red-desire",
-    "va_ja": "関根瞳"
+    "va_ja": "関根瞳",
+    "va_ko": "세키네 히토미"
   },
   {
     "active": true,
@@ -5364,16 +5406,19 @@
     "en_name": "Kiseki",
     "height": 166,
     "jp_name": "キセキ",
+    "name_ko": "키세키",
     "playable": true,
     "race": false,
     "rl": {},
     "sex": 1,
     "tid": "2r",
     "url_name": "kiseki",
-    "va_ja": "星希成奏"
+    "va_ja": "星希成奏",
+    "va_ko": "호시키 세에나"
   },
   {
     "active": true,
+    "active_ko": true,
     "birth_day": 24,
     "birth_month": 2,
     "birth_year": 2021,
@@ -5381,14 +5426,17 @@
     "en_name": "Forever Young",
     "height": 167,
     "jp_name": "フォーエバーヤング",
+    "name_ko": "포에버 영",
     "rl": {},
     "sex": 1,
     "tid": "2t",
     "url_name": "forever-young",
-    "va_ja": "海弓シュリ"
+    "va_ja": "海弓シュリ",
+    "va_ko": "미유미 슈리"
   },
   {
     "active": true,
+    "active_ko": true,
     "birth_day": 7,
     "birth_month": 3,
     "birth_year": 2005,
@@ -5396,14 +5444,17 @@
     "en_name": "Casino Drive",
     "height": 165,
     "jp_name": "カジノドライヴ",
+    "name_ko": "카지노 드라이브",
     "rl": {},
     "sex": 1,
     "tid": "2u",
     "url_name": "casino-drive",
-    "va_ja": "愛美"
+    "va_ja": "愛美",
+    "va_ko": "아이미"
   },
   {
     "active": true,
+    "active_ko": true,
     "birth_day": 4,
     "birth_month": 2,
     "birth_year": 2016,
@@ -5411,14 +5462,17 @@
     "en_name": "Marche Lorraine",
     "height": 157,
     "jp_name": "マルシュロレーヌ",
+    "name_ko": "마르슈 로렌",
     "rl": {},
     "sex": 2,
     "tid": "2w",
     "url_name": "marche-lorraine",
-    "va_ja": "近貞月乃"
+    "va_ja": "近貞月乃",
+    "va_ko": "치카사다 츠키노"
   },
   {
     "active": true,
+    "active_ko": true,
     "birth_day": 31,
     "birth_month": 3,
     "birth_year": 2007,
@@ -5426,12 +5480,33 @@
     "en_name": "Victoire Pisa",
     "height": 161,
     "jp_name": "ヴィクトワールピサ",
+    "name_ko": "빅투아르 피사",
     "playable": true,
     "rl": {},
     "sex": 1,
     "tid": "2v",
     "url_name": "victoire-pisa",
-    "va_ja": "嶋野花"
+    "va_ja": "嶋野花",
+    "va_ko": "시마노 하나"
+  },
+  {
+    "active": true,
+    "birth_day": 15,
+    "birth_month": 5,
+    "birth_year": 2007,
+    "char_id": 1145,
+    "en_name": "Rulership",
+    "height": 160,
+    "jp_name": "ルーラーシップ",
+    "name_ko": "룰러쉽",
+    "playable": true,
+    "race": false,
+    "rl": {},
+    "sex": 1,
+    "tid": "2x",
+    "url_name": "rulership",
+    "va_ja": "海野水玉",
+    "va_ko": "우미노 미즈타마"
   },
   {
     "active_en": true,
@@ -5678,6 +5753,7 @@
   },
   {
     "active": true,
+    "active_en": true,
     "active_ko": true,
     "active_zh_tw": true,
     "birth_day": 25,
@@ -5853,30 +5929,39 @@
   },
   {
     "active": true,
+    "active_ko": true,
+    "active_zh_tw": true,
     "birth_day": 21,
     "birth_month": 6,
     "char_id": 9049,
     "en_name": "Tucker Bryne",
     "height": 168,
     "jp_name": "タッカーブライン",
+    "name_ko": "터커 브라인",
+    "name_tw": "塔可拜茵",
     "rl": {},
     "sex": 1,
     "tid": "2p",
     "url_name": "tucker-bryne",
-    "va_ja": "小林ゆう"
+    "va_ja": "小林ゆう",
+    "va_ko": "코바야시 유우",
+    "va_zh_tw": "小林ゆう"
   },
   {
     "active": true,
+    "active_ko": true,
     "birth_day": 7,
     "birth_month": 4,
     "char_id": 9050,
     "en_name": "Kiyoko Hoshina",
     "height": 170,
     "jp_name": "保科健子",
+    "name_ko": "호시나 키요코",
     "rl": {},
     "sex": 2,
     "tid": "2q",
     "url_name": "kiyoko-hoshina",
-    "va_ja": "高垣彩陽"
+    "va_ja": "高垣彩陽",
+    "va_ko": "타카가키 아야히"
   }
 ]

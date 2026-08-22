@@ -216,7 +216,8 @@
     "desc": "If you're in the first position during the second half of the race, your speed will increase",
     "rarity": 5,
     "type": [
-      "nac"
+      "nac",
+      "l_3"
     ],
     "iconId": 20013
   },
@@ -6252,7 +6253,7 @@
   },
   {
     "id": 202401,
-    "name": "Flash Forward",
+    "name": "Lightning Surge",
     "desc": "Short/Mile・If you're about to overtake someone in the second half of the pack during the Final Leg, your acceleration will increase",
     "rarity": 2,
     "type": [
@@ -16958,7 +16959,7 @@
   {
     "id": 203702,
     "name": "Take the Plunge",
-    "desc": "Leader・Long・If you have enough stamina for a full spurt at a random point in the first half of the Final Leg, you will get a slight speed boost",
+    "desc": "Leader・Long・If you have enough stamina for a full spurt at a random point during the first half of the Final Leg, you will get a slight speed boost",
     "rarity": 1,
     "type": [
       "lng",
@@ -18919,7 +18920,7 @@
   {
     "id": 203701,
     "name": "Gordian Cut",
-    "desc": "Leader・Long・If you have enough stamina for a full spurt at a random point in the first half of the Final Leg, you will get a speed boost",
+    "desc": "Leader・Long・If you have enough stamina for a full spurt at a random point during the first half of the Final Leg, you will get a speed boost",
     "rarity": 2,
     "type": [
       "lng",
@@ -19981,7 +19982,7 @@
   {
     "id": 101361,
     "name": "Innocent Prayer: Holy Light",
-    "desc": "",
+    "desc": "Mile/Medium・During the Final Leg, if you're not in the front and have enough stamina for a full spurt, you will get a speed boost; then, at a random point during your Zenkai Spurt, if the Saintess's Trial skill increased your speed, your Zenkai acceleration will increase",
     "rarity": 5,
     "type": [
       "l_2",
@@ -19993,7 +19994,7 @@
   {
     "id": 203321,
     "name": "Descending Wings",
-    "desc": "",
+    "desc": "Betweener・At a random point on a random downhill, your acceleration will increase",
     "rarity": 2,
     "type": [
       "btw",
@@ -20004,7 +20005,7 @@
   {
     "id": 204452,
     "name": "Saintess's Trial",
-    "desc": "",
+    "desc": "Betweener・Medium・At a random point during the first half of the Middle Leg, your speed will slightly decrease; if you've stayed in the middle of the pack or beyond until then, your speed will increase instead",
     "rarity": 1,
     "type": [
       "med",
@@ -20016,7 +20017,7 @@
   {
     "id": 204453,
     "name": "Saintess's Challenge",
-    "desc": "",
+    "desc": "At a random point during the first half of the Middle Leg, your speed will marginally increase; if you've stayed in the middle of the pack or beyond until then, your speed will slightly increase instead",
     "rarity": 1,
     "type": [
       "l_1",
@@ -20027,7 +20028,7 @@
   {
     "id": 113601111,
     "name": "Saintess Awakened",
-    "desc": "",
+    "desc": "Betweener・On the Final Straight during the Final Leg, if you're not in the back of the pack, your speed will increase; if the Saintess's Trial skill increased your speed, you will also get a slight speed boost",
     "rarity": 6,
     "type": [
       "btw",
@@ -20039,7 +20040,7 @@
   {
     "id": 113601211,
     "name": "Heaven-Bestowed Grace",
-    "desc": "",
+    "desc": "Betweener・At a random point on a random downhill, your acceleration will increase; if the Saintess's Trial skill increased your speed, you will also use a little extra stamina to get a speed boost",
     "rarity": 6,
     "type": [
       "btw",
@@ -20050,7 +20051,7 @@
   {
     "id": 111161,
     "name": "Unwithering Cattleya",
-    "desc": "",
+    "desc": "Medium・If you were in the middle of the pack halfway through the race, then with 400 m remaining, your speed will greatly increase; the effect is stronger if you're in a good position when it activates",
     "rarity": 5,
     "type": [
       "med"
@@ -20060,19 +20061,19 @@
   {
     "id": 120251,
     "name": "In Times You're Wandering the Night",
-    "desc": "",
+    "desc": "Betweener・During the Middle Leg, your stamina will recover; (Long only) then, during the second half of the race, if you're in the middle of the pack, you will get a speed boost",
     "rarity": 5,
     "type": [
       "l_1",
       "btw",
       "lng"
     ],
-    "iconId": 0
+    "iconId": 20023
   },
   {
     "id": 203561,
     "name": "With All My Might",
-    "desc": "",
+    "desc": "Long・If you're in a last spurt at a random point during the first half of the Last Spurt, your speed will increase",
     "rarity": 2,
     "type": [
       "lng",
@@ -20083,7 +20084,7 @@
   {
     "id": 204171,
     "name": "Bursting with Energy",
-    "desc": "",
+    "desc": "Mile・If you're in a last spurt at a random point during the first half of the Last Spurt, your speed will increase",
     "rarity": 2,
     "type": [
       "mil",
@@ -20094,27 +20095,27 @@
   {
     "id": 204292,
     "name": "Ultra-Long-Distance Recovery ◎",
-    "desc": "",
+    "desc": "In races of at least 3000 m, 40% through the race, your stamina will recover",
     "rarity": 1,
     "type": [
       "nac"
     ],
-    "iconId": 0
+    "iconId": 20021
   },
   {
     "id": 204293,
     "name": "Ultra-Long-Distance Recovery ○",
-    "desc": "",
+    "desc": "In races of at least 3000 m, 40% through the race, your stamina will slightly recover",
     "rarity": 1,
     "type": [
       "nac"
     ],
-    "iconId": 0
+    "iconId": 20021
   },
   {
     "id": 204381,
     "name": "Dazzling Brilliance",
-    "desc": "",
+    "desc": "Long・At a random point during the second half of the race, you will get a speed boost",
     "rarity": 2,
     "type": [
       "lng"
@@ -20124,7 +20125,7 @@
   {
     "id": 204382,
     "name": "Radiating Brilliance",
-    "desc": "",
+    "desc": "Long・At a random point during the second half of the race, you will get a slight speed boost",
     "rarity": 1,
     "type": [
       "lng"
@@ -20134,7 +20135,7 @@
   {
     "id": 204431,
     "name": "Before Dust Can Rise",
-    "desc": "",
+    "desc": "Betweener・During any Last Spurt straight, your acceleration will increase",
     "rarity": 2,
     "type": [
       "btw",
@@ -20145,7 +20146,7 @@
   {
     "id": 204432,
     "name": "Faster Than Shadow",
-    "desc": "",
+    "desc": "Betweener・During any Last Spurt straight, your acceleration will slightly increase",
     "rarity": 1,
     "type": [
       "btw",
@@ -20156,7 +20157,7 @@
   {
     "id": 204442,
     "name": "Tracking",
-    "desc": "",
+    "desc": "Betweener・At a random point during the Middle Leg, your speed will slightly increase; the effect is stronger if you're at least 15 meters behind first place",
     "rarity": 1,
     "type": [
       "btw",
@@ -20167,7 +20168,7 @@
   {
     "id": 204462,
     "name": "Now, Onto My Path!",
-    "desc": "",
+    "desc": "Mile・If you're not in the front at a random point during the second half of the Opening Leg, your speed will slightly increase",
     "rarity": 1,
     "type": [
       "mil",
@@ -20178,7 +20179,7 @@
   {
     "id": 100301311,
     "name": "Surpassing the Emperor",
-    "desc": "",
+    "desc": "Leader・Medium・If you're in the first half of the pack at a random point during the first quarter of the Final Leg, your acceleration will increase; in 2400 m Tokyo races, you will also get a speed boost",
     "rarity": 6,
     "type": [
       "ldr",
@@ -20189,7 +20190,7 @@
   {
     "id": 102503111,
     "name": "Paranormal Experience",
-    "desc": "",
+    "desc": "Betweener・Long・When you enter the Final Corner, you will get a speed boost; the duration gains 0.5 seconds for each uphill before activation, up to four times",
     "rarity": 6,
     "type": [
       "lng",
@@ -20202,7 +20203,7 @@
   {
     "id": 102503211,
     "name": "Not of This World",
-    "desc": "",
+    "desc": "Betweener・Long・During your last spurt, your acceleration will greatly increase",
     "rarity": 6,
     "type": [
       "btw",
@@ -20213,17 +20214,17 @@
   {
     "id": 107002121,
     "name": "The Star That Scorches All",
-    "desc": "",
+    "desc": "In 2400 m Tokyo races, your Speed and Power stats are increased by 60; if you're top 3 in popularity, then with 800 m remaining, if you're in the middle of the pack, your acceleration will slightly increase and you will get a slight speed boost",
     "rarity": 6,
     "type": [
       "nac"
     ],
-    "iconId": 0
+    "iconId": 10036
   },
   {
     "id": 111602111,
     "name": "Now, Let Us Dance",
-    "desc": "",
+    "desc": "Mile/Medium・If you're not in the front at a random point on the third corner, you will get a speed boost; in 2400 m Tokyo races, your acceleration will also increase",
     "rarity": 6,
     "type": [
       "cor",
@@ -20234,8 +20235,8 @@
   },
   {
     "id": 111602211,
-    "name": "The Strongest Lady’s Pride",
-    "desc": "",
+    "name": "The Strongest Lady's Pride",
+    "desc": "Betweener・If you're not in the front at a random point during the second half of the Middle Leg, your speed will increase; it will increase tremendously in 2400 m Tokyo races",
     "rarity": 6,
     "type": [
       "btw",
@@ -20246,7 +20247,7 @@
   {
     "id": 101341,
     "name": "Flora That Will Bloom for You",
-    "desc": "",
+    "desc": "During the Middle Leg, if you're in the first half of the pack with at least two other girls near you, your speed will slightly increase; the effect is stronger in Medium and Long races",
     "rarity": 5,
     "type": [
       "l_1",
@@ -20259,7 +20260,7 @@
   {
     "id": 113401111,
     "name": "Flower Path in Bloom",
-    "desc": "",
+    "desc": "Leader・At a random point during the Middle Leg, you will get a speed boost; if you're in the first half of the pack when it activates, your (target) speed will also slightly increase",
     "rarity": 6,
     "type": [
       "ldr",
@@ -20270,7 +20271,7 @@
   {
     "id": 113401211,
     "name": "Bouquet of Wishes, Forward",
-    "desc": "",
+    "desc": "Medium/Long・During the Final Corner or beyond in the Final Leg, when the most popular girl activates a skill, you will get a speed boost; the effect is stronger if your base Wisdom is at least 1200",
     "rarity": 6,
     "type": [
       "l_2",
@@ -20284,8 +20285,8 @@
   },
   {
     "id": 120771,
-    "name": "一杯全力、お届けします！",
-    "desc": "",
+    "name": "One Bowl, Full Power Delivery!",
+    "desc": "Leader・Long・After activating at least 3 recovery skills, during the latter part of the Middle Leg, you will get a speed boost; if you're in the first half of the pack when it activates, your acceleration will also increase",
     "rarity": 5,
     "type": [
       "l_1",
@@ -20296,8 +20297,8 @@
   },
   {
     "id": 203641,
-    "name": "曙光",
-    "desc": "",
+    "name": "Dawnlight",
+    "desc": "Medium/Long・If you're in the first half of the pack at a random point during the first half of the Final Leg, you will get a speed boost",
     "rarity": 2,
     "type": [
       "med",
@@ -20308,32 +20309,32 @@
   },
   {
     "id": 204391,
-    "name": "悠々自適",
-    "desc": "",
+    "name": "Carefree Ease",
+    "desc": "Medium/Long・At a random point during the first half of the Middle Leg, you will get a slight speed boost and your stamina will recover",
     "rarity": 2,
     "type": [
       "l_1",
       "med",
       "lng"
     ],
-    "iconId": 0
+    "iconId": 20022
   },
   {
     "id": 204392,
-    "name": "息抜き上手",
-    "desc": "",
+    "name": "Breaktime Pro",
+    "desc": "Medium/Long・At a random point during the first half of the Middle Leg, you will get a marginal speed boost and your stamina will slightly recover",
     "rarity": 1,
     "type": [
       "l_1",
       "med",
       "lng"
     ],
-    "iconId": 0
+    "iconId": 20021
   },
   {
     "id": 204472,
-    "name": "奮い立つ心",
-    "desc": "",
+    "name": "Roused Spirit",
+    "desc": "Medium/Long・If you're in the first half of the pack at a random point on the third corner, you will get a slight speed boost",
     "rarity": 1,
     "type": [
       "med",
@@ -20344,8 +20345,8 @@
   },
   {
     "id": 210391,
-    "name": "極上の感謝を！",
-    "desc": "",
+    "name": "Premium Helping of Gratitude",
+    "desc": "If you're in a last spurt at a random point during the first half of the Last Spurt, your speed will increase; the effect is stronger the more total Excitement Pt you've earned",
     "rarity": 2,
     "type": [
       "l_3",
@@ -20355,8 +20356,8 @@
   },
   {
     "id": 210392,
-    "name": "恩返し、召し上がれ",
-    "desc": "",
+    "name": "Serving of Gratitude",
+    "desc": "If you're in a last spurt at a random point during the first half of the Last Spurt, your speed will slightly increase",
     "rarity": 1,
     "type": [
       "l_3",
@@ -20366,8 +20367,8 @@
   },
   {
     "id": 414011,
-    "name": "バリカタ、一丁上がり！",
-    "desc": "",
+    "name": "Extra-Firm, Coming Right Up!",
+    "desc": "If another girl has been right behind you for at least 3 seconds, your speed will greatly increase",
     "rarity": 6,
     "type": [
       "nac"
@@ -20376,8 +20377,8 @@
   },
   {
     "id": 414021,
-    "name": "じっくり仕込みの一杯",
-    "desc": "",
+    "name": "Slow-Crafted Bowl",
+    "desc": "Medium/Long・At a random point during the first half of the Middle Leg, you will get a slight speed boost and your stamina will greatly recover",
     "rarity": 6,
     "type": [
       "l_1",
@@ -20388,8 +20389,8 @@
   },
   {
     "id": 414031,
-    "name": "麺の極意、見つけたり",
-    "desc": "",
+    "name": "Secrets of the Noodle Path",
+    "desc": "Medium/Long・At a random point during the Middle Leg, your speed will increase",
     "rarity": 6,
     "type": [
       "med",
@@ -20400,8 +20401,8 @@
   },
   {
     "id": 414041,
-    "name": "湯切りの妙技",
-    "desc": "",
+    "name": "Exquisite Water Draining",
+    "desc": "At a random point during the Middle Leg, your speed will greatly increase; (Medium only) if all your base stats are at least 1000, you will get a tremendous speed boost instead",
     "rarity": 6,
     "type": [
       "l_1",
@@ -20412,8 +20413,8 @@
   },
   {
     "id": 414051,
-    "name": "秘伝の味変アレンジ！",
-    "desc": "",
+    "name": "Secret Flavor Remix!",
+    "desc": "Mile・If you're in the first half of the pack at a random point during the Middle Leg, your speed will greatly increase",
     "rarity": 6,
     "type": [
       "mil",
@@ -20423,8 +20424,8 @@
   },
   {
     "id": 414061,
-    "name": "元気特盛りのおもてなし",
-    "desc": "",
+    "name": "Heaping Helping of Cheer",
+    "desc": "Mile・If you're in a last spurt at a random point during the first half of the Last Spurt, your speed will greatly increase",
     "rarity": 6,
     "type": [
       "mil",
@@ -20434,8 +20435,8 @@
   },
   {
     "id": 107703111,
-    "name": "湯気立つ勝負道",
-    "desc": "",
+    "name": "Steaming Road to Victory",
+    "desc": "Leader・Long・At a random point during the first half of the Middle Leg, you will get a great speed boost and your stamina will slightly recover",
     "rarity": 6,
     "type": [
       "lng",
@@ -20446,8 +20447,8 @@
   },
   {
     "id": 107703211,
-    "name": "いざ、開店です！",
-    "desc": "",
+    "name": "Now Open for Business!",
+    "desc": "Leader・Long・If you have enough stamina for a full spurt at a random point during the first half of the Final Leg, you will get a speed boost; then, during the Final Straight, you will get another slight speed boost",
     "rarity": 6,
     "type": [
       "lng",
@@ -20458,13 +20459,325 @@
   },
   {
     "id": 111701121,
-    "name": "凱歌へのプレパラシオン",
-    "desc": "",
+    "name": "Preparation for Triumph",
+    "desc": "Chaser・Long・If you're trying to overtake someone during the Middle Leg, your speed will increase and your stamina will slightly recover",
     "rarity": 6,
     "type": [
       "cha",
       "lng",
       "l_1"
+    ],
+    "iconId": 20016
+  },
+  {
+    "id": 120221,
+    "name": "Graceful Dash: The Way of Ramen",
+    "desc": "Leader・During the first half of the Middle Leg, if you're in the first half of the pack and have been blocked from the side for at least 2 seconds, your speed will increase",
+    "rarity": 5,
+    "type": [
+      "ldr"
+    ],
+    "iconId": 20013
+  },
+  {
+    "id": 102203111,
+    "name": "Noodle Refill Coming Up♪",
+    "desc": "Medium・If you're in the first half of the pack at a random point during the second half of the Middle Leg, your speed will increase; if your unique skill has activated, then upon entering the Last Spurt, it will automatically activate again",
+    "rarity": 6,
+    "type": [
+      "med",
+      "l_1",
+      "l_3"
+    ],
+    "iconId": 20016
+  },
+  {
+    "id": 102203211,
+    "name": "Piping Hot! Order Up!",
+    "desc": "Leader・At a random point during the Middle Leg, your speed will greatly increase",
+    "rarity": 6,
+    "type": [
+      "ldr",
+      "l_1"
+    ],
+    "iconId": 20016
+  },
+  {
+    "id": 101451,
+    "name": "Unmatched Tactics",
+    "desc": "Leader/Chaser・If you get a good start, you will get a slight speed boost; if you get a late start, then halfway through the race, if you're in the second half of the pack, your speed will greatly increase",
+    "rarity": 5,
+    "type": [
+      "ldr",
+      "cha"
+    ],
+    "iconId": 20013
+  },
+  {
+    "id": 204581,
+    "name": "Inner Turmoil",
+    "desc": "All your stats are decreased by 20, and your race start will be slower",
+    "rarity": 1,
+    "type": [
+      "nac"
+    ],
+    "iconId": 20064
+  },
+  {
+    "id": 114501111,
+    "name": "Cunning Gambit",
+    "desc": "Turf・In races from 2000 to 2500 m, your race start will be slower; then, at a random point during the first half of the Middle Leg, your speed will greatly increase",
+    "rarity": 6,
+    "type": [
+      "tur",
+      "l_1"
+    ],
+    "iconId": 20016
+  },
+  {
+    "id": 114501211,
+    "name": "Assault Trick",
+    "desc": "Leader/Chaser・In races from 2000 to 2500 m, at a random point during the first quarter of the Final Leg, your acceleration will greatly increase; (Medium only) if you overtook someone during the second half of the race, you will also get a slight speed boost",
+    "rarity": 6,
+    "type": [
+      "ldr",
+      "med",
+      "cha"
+    ],
+    "iconId": 20046
+  },
+  {
+    "id": 120201,
+    "name": "Let the Sea Breeze Carry Me",
+    "desc": "Runner・Turf・If you're in the first half of the pack at a random point during the Middle Leg, you will get a great speed boost; (Medium only) then, if you didn't have a late start, your acceleration will increase at a random point during the first quarter of the Final Leg",
+    "rarity": 5,
+    "type": [
+      "run",
+      "tur",
+      "l_1",
+      "med"
+    ],
+    "iconId": 20013
+  },
+  {
+    "id": 120741,
+    "name": "Evening Calm Retreat Memory",
+    "desc": "If you're in the middle of the pack on the Final Straight during the Final Leg, your speed will increase; (Medium/Long only) if you were overtaken during the Middle Leg, you will also get a slight speed boost",
+    "rarity": 5,
+    "type": [
+      "l_2",
+      "l_3",
+      "med",
+      "lng",
+      "nac"
+    ],
+    "iconId": 20013
+  },
+  {
+    "id": 204481,
+    "name": "Race Maker",
+    "desc": "Runner・Long・If you're in the first half of the pack at a random point during the Middle Leg, your speed will increase",
+    "rarity": 2,
+    "type": [
+      "l_1",
+      "run",
+      "lng"
+    ],
+    "iconId": 20012
+  },
+  {
+    "id": 204482,
+    "name": "Let the Brush Lead",
+    "desc": "Runner・Long・If you're in the first half of the pack at a random point during the Middle Leg, your speed will slightly increase",
+    "rarity": 1,
+    "type": [
+      "l_1",
+      "run",
+      "lng"
+    ],
+    "iconId": 20011
+  },
+  {
+    "id": 204492,
+    "name": "Point Man",
+    "desc": "Runner・At a random point on a random uphill, your speed will slightly increase",
+    "rarity": 1,
+    "type": [
+      "run",
+      "slo"
+    ],
+    "iconId": 20011
+  },
+  {
+    "id": 204501,
+    "name": "Two Birds, One Stone",
+    "desc": "Medium・At a random point during the first half of the Middle Leg, your speed will increase and you will get a slight speed boost",
+    "rarity": 2,
+    "type": [
+      "med",
+      "l_1"
+    ],
+    "iconId": 20012
+  },
+  {
+    "id": 204502,
+    "name": "Double Axel",
+    "desc": "Medium・At a random point during the first half of the Middle Leg, your speed will marginally increase and you will get a marginal speed boost",
+    "rarity": 1,
+    "type": [
+      "med",
+      "l_1"
+    ],
+    "iconId": 20011
+  },
+  {
+    "id": 204541,
+    "name": "Vanguard",
+    "desc": "Runner・Medium・If you're in the first half of the pack at a random point during the Middle Leg, your speed will increase",
+    "rarity": 2,
+    "type": [
+      "l_1",
+      "run",
+      "med"
+    ],
+    "iconId": 20012
+  },
+  {
+    "id": 204542,
+    "name": "Forerunner",
+    "desc": "Runner・Medium・If you're in the first half of the pack at a random point during the Middle Leg, your speed will slightly increase",
+    "rarity": 1,
+    "type": [
+      "l_1",
+      "run",
+      "med"
+    ],
+    "iconId": 20011
+  },
+  {
+    "id": 204552,
+    "name": "Ace Up the Sleeve",
+    "desc": "Runner・If you're in a last spurt at a random point during the first half of the Last Spurt, your speed will slightly increase",
+    "rarity": 1,
+    "type": [
+      "run",
+      "l_3"
+    ],
+    "iconId": 20011
+  },
+  {
+    "id": 204562,
+    "name": "Game Sense",
+    "desc": "Runner・Medium・If your base Speed is at least 1200, it will increase by another 20; if your base Wisdom is also at least 1200, the Speed increase will be 40 instead",
+    "rarity": 1,
+    "type": [
+      "run",
+      "med"
+    ],
+    "iconId": 10011
+  },
+  {
+    "id": 100201311,
+    "name": "A World All My Own",
+    "desc": "Your Speed and Power stats are increased by 60 on counterclockwise tracks; in 1800 m Tokyo races, they are increased by 120 instead",
+    "rarity": 6,
+    "type": [
+      "nac"
+    ],
+    "iconId": 10016
+  },
+  {
+    "id": 102003111,
+    "name": "Carefree Vacation♪",
+    "desc": "Runner・Medium・If you're in the first half of the pack at a random point during the Middle Leg, your speed will increase; it will increase tremendously in Turf races",
+    "rarity": 6,
+    "type": [
+      "run",
+      "l_1",
+      "med",
+      "tur"
+    ],
+    "iconId": 20016
+  },
+  {
+    "id": 102003211,
+    "name": "Summer Breeze Frontrunner",
+    "desc": "Runner・Medium・If you're in the first half of the pack at a random point during the Middle Leg, your speed will increase; it will increase tremendously in Turf races if your base Wisdom is at least 1000",
+    "rarity": 6,
+    "type": [
+      "run",
+      "l_1",
+      "med",
+      "tur"
+    ],
+    "iconId": 20016
+  },
+  {
+    "id": 105003221,
+    "name": "Indomitable Rebellion",
+    "desc": "Chaser・Medium・Nakayama・During the Final Leg, your acceleration will slightly increase; the effect is stronger if you were at least 15 meters behind first place around the end of the Middle Leg",
+    "rarity": 6,
+    "type": [
+      "l_2",
+      "med",
+      "cha"
+    ],
+    "iconId": 20046
+  },
+  {
+    "id": 107403111,
+    "name": "Beachside Chase",
+    "desc": "Medium/Long・If you're not in the front during the second half of the Middle Leg, your speed will increase",
+    "rarity": 6,
+    "type": [
+      "l_1",
+      "med",
+      "lng"
+    ],
+    "iconId": 20016
+  },
+  {
+    "id": 107403211,
+    "name": "Rudbeckia Brings the Summer Breeze",
+    "desc": "Betweener・2000 m+・If you have enough stamina for a full spurt at a random point during the first half of the Final Leg, you will get a great speed boost",
+    "rarity": 6,
+    "type": [
+      "btw",
+      "l_2"
+    ],
+    "iconId": 20016
+  },
+  {
+    "id": 111131,
+    "name": "Beachside Venus Time♡",
+    "desc": "If you're in the first half of the pack and someone is trying to overtake you during the second half of the Middle Leg, your speed will increase; the effect is stronger if the race is Medium and your Motivation is Great",
+    "rarity": 5,
+    "type": [
+      "l_1",
+      "med",
+      "nac"
+    ],
+    "iconId": 20013
+  },
+  {
+    "id": 111302111,
+    "name": "Sorry I'm So Loved♡",
+    "desc": "Leader・Medium・If your base Speed is at least 1200, your Speed stat is increased by 80; if your Motivation is Great, all your stats are increased by an additional 20",
+    "rarity": 6,
+    "type": [
+      "ldr",
+      "med"
+    ],
+    "iconId": 10016
+  },
+  {
+    "id": 111302211,
+    "name": "Brilliance on Full Display",
+    "desc": "Medium・If you're in a last spurt at a random point during the first half of the Last Spurt, your speed will increase; it will increase tremendously if your Motivation is Great",
+    "rarity": 6,
+    "type": [
+      "med",
+      "l_3"
     ],
     "iconId": 20016
   }

@@ -268,6 +268,26 @@
       200022,
       200431,
       200542,
+      200551,
+      204262,
+      200024
+    ],
+    "skills_awakening_en": [
+      200022,
+      200431,
+      200542,
+      200551
+    ],
+    "skills_awakening_ko": [
+      200022,
+      200431,
+      200542,
+      200551
+    ],
+    "skills_awakening_zh_tw": [
+      200022,
+      200431,
+      200542,
       200551
     ],
     "skills_event": [
@@ -283,6 +303,10 @@
       {
         "new": 100201211,
         "old": 200551
+      },
+      {
+        "new": 100201311,
+        "old": 200024
       }
     ],
     "skills_innate": [
@@ -1064,12 +1088,6 @@
       202452,
       200492
     ],
-    "skills_event_en": [
-      201052,
-      201702,
-      200602,
-      200492
-    ],
     "skills_evo": [
       {
         "new": 100801111,
@@ -1172,12 +1190,6 @@
       200492,
       200732
     ],
-    "skills_event_en": [
-      201072,
-      201052,
-      201902,
-      200732
-    ],
     "skills_evo": [
       {
         "new": 100901111,
@@ -1277,11 +1289,6 @@
       200582,
       201702,
       202502,
-      201902
-    ],
-    "skills_event_en": [
-      200582,
-      201702,
       201902
     ],
     "skills_evo": [
@@ -2522,15 +2529,6 @@
       201072,
       202222,
       202322
-    ],
-    "skills_event_en": [
-      201672,
-      201062,
-      200512,
-      200062,
-      201042,
-      200702,
-      201072
     ],
     "skills_evo": [
       {
@@ -3897,10 +3895,6 @@
       201282,
       202042
     ],
-    "skills_event_en": [
-      200042,
-      201282
-    ],
     "skills_evo": [
       {
         "new": 104101111,
@@ -4108,10 +4102,6 @@
       201672,
       202202,
       202262
-    ],
-    "skills_event_en": [
-      201272,
-      201672
     ],
     "skills_evo": [
       {
@@ -6535,8 +6525,8 @@
       200582,
       201532,
       201702,
-      200732,
       201212,
+      200732,
       200462,
       200352
     ],
@@ -6832,14 +6822,6 @@
       201142,
       201192,
       202462,
-      200452
-    ],
-    "skills_event_en": [
-      200332,
-      200352,
-      200172,
-      201142,
-      201192,
       200452
     ],
     "skills_evo": [
@@ -8306,13 +8288,6 @@
       202502,
       201902
     ],
-    "skills_event_en": [
-      200582,
-      202042,
-      201052,
-      201702,
-      201902
-    ],
     "skills_evo": [
       {
         "new": 101002111,
@@ -8503,10 +8478,11 @@
     "skills_event": [
       201512,
       202102,
+      200172,
       200192,
+      202181,
       200332,
-      202092,
-      202181
+      202092
     ],
     "skills_evo": [
       {
@@ -8684,6 +8660,7 @@
     "obtained": "gacha",
     "rarity": 3,
     "release": "2022-07-29",
+    "release_en": "2026-07-02",
     "release_ko": "2023-11-17",
     "release_zh_tw": "2023-12-01",
     "skills_awakening": [
@@ -8781,6 +8758,7 @@
     "obtained": "gacha",
     "rarity": 3,
     "release": "2022-07-29",
+    "release_en": "2026-07-02",
     "release_ko": "2023-11-17",
     "release_zh_tw": "2023-12-01",
     "skills_awakening": [
@@ -8873,6 +8851,7 @@
     "obtained": "gacha",
     "rarity": 3,
     "release": "2022-08-10",
+    "release_en": "2026-07-07",
     "release_ko": "2023-11-29",
     "release_zh_tw": "2023-12-13",
     "skills_awakening": [
@@ -8968,6 +8947,7 @@
     "obtained": "gacha",
     "rarity": 3,
     "release": "2022-08-19",
+    "release_en": "2026-07-16",
     "release_ko": "2023-12-08",
     "release_zh_tw": "2023-12-22",
     "skills_awakening": [
@@ -8979,7 +8959,8 @@
     "skills_event": [
       202332,
       201672,
-      201682
+      201682,
+      202262
     ],
     "skills_evo": [
       {
@@ -9059,6 +9040,7 @@
     "obtained": "gacha",
     "rarity": 3,
     "release": "2022-08-24",
+    "release_en": "2026-07-22",
     "release_ko": "2023-12-13",
     "release_zh_tw": "2023-12-27",
     "skills_awakening": [
@@ -9074,12 +9056,6 @@
       201672,
       202202,
       202262
-    ],
-    "skills_event_en": [
-      201272,
-      202282,
-      200452,
-      201672
     ],
     "skills_evo": [
       {
@@ -9164,6 +9140,7 @@
     "obtained": "gacha",
     "rarity": 3,
     "release": "2022-08-29",
+    "release_en": "2026-07-27",
     "release_ko": "2023-12-18",
     "release_zh_tw": "2024-01-01",
     "skills_awakening": [
@@ -9263,6 +9240,7 @@
     "obtained": "gacha",
     "rarity": 3,
     "release": "2022-08-29",
+    "release_en": "2026-07-27",
     "release_ko": "2023-12-18",
     "release_zh_tw": "2024-01-01",
     "skills_awakening": [
@@ -9358,6 +9336,7 @@
     "obtained": "gacha",
     "rarity": 3,
     "release": "2022-09-12",
+    "release_en": "2026-08-05",
     "release_ko": "2024-01-01",
     "release_zh_tw": "2024-01-15",
     "skills_awakening": [
@@ -9370,7 +9349,9 @@
       200202,
       202172,
       200342,
-      201902
+      201902,
+      202222,
+      202282
     ],
     "skills_evo": [
       {
@@ -9454,6 +9435,7 @@
     "obtained": "gacha",
     "rarity": 3,
     "release": "2022-09-20",
+    "release_en": "2026-08-12",
     "release_ko": "2024-01-09",
     "release_zh_tw": "2024-01-23",
     "skills_awakening": [
@@ -9463,7 +9445,12 @@
       201071
     ],
     "skills_event": [
-      201591
+      201591,
+      201112,
+      200722,
+      202102,
+      201032,
+      201042
     ],
     "skills_evo": [
       {
@@ -9543,6 +9530,7 @@
     "obtained": "gacha",
     "rarity": 3,
     "release": "2022-09-29",
+    "release_en": "2026-08-18",
     "release_ko": "2024-01-18",
     "release_zh_tw": "2024-02-01",
     "skills_awakening": [
@@ -9563,17 +9551,6 @@
       201072,
       202222,
       202322
-    ],
-    "skills_event_en": [
-      201672,
-      201062,
-      200512,
-      200062,
-      201042,
-      202302,
-      201032,
-      200702,
-      201072
     ],
     "skills_evo": [
       {
@@ -9658,6 +9635,7 @@
     "obtained": "gacha",
     "rarity": 3,
     "release": "2022-09-29",
+    "release_en": "2026-08-18",
     "release_ko": "2024-01-18",
     "release_zh_tw": "2024-02-01",
     "skills_awakening": [
@@ -10058,11 +10036,11 @@
       200462,
       201682,
       201611,
+      200192,
+      201482,
       202102,
       201702,
-      202092,
-      200192,
-      201482
+      202092
     ],
     "skills_evo": [
       {
@@ -10347,15 +10325,6 @@
       202452,
       200492
     ],
-    "skills_event_en": [
-      201052,
-      200352,
-      201392,
-      200202,
-      201702,
-      200602,
-      200492
-    ],
     "skills_evo": [
       {
         "new": 100802111,
@@ -10451,15 +10420,6 @@
       200202,
       201902,
       200492,
-      200732
-    ],
-    "skills_event_en": [
-      201072,
-      201052,
-      200352,
-      201252,
-      200202,
-      201902,
       200732
     ],
     "skills_evo": [
@@ -10843,16 +10803,6 @@
       201142,
       201192,
       202462,
-      200452
-    ],
-    "skills_event_en": [
-      200332,
-      200352,
-      201272,
-      201102,
-      200172,
-      201142,
-      201192,
       200452
     ],
     "skills_evo": [
@@ -11918,8 +11868,8 @@
       201142,
       201112,
       201702,
-      200732,
       201212,
+      200732,
       200462,
       200352
     ],
@@ -12216,12 +12166,6 @@
       201601,
       201282,
       202042
-    ],
-    "skills_event_en": [
-      200042,
-      200972,
-      201601,
-      201282
     ],
     "skills_evo": [
       {
@@ -13839,10 +13783,11 @@
       202102,
       202422,
       202122,
+      200172,
       200192,
+      202181,
       200332,
-      202092,
-      202181
+      202092
     ],
     "skills_evo": [
       {
@@ -15156,7 +15101,9 @@
       201032,
       202672,
       200342,
-      201902
+      201902,
+      202222,
+      202282
     ],
     "skills_evo": [
       {
@@ -17794,7 +17741,11 @@
     "skills_event": [
       201591,
       201042,
-      202532
+      202532,
+      201112,
+      200722,
+      202102,
+      201032
     ],
     "skills_evo": [
       {
@@ -18078,6 +18029,10 @@
       },
       {
         "new": 105003211,
+        "old": 202881
+      },
+      {
+        "new": 105003221,
         "old": 202881
       }
     ],
@@ -18441,7 +18396,8 @@
       203152,
       202922,
       202942,
-      201462
+      201462,
+      202382
     ],
     "skills_evo": [
       {
@@ -19276,6 +19232,7 @@
     "rarity": 3,
     "release": "2025-02-24",
     "release_ko": "2026-06-15",
+    "release_zh_tw": "2026-06-27",
     "skills_awakening": [
       203522,
       202871,
@@ -19370,6 +19327,8 @@
     "obtained": "gacha",
     "rarity": 3,
     "release": "2025-03-11",
+    "release_ko": "2026-06-30",
+    "release_zh_tw": "2026-07-12",
     "skills_awakening": [
       202402,
       203041,
@@ -19460,6 +19419,8 @@
     "obtained": "gacha",
     "rarity": 3,
     "release": "2025-03-21",
+    "release_ko": "2026-07-10",
+    "release_zh_tw": "2026-07-22",
     "skills_awakening": [
       203332,
       202091,
@@ -19498,6 +19459,8 @@
     "tid": "3h",
     "title": "Swift Crimson Armor",
     "title_jp": "[紅色塗早駆具足]",
+    "title_ko": "[질주하는 붉은 갑주]",
+    "title_tw": "[赤紅漆疾馳甲冑]",
     "url_name": "109601-no-reason"
   },
   {
@@ -19544,6 +19507,8 @@
     "obtained": "gacha",
     "rarity": 3,
     "release": "2025-03-31",
+    "release_ko": "2026-07-20",
+    "release_zh_tw": "2026-08-01",
     "skills_awakening": [
       203042,
       200701,
@@ -19586,6 +19551,8 @@
     "tid": "3i",
     "title": "With a Twist",
     "title_jp": "[With a Twist]",
+    "title_ko": "[With a Twist]",
+    "title_tw": "[With a Twist]",
     "url_name": "108402-tanino-gimlet",
     "version": "ballroom"
   },
@@ -19633,6 +19600,8 @@
     "obtained": "gacha",
     "rarity": 3,
     "release": "2025-03-31",
+    "release_ko": "2026-07-20",
+    "release_zh_tw": "2026-08-01",
     "skills_awakening": [
       201102,
       202461,
@@ -19675,6 +19644,8 @@
     "tid": "3j",
     "title": "Tap! Tap! Tap!",
     "title_jp": "[Tap! Tap! Tap!]",
+    "title_ko": "[Tap! Tap! Tap!]",
+    "title_tw": "[Tap! Tap! Tap!]",
     "url_name": "110702-tap-dance-city",
     "version": "ballroom"
   },
@@ -19722,6 +19693,8 @@
     "obtained": "gacha",
     "rarity": 3,
     "release": "2025-04-10",
+    "release_ko": "2026-07-30",
+    "release_zh_tw": "2026-08-11",
     "skills_awakening": [
       201102,
       200164,
@@ -19768,6 +19741,8 @@
     "tid": "3k",
     "title": "Louve Stellaire",
     "title_jp": "[Louve stellaire]",
+    "title_ko": "[Louve stellaire]",
+    "title_tw": "[Louve stellaire]",
     "url_name": "107002-sirius-symboli",
     "version": "twinkle"
   },
@@ -19815,6 +19790,7 @@
     "obtained": "gacha",
     "rarity": 3,
     "release": "2025-04-21",
+    "release_ko": "2026-08-10",
     "skills_awakening": [
       200172,
       200741,
@@ -19855,6 +19831,8 @@
     "tid": "3l",
     "title": "Black Flame of Righteousness",
     "title_jp": "[義心の黒焔]",
+    "title_ko": "[정의심의 검은 불꽃]",
+    "title_tw": "[義心黑焰]",
     "url_name": "112701-fenomeno"
   },
   {
@@ -19901,6 +19879,7 @@
     "obtained": "gacha",
     "rarity": 3,
     "release": "2025-04-30",
+    "release_ko": "2026-08-19",
     "skills_awakening": [
       200532,
       200431,
@@ -19914,13 +19893,6 @@
       202262,
       201672,
       202202
-    ],
-    "skills_event_en": [
-      201272,
-      203402,
-      202672,
-      202262,
-      201672
     ],
     "skills_evo": [
       {
@@ -19951,6 +19923,8 @@
     "tid": "3m",
     "title": "Luminous ☆ Twirler",
     "title_jp": "[ルミナス☆トワラー]",
+    "title_ko": "[루미너스☆트월러]",
+    "title_tw": "[光輝☆舞棒者]",
     "url_name": "104603-smart-falcon",
     "version": "parade"
   },
@@ -19998,6 +19972,7 @@
     "obtained": "gacha",
     "rarity": 3,
     "release": "2025-04-30",
+    "release_ko": "2026-08-19",
     "skills_awakening": [
       203093,
       203611,
@@ -20010,7 +19985,8 @@
       201601,
       203103,
       201672,
-      201682
+      201682,
+      202262
     ],
     "skills_evo": [
       {
@@ -20045,6 +20021,8 @@
     "tid": "3n",
     "title": "Dazzling ☆ Lucky Wear",
     "title_jp": "[光彩陸離☆招福衣]",
+    "title_ko": "[광채육리☆복을 부르는 옷]",
+    "title_tw": "[光彩奪目☆招福衣]",
     "url_name": "109802-copano-rickey",
     "version": "parade"
   },
@@ -20131,6 +20109,8 @@
     "tid": "3o",
     "title": "Le Beau Sommet",
     "title_jp": "[Le beau sommet]",
+    "title_ko": "[Le beau sommet]",
+    "title_tw": "[Le beau sommet]",
     "url_name": "109001-verxina"
   },
   {
@@ -20219,6 +20199,8 @@
     "tid": "3p",
     "title": "9927 Wishes",
     "title_jp": "[9927 Wishes]",
+    "title_ko": "[9927 Wishes]",
+    "title_tw": "[9927 Wishes]",
     "url_name": "113201-loves-only-you"
   },
   {
@@ -20305,6 +20287,8 @@
     "tid": "3q",
     "title": "Untouchable Eden",
     "title_jp": "[Untouchable Eden]",
+    "title_ko": "[Untouchable Eden]",
+    "title_tw": "[Untouchable Eden]",
     "url_name": "108602-mejiro-ramonu",
     "version": "wedding"
   },
@@ -20396,6 +20380,8 @@
     "tid": "3r",
     "title": "Twinbell Queen",
     "title_jp": "[Twinbell Queen]",
+    "title_ko": "[Twinbell Queen]",
+    "title_tw": "[Twinbell Queen]",
     "url_name": "111002-cesario",
     "version": "wedding"
   },
@@ -20481,6 +20467,8 @@
     "tid": "3s",
     "title": "Prismatic Curator",
     "title_jp": "[陸離の編纂者]",
+    "title_ko": "[찬란한 편찬자]",
+    "title_tw": "[璀璨的編篡者]",
     "url_name": "113301-chrono-genesis"
   },
   {
@@ -20567,6 +20555,8 @@
     "tid": "3t",
     "title": "Boho Flare",
     "title_jp": "[Boho Flare]",
+    "title_ko": "[Boho Flare]",
+    "title_tw": "[Boho Flare]",
     "url_name": "104003-gold-city",
     "version": "island"
   },
@@ -20657,6 +20647,8 @@
     "tid": "3u",
     "title": "Hello Hello Island",
     "title_jp": "[Hello Hello Island]",
+    "title_ko": "[Hello Hello Island]",
+    "title_tw": "[Hello Hello Island]",
     "url_name": "103103-ines-fujin",
     "version": "island"
   },
@@ -20749,6 +20741,8 @@
     "tid": "3v",
     "title": "Eternal Fairytale",
     "title_jp": "[Eternal Fairytale]",
+    "title_ko": "[Eternal Fairytale]",
+    "title_tw": "[Eternal Fairytale]",
     "url_name": "110902-rhein-kraft",
     "version": "alt"
   },
@@ -20834,6 +20828,8 @@
     "tid": "3w",
     "title": "Assorted Cuteness♡",
     "title_jp": "[Assorted Cuteness♡]",
+    "title_ko": "[Assorted Cuteness♡]",
+    "title_tw": "[Assorted Cuteness♡]",
     "url_name": "111301-fusaichi-pandora"
   },
   {
@@ -20921,6 +20917,8 @@
     "tid": "3x",
     "title": "Sunny Island Floral Beauty",
     "title_jp": "[晴島花麗]",
+    "title_ko": "[맑은 섬에 핀 아름다운 꽃]",
+    "title_tw": "[晴島花麗]",
     "url_name": "108802-satono-crown",
     "version": "summer"
   },
@@ -21012,6 +21010,8 @@
     "tid": "3y",
     "title": "Summer Lull Navy Drop",
     "title_jp": "[夏凪ネイビードロップ]",
+    "title_ko": "[잔잔한 여름의 네이비 드롭]",
+    "title_tw": "[夏日靜謐的深藍水滴]",
     "url_name": "108902-cheval-grand",
     "version": "summer"
   },
@@ -21101,6 +21101,8 @@
     "tid": "3z",
     "title": "Éclat d'été",
     "title_jp": "[Éclat d'été]",
+    "title_ko": "[Éclat d'été]",
+    "title_tw": "[Éclat d'été]",
     "url_name": "109102-vivlos",
     "version": "summer"
   },
@@ -21192,6 +21194,8 @@
     "tid": "3A",
     "title": "Scarlet Vow Raiment",
     "title_jp": "[緋想の誓衣]",
+    "title_ko": "[진홍빛 염원의 서의]",
+    "title_tw": "[緋念誓衣]",
     "url_name": "109701-still-in-love"
   },
   {
@@ -21279,6 +21283,8 @@
     "tid": "3B",
     "title": "Andante in Autumn Hues",
     "title_jp": "[秋日色アンダンテ]",
+    "title_ko": "[가을빛 안단테]",
+    "title_tw": "[秋日暖調行板節奏]",
     "url_name": "109302-ksmiracle",
     "version": "alt"
   },
@@ -21370,6 +21376,8 @@
     "tid": "3C",
     "title": "Happy Little Notes",
     "title_jp": "[ハッピー・リトル・ノーツ]",
+    "title_ko": "[해피・리틀・노츠]",
+    "title_tw": "[快樂小音符]",
     "url_name": "110602-hishi-miracle",
     "version": "alt"
   },
@@ -21456,6 +21464,8 @@
     "tid": "3D",
     "title": "Red Devil Gear",
     "title_jp": "[Red Devil Gear]",
+    "title_ko": "[Red Devil Gear]",
+    "title_tw": "[Red Devil Gear]",
     "url_name": "108101-espoir-city"
   },
   {
@@ -21543,6 +21553,7 @@
     "tid": "3E",
     "title": "Purity",
     "title_jp": "[精粋]",
+    "title_ko": "[精粋]",
     "url_name": "109501-believe"
   },
   {
@@ -21630,6 +21641,7 @@
     "tid": "3F",
     "title": "Magic Night Garland",
     "title_jp": "[マジックナイトガーランド]",
+    "title_ko": "[マジックナイトガーランド]",
     "url_name": "102802-hishi-akebono",
     "version": "halloween"
   },
@@ -21718,6 +21730,7 @@
     "tid": "3G",
     "title": "Trick ☆ Ribonetta",
     "title_jp": "[トリック☆リボネッタ]",
+    "title_ko": "[トリック☆リボネッタ]",
     "url_name": "105502-marvelous-sunday",
     "version": "halloween"
   },
@@ -21807,6 +21820,7 @@
     "tid": "3H",
     "title": "Highkey ☆ Hallowed",
     "title_jp": "[Highkey☆Hallowed]",
+    "title_ko": "[Highkey☆Hallowed]",
     "url_name": "104803-tosen-jordan",
     "version": "halloween"
   },
@@ -21892,6 +21906,7 @@
     "tid": "3I",
     "title": "Center ◎ Spotlight",
     "title_jp": "[まんなか◎スポットライト]",
+    "title_ko": "[まんなか◎スポットライト]",
     "url_name": "109201-dantsu-flame"
   },
   {
@@ -21981,6 +21996,7 @@
     "tid": "3J",
     "title": "Twilit Neo-Kagura",
     "title_jp": "[宵闇ネオカグラ]",
+    "title_ko": "[宵闇ネオカグラ]",
     "url_name": "108002-transcend",
     "version": "onsen"
   },
@@ -22068,6 +22084,7 @@
     "tid": "3K",
     "title": "Soft Light・Hot Spring Scent",
     "title_jp": "[柔灯・湯の香の装い]",
+    "title_ko": "[柔灯・湯の香の装い]",
     "url_name": "110002-wonder-acute",
     "version": "onsen"
   },
@@ -22155,6 +22172,7 @@
     "tid": "3L",
     "title": "Heroína Inocente",
     "title_jp": "[Heroína Inocente]",
+    "title_ko": "[Heroína Inocente]",
     "url_name": "111401-buena-vista"
   },
   {
@@ -22242,6 +22260,7 @@
     "tid": "3M",
     "title": "Festive Play",
     "title_jp": "[祝祭遊戯]",
+    "title_ko": "[祝祭遊戯]",
     "url_name": "104902-nakayama-festa",
     "version": "christmas"
   },
@@ -22330,6 +22349,7 @@
     "tid": "3N",
     "title": "Snow-White Dream Road",
     "title_jp": "[雪白の夢路]",
+    "title_ko": "[雪白の夢路]",
     "url_name": "111902-dream-journey",
     "version": "christmas"
   },
@@ -22423,6 +22443,7 @@
     "tid": "3O",
     "title": "Cinderella Gray",
     "title_jp": "[シンデレラグレイ]",
+    "title_ko": "[シンデレラグレイ]",
     "url_name": "100603-oguri-cap",
     "version": "anime_collab"
   },
@@ -22465,6 +22486,8 @@
     ],
     "name_en": "Stay Gold",
     "name_jp": "ステイゴールド",
+    "name_ko": "스테이 골드",
+    "name_tw": "黃金旅程",
     "obtained": "gacha",
     "rarity": 3,
     "release": "2025-12-21",
@@ -22513,6 +22536,7 @@
     "tid": "3P",
     "title": "Sunlit Outsider",
     "title_jp": "[Sunlit Outsider]",
+    "title_ko": "[Sunlit Outsider]",
     "url_name": "113501-stay-gold"
   },
   {
@@ -22602,6 +22626,7 @@
     "tid": "3Q",
     "title": "Strolling an Orderly Path",
     "title_jp": "[逍遥、整然たる路を]",
+    "title_ko": "[逍遥、整然たる路を]",
     "url_name": "106302-ikuno-dictus",
     "version": "new_year"
   },
@@ -22702,6 +22727,7 @@
     "tid": "3R",
     "title": "Nouvelle Pousse",
     "title_jp": "[Nouvelle pousse]",
+    "title_ko": "[Nouvelle pousse]",
     "url_name": "107602-sakura-laurel",
     "version": "new_year"
   },
@@ -22790,6 +22816,7 @@
     "tid": "3S",
     "title": "Dawn Light",
     "title_jp": "[暁光]",
+    "title_ko": "[暁光]",
     "url_name": "112402-bubble-gum-fellow",
     "version": "new_year"
   },
@@ -22832,6 +22859,7 @@
     ],
     "name_en": "Kiseki",
     "name_jp": "キセキ",
+    "name_ko": "키세키",
     "obtained": "gacha",
     "rarity": 3,
     "release": "2026-01-19",
@@ -22875,6 +22903,7 @@
     "tid": "3T",
     "title": "Miracle Author",
     "title_jp": "[Miracle Author]",
+    "title_ko": "[Miracle Author]",
     "url_name": "113701-kiseki"
   },
   {
@@ -22934,12 +22963,6 @@
       201702,
       202502
     ],
-    "skills_event_en": [
-      200582,
-      203162,
-      201902,
-      201702
-    ],
     "skills_evo": [
       {
         "new": 101003111,
@@ -22969,6 +22992,7 @@
     "tid": "3U",
     "title": "Baa Baa Patisserie",
     "title_jp": "[Baa Baa Patisserie]",
+    "title_ko": "[Baa Baa Patisserie]",
     "url_name": "101003-taiki-shuttle",
     "version": "valentine"
   },
@@ -23058,6 +23082,7 @@
     "tid": "3V",
     "title": "Sonata alla Menta",
     "title_jp": "[ソナタ・アッラ・メンタ]",
+    "title_ko": "[ソナタ・アッラ・メンタ]",
     "url_name": "110202-sounds-of-earth",
     "version": "valentine"
   },
@@ -23152,6 +23177,7 @@
     "tid": "3W",
     "title": "Inspiring Genius",
     "title_jp": "[Inspiring Genius]",
+    "title_ko": "[Inspiring Genius]",
     "url_name": "110301-royce-and-royce"
   },
   {
@@ -23241,6 +23267,7 @@
     "tid": "3X",
     "title": "The Changer",
     "title_jp": "[The Changer]",
+    "title_ko": "[The Changer]",
     "url_name": "112901-almond-eye"
   },
   {
@@ -23331,6 +23358,7 @@
     "tid": "3Y",
     "title": "Love-Linked Aster",
     "title_jp": "[Love-Linked Aster]",
+    "title_ko": "[Love-Linked Aster]",
     "url_name": "113202-loves-only-you",
     "version": "beyond_dreams"
   },
@@ -23373,6 +23401,7 @@
     ],
     "name_en": "Victoire Pisa",
     "name_jp": "ヴィクトワールピサ",
+    "name_ko": "빅투아르 피사",
     "obtained": "gacha",
     "rarity": 3,
     "release": "2026-03-19",
@@ -23473,12 +23502,6 @@
       200172,
       201282,
       202042
-    ],
-    "skills_event_en": [
-      200042,
-      200972,
-      200172,
-      201282
     ],
     "skills_evo": [
       {
@@ -23724,6 +23747,8 @@
     ],
     "name_en": "Admire Groove",
     "name_jp": "アドマイヤグルーヴ",
+    "name_ko": "어드마이어 그루브",
+    "name_tw": "愛慕律動",
     "obtained": "gacha",
     "rarity": 3,
     "release": "2026-04-20",
@@ -24070,6 +24095,7 @@
     ],
     "name_en": "Red Desire",
     "name_jp": "レッドディザイア",
+    "name_ko": "레드 디자이어",
     "obtained": "gacha",
     "rarity": 3,
     "release": "2026-05-20",
@@ -24163,6 +24189,7 @@
     ],
     "skills_event": [
       200602,
+      204372,
       203592,
       201172,
       201182
@@ -24459,5 +24486,455 @@
     "title_jp": "[万福龍湯伝・頂]",
     "url_name": "107703-narita-top-road",
     "version": "tracen_ken"
+  },
+  {
+    "aptitude": [
+      "A",
+      "G",
+      "F",
+      "A",
+      "A",
+      "C",
+      "D",
+      "A",
+      "E",
+      "C"
+    ],
+    "base_stats": [
+      91,
+      85,
+      96,
+      85,
+      93
+    ],
+    "card_id": 102203,
+    "char_id": 1022,
+    "costume": 102202,
+    "five_star_stats": [
+      111,
+      104,
+      117,
+      104,
+      114
+    ],
+    "four_star_stats": [
+      101,
+      95,
+      107,
+      95,
+      102
+    ],
+    "name_en": "Fine Motion",
+    "name_jp": "ファインモーション",
+    "name_ko": "파인 모션",
+    "name_tw": "美妙姿勢",
+    "obtained": "gacha",
+    "rarity": 3,
+    "release": "2026-07-10",
+    "skills_awakening": [
+      202702,
+      204071,
+      203222,
+      203031
+    ],
+    "skills_event": [
+      201322,
+      201702,
+      204372,
+      202172,
+      200622,
+      200722,
+      201342,
+      200702,
+      200572,
+      201902
+    ],
+    "skills_evo": [
+      {
+        "new": 102203111,
+        "old": 204071
+      },
+      {
+        "new": 102203211,
+        "old": 203031
+      }
+    ],
+    "skills_innate": [
+      204072,
+      203032,
+      202982
+    ],
+    "skills_unique": [
+      120221
+    ],
+    "stat_bonus": [
+      0,
+      0,
+      10,
+      10,
+      10
+    ],
+    "talent_group": 102203,
+    "tid": "4c",
+    "title": "",
+    "title_jp": "[麺華煌彩伝・極]",
+    "url_name": "102203-fine-motion",
+    "version": "tracen_ken"
+  },
+  {
+    "aptitude": [
+      "A",
+      "G",
+      "G",
+      "B",
+      "A",
+      "B",
+      "G",
+      "A",
+      "A",
+      "A"
+    ],
+    "base_stats": [
+      97,
+      87,
+      97,
+      72,
+      97
+    ],
+    "card_id": 114501,
+    "char_id": 1145,
+    "costume": 114501,
+    "five_star_stats": [
+      119,
+      106,
+      119,
+      88,
+      118
+    ],
+    "four_star_stats": [
+      108,
+      97,
+      108,
+      80,
+      107
+    ],
+    "name_en": "Rulership",
+    "name_jp": "ルーラーシップ",
+    "name_ko": "룰러쉽",
+    "obtained": "gacha",
+    "rarity": 3,
+    "release": "2026-07-21",
+    "skills_awakening": [
+      204122,
+      200431,
+      202662,
+      202971
+    ],
+    "skills_event": [
+      201631,
+      202552
+    ],
+    "skills_evo": [
+      {
+        "new": 114501111,
+        "old": 200431
+      },
+      {
+        "new": 114501211,
+        "old": 202971
+      }
+    ],
+    "skills_innate": [
+      200432,
+      202972,
+      204202
+    ],
+    "skills_unique": [
+      101451
+    ],
+    "stat_bonus": [
+      0,
+      10,
+      10,
+      0,
+      10
+    ],
+    "talent_group": 114501,
+    "tid": "4d",
+    "title": "Monochrome GM",
+    "title_jp": "[Monochrome GM]",
+    "url_name": "114501-rulership"
+  },
+  {
+    "aptitude": [
+      "A",
+      "G",
+      "G",
+      "C",
+      "A",
+      "A",
+      "A",
+      "B",
+      "D",
+      "E"
+    ],
+    "base_stats": [
+      97,
+      88,
+      79,
+      89,
+      97
+    ],
+    "card_id": 102003,
+    "char_id": 1020,
+    "costume": 102030,
+    "five_star_stats": [
+      118,
+      108,
+      97,
+      109,
+      118
+    ],
+    "four_star_stats": [
+      107,
+      98,
+      88,
+      99,
+      108
+    ],
+    "name_en": "Seiun Sky",
+    "name_jp": "セイウンスカイ",
+    "name_ko": "세이운 스카이",
+    "name_tw": "青雲天空",
+    "obtained": "gacha",
+    "rarity": 3,
+    "release": "2026-07-30",
+    "skills_awakening": [
+      204552,
+      200541,
+      203392,
+      204541
+    ],
+    "skills_event": [
+      200891,
+      200742,
+      201242,
+      201621,
+      201581,
+      200732,
+      200911,
+      200182,
+      200452,
+      200542
+    ],
+    "skills_evo": [
+      {
+        "new": 102003111,
+        "old": 200541
+      },
+      {
+        "new": 102003211,
+        "old": 204541
+      }
+    ],
+    "skills_innate": [
+      200542,
+      204562,
+      204542
+    ],
+    "skills_unique": [
+      120201
+    ],
+    "stat_bonus": [
+      0,
+      0,
+      5,
+      10,
+      15
+    ],
+    "talent_group": 102003,
+    "tid": "4e",
+    "title": "",
+    "title_jp": "[渚のきまぐれオランジュ]",
+    "url_name": "102003-seiun-sky",
+    "version": "summer"
+  },
+  {
+    "aptitude": [
+      "A",
+      "G",
+      "F",
+      "C",
+      "A",
+      "A",
+      "G",
+      "D",
+      "A",
+      "A"
+    ],
+    "base_stats": [
+      97,
+      91,
+      97,
+      76,
+      89
+    ],
+    "card_id": 107403,
+    "char_id": 1074,
+    "costume": 107430,
+    "five_star_stats": [
+      118,
+      111,
+      118,
+      93,
+      110
+    ],
+    "four_star_stats": [
+      108,
+      101,
+      108,
+      85,
+      98
+    ],
+    "name_en": "Mejiro Bright",
+    "name_jp": "メジロブライト",
+    "name_ko": "메지로 브라이트",
+    "name_tw": "目白光明",
+    "obtained": "gacha",
+    "rarity": 3,
+    "release": "2026-07-30",
+    "skills_awakening": [
+      200012,
+      202561,
+      203252,
+      202591
+    ],
+    "skills_event": [
+      200162,
+      204132,
+      203672,
+      200752,
+      200732,
+      200142,
+      201182,
+      201202,
+      201232
+    ],
+    "skills_evo": [
+      {
+        "new": 107403111,
+        "old": 202561
+      },
+      {
+        "new": 107403211,
+        "old": 202591
+      }
+    ],
+    "skills_innate": [
+      202562,
+      202592,
+      202622
+    ],
+    "skills_unique": [
+      120741
+    ],
+    "stat_bonus": [
+      5,
+      10,
+      0,
+      5,
+      10
+    ],
+    "talent_group": 107403,
+    "tid": "4f",
+    "title": "",
+    "title_jp": "[海辺のエレガンスシフォン]",
+    "url_name": "107403-mejiro-bright",
+    "version": "summer"
+  },
+  {
+    "aptitude": [
+      "A",
+      "E",
+      "G",
+      "B",
+      "A",
+      "G",
+      "C",
+      "A",
+      "B",
+      "F"
+    ],
+    "base_stats": [
+      83,
+      96,
+      95,
+      77,
+      99
+    ],
+    "card_id": 111302,
+    "char_id": 1113,
+    "costume": 111330,
+    "five_star_stats": [
+      101,
+      118,
+      116,
+      94,
+      121
+    ],
+    "four_star_stats": [
+      92,
+      107,
+      105,
+      86,
+      110
+    ],
+    "name_en": "Fusaichi Pandora",
+    "name_jp": "フサイチパンドラ",
+    "name_ko": "후사이치 판도라",
+    "name_tw": "房一潘朵拉",
+    "obtained": "gacha",
+    "rarity": 3,
+    "release": "2026-08-14",
+    "skills_awakening": [
+      204412,
+      202701,
+      202982,
+      203431
+    ],
+    "skills_event": [
+      201631
+    ],
+    "skills_evo": [
+      {
+        "new": 111302111,
+        "old": 202701
+      },
+      {
+        "new": 111302211,
+        "old": 203431
+      }
+    ],
+    "skills_innate": [
+      202702,
+      203432,
+      201342
+    ],
+    "skills_unique": [
+      111131
+    ],
+    "stat_bonus": [
+      0,
+      0,
+      14,
+      8,
+      8
+    ],
+    "talent_group": 111302,
+    "tid": "4g",
+    "title": "Snatchin' Hearts ♡",
+    "title_jp": "[Snatchin' Hearts ♡]",
+    "url_name": "111302-fusaichi-pandora",
+    "version": "summer"
   }
 ]
