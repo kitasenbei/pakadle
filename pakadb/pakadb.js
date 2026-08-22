@@ -21,6 +21,50 @@
     var t = setTimeout(done, 240);
     el.addEventListener("animationend", done);
   }
+  // Touch has no right-click, so press-and-hold opens the same context menu.
+  // A tap that moves is the user scrolling, and a tap that lifts early is a
+  // plain tap, so both cancel. When the menu does fire we swallow the click the
+  // browser synthesises afterwards, or the card underneath would open too.
+  var LONG_PRESS_MS = 480, LONG_PRESS_SLOP = 12;
+  var swallowClick = false, swallowTimer = null;
+  function swallowNextClick() {
+    swallowClick = true;
+    clearTimeout(swallowTimer);
+    swallowTimer = setTimeout(function () { swallowClick = false; }, 900);   // never strand the flag
+  }
+  function clickSwallowed() {
+    if (!swallowClick) return false;
+    swallowClick = false; clearTimeout(swallowTimer);
+    return true;
+  }
+  function onLongPress(host, selector, fire) {
+    var lp = null;
+    function cancel() { if (lp) { clearTimeout(lp.timer); lp = null; } }
+    host.addEventListener("touchstart", function (e) {
+      cancel();
+      if (e.touches.length !== 1) return;                       // pinch/zoom, not a press
+      var el = e.target.closest(selector); if (!el) return;
+      var t = e.touches[0];
+      lp = { el: el, x: t.clientX, y: t.clientY, fired: false, timer: 0 };
+      lp.timer = setTimeout(function () {
+        if (!lp) return;
+        lp.fired = true;
+        swallowNextClick();
+        fire(lp.el, lp.x, lp.y);
+      }, LONG_PRESS_MS);
+    }, { passive: true });
+    host.addEventListener("touchmove", function (e) {
+      if (!lp || !e.touches.length) return;
+      var t = e.touches[0];
+      if (Math.abs(t.clientX - lp.x) + Math.abs(t.clientY - lp.y) > LONG_PRESS_SLOP) cancel();
+    }, { passive: true });
+    host.addEventListener("touchend", function (e) {
+      if (lp && lp.fired) e.preventDefault();                   // stop the synthetic click at the source
+      cancel();
+    });
+    host.addEventListener("touchcancel", cancel);
+  }
+
   var esc = function (s) {
     return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) {
       return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
@@ -1640,13 +1684,18 @@
   }
 
   // ---- wiring ----
+  function gridCtxFrom(el, x, y) {
+    var t = cardTarget(el); if (!t) return;
+    openCardCtx(t.u, t.idx, x, y);
+  }
   $("cp-grid").addEventListener("contextmenu", function (e) {
     var el = e.target.closest(".unit"); if (!el) return;
     e.preventDefault();
-    var t = cardTarget(el); if (!t) return;
-    openCardCtx(t.u, t.idx, e.clientX, e.clientY);
+    gridCtxFrom(el, e.clientX, e.clientY);
   });
+  onLongPress($("cp-grid"), ".unit", gridCtxFrom);
   $("cp-grid").addEventListener("click", function (e) {
+    if (clickSwallowed()) return;
     var el = e.target.closest(".unit"); if (!el) return;
     // clicking the already-open mare toggles the drawer shut
     if (el.classList.contains("sel") && $("cp-drawer").classList.contains("open")) { closeDrawer(); return; }
@@ -1840,14 +1889,20 @@
 
   // breeding interactions: tree slots open the popup anchored under the slot
   $("bd-stage").addEventListener("click", function (e) {
+    if (clickSwallowed()) return;
     if (suppressNodeClick) { suppressNodeClick = false; return; }
     var n = e.target.closest(".bd-node"); if (n) openSlotPicker(n.getAttribute("data-slot"), n);
   });
+  function nodeCtxFrom(n, x, y) {
+    closeSlotPicker();
+    openCtx(n.getAttribute("data-slot"), n, x, y);
+  }
   $("bd-stage").addEventListener("contextmenu", function (e) {
     var n = e.target.closest(".bd-node"); if (!n) return;
-    e.preventDefault(); closeSlotPicker();
-    openCtx(n.getAttribute("data-slot"), n, e.clientX, e.clientY);
+    e.preventDefault();
+    nodeCtxFrom(n, e.clientX, e.clientY);
   });
+  onLongPress($("bd-stage"), ".bd-node", nodeCtxFrom);
   // the lineage map is editable: click a portrait to change the uma, a spark to edit its sparks
   var suppressLmClick = false;
   $("bd-affinity").addEventListener("click", function (e) {
@@ -2076,6 +2131,7 @@
   });
   // per-uma delete (✕), edit (pencil button or right-click) + add a new uma
   $("bd-umas").addEventListener("click", function (e) {
+    if (clickSwallowed()) return;
     var db = e.target.closest(".bd-uma-del");
     if (db) { savedUmas.splice(Number(db.getAttribute("data-del-uma")), 1); persistRoster(); return; }
     var eb = e.target.closest(".bd-uma-edit"); if (eb) openEditor(Number(eb.getAttribute("data-edit-uma")));
@@ -2083,6 +2139,9 @@
   $("bd-umas").addEventListener("contextmenu", function (e) {
     var row = e.target.closest(".bd-uma-row"); if (!row) return;
     e.preventDefault(); openEditor(Number(row.getAttribute("data-uidx")));
+  });
+  onLongPress($("bd-umas"), ".bd-uma-row", function (row) {
+    openEditor(Number(row.getAttribute("data-uidx")));
   });
   $("bd-umas-add").addEventListener("click", function () { openEditor(null); });
   // Projected foal / Factor pool toolbar buttons -> readout modals

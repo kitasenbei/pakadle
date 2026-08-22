@@ -262,6 +262,11 @@ body.scrubbing .numc-val::selection { background: transparent; }
   font-size: 13px; letter-spacing: .5px; padding: 60px 0; }
 
 /* ---- breeding tree right-click context menu ---- */
+/* press-and-hold targets: suppress the OS callout (iOS "save image", Android's
+   own menu) so the long-press opens PakaDB's context menu instead */
+.unit, .bd-node, .bd-uma-row,
+.unit img, .bd-node img, .bd-uma-row img { -webkit-touch-callout: none; }
+
 /* full-size portrait viewer: blurred page behind, portrait centred, X top right */
 .cp-lb {
   position: fixed; inset: 0; z-index: 90;
