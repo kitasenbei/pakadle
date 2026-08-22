@@ -218,6 +218,35 @@ body.scrubbing .numc-val::selection { background: transparent; }
 .unit-sub { font-size: 13px; color: var(--ink3); margin-top: 4px; font-weight: 700; }
 .unit-star { color: var(--gold); }
 
+/* announced but not yet in the game: greyed out, no portrait, read-only.
+   The card stays clickable so the drawer can show her profile. */
+.unit.upcoming { background: var(--bg); border-style: dashed; box-shadow: none; opacity: .72; }
+.unit.upcoming:hover { transform: translateY(-2px); opacity: 1; border-color: var(--slate); box-shadow: 0 3px 0 var(--shadow); }
+.unit.upcoming .unit-name, .unit.upcoming .unit-sub { color: var(--ink3); }
+.unit-img-tbd, .gunit-img-tbd, .dh-img-tbd {
+  display: flex; align-items: center; justify-content: center;
+  color: var(--ink3); font-weight: 800; user-select: none;
+  background: repeating-linear-gradient(-45deg, var(--divider) 0 8px, var(--bg) 8px 16px);
+}
+.unit-img-tbd { font-size: 34px; }
+.gunit-img-tbd { width: 100%; height: 100%; font-size: 56px; }
+.unit-tbd {
+  align-self: flex-start; padding: 4px 10px; border-radius: 999px;
+  background: var(--slate); color: #fff; font-size: 11px; font-weight: 800; letter-spacing: .6px;
+}
+/* gallery cards are portrait-only, so grey the whole tile */
+.gunit.upcoming { opacity: .72; }
+.gunit.upcoming:hover { opacity: 1; }
+.gunit.upcoming .gunit-cap { color: var(--ink3); }
+/* drawer header for an uma with no card */
+.dh.dh-tbd::before { filter: grayscale(1); }
+.dh-img-tbd { font-size: 56px; }
+.dh-tbd-tag {
+  align-self: flex-start; margin-top: 6px; padding: 3px 10px; border-radius: 999px;
+  background: rgba(255,255,255,.22); color: #fff; font-size: 11px; font-weight: 800; letter-spacing: .6px;
+}
+.tbd-note { font-size: 13px; line-height: 1.5; color: var(--ink2); }
+
 /* aptitude micro-matrix on the card */
 .apt-row { display: flex; gap: 6px; }
 .grade {

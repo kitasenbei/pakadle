@@ -29,7 +29,8 @@
   function gradeCls(g) { return "g-" + (g && GRANK[g] ? g : "null"); }
   function gradeTxt(g) { return g && GRANK[g] ? g : "-"; }
 
-  var UMAS = [];
+  var UMAS = [];        // every character, including announced-but-unplayable ones
+  var PLAYABLE = [];    // only those with a card: everything except the browsable roster needs this
   var SKILL_INDEX = [];   // unique skills across the roster, for the skill filter picker
   var ALL_SKILLS = [];    // full skill catalog (skills.json) for the white-spark picker
   var WHITE_CATALOG = []; // deduped {name, iconId} skill list, sorted
@@ -115,6 +116,10 @@
     ]).then(function (res) {
       UMAS = res[0]; BREED = res[1] || BREED; ALL_SKILLS = res[2] || [];
       BYID = {}; UMAS.forEach(function (u) { BYID[u.id] = u; });
+      // Upcoming umas have no card, so they carry no stats, aptitudes, skills or
+      // portrait. They belong in the database grid and nowhere else: the breeding
+      // planner, the spark editor and horseshare all read PLAYABLE instead.
+      PLAYABLE = UMAS.filter(function (u) { return !u.upcoming; });
       STAT_KEYS.forEach(function (k) {
         STATMAX[k] = UMAS.reduce(function (m, u) { return Math.max(m, (u.statsMax && u.statsMax[k]) || 0); }, 1);
       });
@@ -230,6 +235,8 @@
   function sortUmas(list) {
     var s = state.sort;
     return list.sort(function (a, b) {
+      // whatever the sort, umas without a card sit after the ones you can train
+      if (!a.upcoming !== !b.upcoming) return a.upcoming ? 1 : -1;
       if (s === "name") return a.name.localeCompare(b.name);
       if (s === "rarity") return (b.rarity - a.rarity) || a.name.localeCompare(b.name);
       var av = (a.statsMax && a.statsMax[s]) || 0, bv = (b.statsMax && b.statsMax[s]) || 0;
@@ -241,7 +248,22 @@
     return '<div class="grade ' + gradeCls(g) + '">' + gradeTxt(g) + "<small>" + label + "</small></div>";
   }
 
+  // Announced umas have no portrait to serve, so the card draws a silhouette
+  // plate instead of a broken <img> and swaps the aptitude grid for a status.
+  function upcomingCard(u) {
+    return '<div class="unit upcoming" data-id="' + u.id + '">' +
+      '<div class="unit-top">' +
+        '<div class="unit-img unit-img-tbd" aria-hidden="true">?</div>' +
+        '<div class="unit-id">' +
+          '<div class="unit-name">' + esc(u.name) + "</div>" +
+          '<div class="unit-sub">' + esc(u.nameJp || "") + "</div>" +
+        "</div>" +
+      "</div>" +
+      '<div class="unit-tbd">Not yet playable</div></div>';
+  }
+
   function unitCard(u) {
+    if (u.upcoming) return upcomingCard(u);
     var ap = u.aptitude || { surface: {}, distance: {}, style: {} };
     var row1 = '<div class="apt-row">' +
       gcell(ap.surface.turf, "TRF") + gcell(ap.surface.dirt, "DRT") +
@@ -266,6 +288,11 @@
   // image-only card for one outfit (base or alt): big portrait, name on a faded strip
   function galleryCard(u, o) {
     o = o || u;
+    if (u.upcoming) {
+      return '<div class="unit gunit upcoming" data-id="' + u.id + '">' +
+        '<div class="gunit-img gunit-img-tbd" aria-hidden="true">?</div>' +
+        '<div class="gunit-cap">' + esc(u.name) + "</div></div>";
+    }
     return '<div class="unit gunit" data-id="' + u.id + '"' + (o.cardId != null ? ' data-card="' + o.cardId + '"' : "") + ">" +
       '<img class="gunit-img" loading="lazy" src="/pakadb/' + esc(o.image) + '" alt="" ' +
         'onerror="this.src=\'/pakadb/' + esc(o.thumb) + "'\" />" +
@@ -284,7 +311,9 @@
     } else {
       grid.innerHTML = list.map(unitCard).join("");
     }
-    $("cp-count").textContent = list.length + " / " + UMAS.length + " beautiful mares";
+    var tbd = list.filter(function (u) { return u.upcoming; }).length;
+    $("cp-count").textContent = (list.length - tbd) + " / " + PLAYABLE.length + " beautiful mares" +
+      (tbd ? " · " + tbd + " on the way" : "");
     $("cp-empty").hidden = list.length > 0;
   }
 
@@ -385,8 +414,32 @@
     if (bd) bioHtml += bioRow("Birthday", (bd.month || "?") + "/" + (bd.day || "?"));
     if (bio.height) bioHtml += bioRow("Height", bio.height + " cm");
     if (bio.vaJa) bioHtml += bioRow("VA (JP)", bio.vaJa);
+    if (u.upcoming && bio.vaEn) bioHtml += bioRow("VA (EN)", bio.vaEn);
     if (bio.realLife && bio.realLife.active) bioHtml += bioRow("RL active", bio.realLife.active);
     if (bio.realLife && bio.realLife.country) bioHtml += bioRow("RL country", String(bio.realLife.country).toUpperCase());
+
+    // No card means no portrait, aptitude, stats or skills to show. The drawer
+    // still opens: the profile is real data and worth reading before she lands.
+    if (u.upcoming) {
+      $("cp-drawer-inner").innerHTML =
+        '<div class="dh dh-tbd">' +
+          '<div class="dh-img dh-img-tbd" aria-hidden="true">?</div>' +
+          '<div class="dh-meta">' +
+            '<div class="dh-name">' + esc(u.name) + "</div>" +
+            '<div class="dh-jp">' + esc(u.nameJp || "") + "</div>" +
+            '<div class="dh-tbd-tag">Not yet playable</div>' +
+          "</div>" +
+          '<button class="dh-x" id="cp-close">✕</button>' +
+        "</div>" +
+        '<div class="sect"><div class="tbd-note">She has been announced but has no outfit in the ' +
+          'game data yet, so there are no stats, aptitudes or skills to show. This entry fills in ' +
+          'on its own the next time the dataset is rebuilt.</div></div>' +
+        (bioHtml ? '<div class="sect"><div class="sect-h">Profile</div>' + bioHtml + "</div>" : "");
+      $("cp-close").addEventListener("click", closeDrawer);
+      $("cp-drawer").classList.add("open");
+      $("cp-drawer").setAttribute("aria-hidden", "false");
+      return;
+    }
 
     $("cp-drawer-inner").innerHTML =
       '<div class="dh">' +
@@ -1056,7 +1109,7 @@
   }
   function openEditor(idx) {
     if (idx != null) { editing = JSON.parse(JSON.stringify(savedUmas[idx])); editing._idx = idx; }
-    else { editing = emptySparks(); editing._idx = null; editing.charId = UMAS[0].id; editing.name = UMAS[0].name; }
+    else { editing = emptySparks(); editing._idx = null; editing.charId = PLAYABLE[0].id; editing.name = PLAYABLE[0].name; }
     hideEl($("cp-roster"));
     showEl($("cp-editor")); showEl($("cp-scrim"));
     renderEditor();
@@ -1114,7 +1167,7 @@
   function outfitRows() {
     if (OUTFITS) return OUTFITS;
     OUTFITS = [];
-    UMAS.forEach(function (u) {
+    PLAYABLE.forEach(function (u) {
       (u.alts && u.alts.length ? u.alts : [u]).forEach(function (a) {
         OUTFITS.push({ id: u.id, name: u.name, cardId: a.cardId, title: a.title, thumb: a.thumb, image: a.image, rarity: a.rarity });
       });
@@ -1256,7 +1309,7 @@
   // assign the uma that maximises this slot's affinity given the rest of the tree
   function autoPickSlot(slot) {
     var best = null, bestT = -Infinity;
-    UMAS.forEach(function (u) {
+    PLAYABLE.forEach(function (u) {
       if (adjConflict(u.id, slot)) return;   // don't let her be her own parent (self-affinity is maximal)
       var t = affinityWith(slot, u.id); if (t > bestT) { bestT = t; best = u.id; }
     });
@@ -1355,7 +1408,7 @@
   function closeCharPicker() { hideEl($("char-picker")); closeFilter(); }
   function renderCharList(q) {
     q = (q || "").trim().toLowerCase();
-    var list = UMAS.filter(function (u) { return (!q || u.name.toLowerCase().indexOf(q) !== -1) && pickerMatch(u.id); });
+    var list = PLAYABLE.filter(function (u) { return (!q || u.name.toLowerCase().indexOf(q) !== -1) && pickerMatch(u.id); });
     $("char-list").innerHTML = list.map(function (u) {
       var on = editing && editing.charId === u.id;
       return '<div class="bp-row' + (on ? " on" : "") + '" data-charid="' + u.id + '">' +
@@ -1464,7 +1517,7 @@
     // rank by resulting affinity only if at least one OTHER slot is filled
     var rank = !!slot && ["foal", "p1", "p2", "gp11", "gp12", "gp21", "gp22"]
       .some(function (k) { return k !== slot && bstate[k]; });
-    var list = UMAS.filter(function (u) { return !q || u.name.toLowerCase().indexOf(q) !== -1; })
+    var list = PLAYABLE.filter(function (u) { return !q || u.name.toLowerCase().indexOf(q) !== -1; })
       .map(function (u) { return { u: u, proj: rank ? affinityWith(slot, u.id) : 0 }; });
     if (rank) list.sort(function (a, b) { return b.proj - a.proj || a.u.name.localeCompare(b.u.name); });
     else list.sort(function (a, b) { return a.u.name.localeCompare(b.u.name); });
@@ -2424,7 +2477,7 @@
     var el = $("hs-fq-sug"); if (!el) return;
     var qq = hsNorm(q);
     if (!qq) { el.hidden = true; el.innerHTML = ""; return; }
-    var list = UMAS.filter(function (u) { return hsNorm(u.name).indexOf(qq) >= 0; }).slice(0, 8);
+    var list = PLAYABLE.filter(function (u) { return hsNorm(u.name).indexOf(qq) >= 0; }).slice(0, 8);
     if (!list.length) { el.hidden = true; el.innerHTML = ""; return; }
     el.innerHTML = list.map(function (u) {
       return '<li class="hs-sug-row" role="option" data-uma-id="' + esc(u.id) + '" data-uma-name="' + esc(u.name) + '">' +

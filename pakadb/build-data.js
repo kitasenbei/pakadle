@@ -62,6 +62,20 @@ function mapAptitude(arr) {
   };
 }
 
+// Portrait-independent character facts, shared by playable and upcoming entries.
+function bioOf(c) {
+  return {
+    birthday: (c.birth_year || c.birth_month || c.birth_day)
+      ? { year: c.birth_year || null, month: c.birth_month || null, day: c.birth_day || null } : null,
+    height: c.height || null,
+    sex: c.sex,
+    threeSizes: c.three_sizes || null,
+    vaJa: c.va_ja || null,
+    vaEn: c.va_en || null,
+    realLife: c.rl || null,
+  };
+}
+
 function mapStats(arr) {
   if (!arr) return null;
   const o = {};
@@ -183,16 +197,7 @@ async function main() {
       name: c.en_name,
       nameJp: c.jp_name,
       urlName: list[0].url_name,
-      bio: {
-        birthday: (c.birth_year || c.birth_month || c.birth_day)
-          ? { year: c.birth_year || null, month: c.birth_month || null, day: c.birth_day || null } : null,
-        height: c.height || null,
-        sex: c.sex,
-        threeSizes: c.three_sizes || null,
-        vaJa: c.va_ja || null,
-        vaEn: c.va_en || null,
-        realLife: c.rl || null,
-      },
+      bio: bioOf(c),
       // base outfit surfaced at the top level (grid, breeding, default drawer)
       cardId: base.cardId,
       title: base.title,
@@ -209,11 +214,44 @@ async function main() {
     });
   }
 
+  // Announced but not yet in the game: gametora lists the character (name, VA,
+  // birthday, real-life record) before her first outfit exists. With no card
+  // there are no stats, aptitudes, skills or portrait to serve, so these ride
+  // along flagged `upcoming` and PakaDB shows them greyed out and read-only.
+  // Mob umas (2xxx) and story NPCs (9xxx) stay excluded.
+  const upcoming = characters
+    .filter((c) => c.char_id < 2000 && !cardsByChar.has(c.char_id))
+    .sort((a, b) => (a.en_name || "").localeCompare(b.en_name || ""))
+    .map((c) => ({
+      id: c.char_id,
+      name: c.en_name,
+      nameJp: c.jp_name,
+      urlName: c.url_name || null,
+      upcoming: true,
+      bio: bioOf(c),
+      // no card yet: every outfit-derived field is absent by design, and the
+      // client must not invent one. Callers guard on `upcoming`.
+      cardId: null,
+      title: null,
+      rarity: null,
+      image: null,
+      thumb: null,
+      statsBase: null,
+      statsMax: null,
+      growth: null,
+      aptitude: null,
+      skills: { unique: [], innate: [], awakening: [], event: [], evo: [] },
+      alts: [],
+      relationTypes: [],
+    }));
+  umas.push(...upcoming);
+
   const altTotal = umas.reduce((s, u) => s + u.alts.length, 0);
   writeJSON(path.join(DATA_DIR, "umas.json"), umas);
   writeJSON(path.join(DATA_DIR, "skills.json"), Array.from(skillById.values()));
   writeJSON(path.join(DATA_DIR, "breeding.json"), { relationPoints, members });
-  log(`     normalized ${umas.length} playable equines (${altTotal} outfits incl. alts)`);
+  log(`     normalized ${umas.length - upcoming.length} playable equines (${altTotal} outfits incl. alts)`);
+  log(`     ${upcoming.length} announced but not yet playable: ${upcoming.map((u) => u.name).join(", ")}`);
 
   if (SKIP_IMAGES) { log("5/5  Skipping images (--no-images)."); return; }
 
