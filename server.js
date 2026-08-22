@@ -255,6 +255,14 @@ function createApp(options = {}) {
         let row = db
             .prepare("SELECT date, number, idx FROM puzzles WHERE date = ?")
             .get(dateStr);
+        // A stored idx points into the word list as it stood when that day was
+        // drawn. Trimming the list can leave an old row pointing past the end,
+        // which would serve an undefined answer, so redraw and persist instead.
+        if (row && row.idx >= words.length) {
+            const idx = puzzleIdxFor(dateStr);
+            db.prepare("UPDATE puzzles SET idx = ? WHERE date = ?").run(idx, dateStr);
+            row = { date: row.date, number: row.number, idx };
+        }
         if (!row) {
             const number = dayNumber(dateStr); // public "Pakadle #N" identifier
             const idx = puzzleIdxFor(dateStr); // secret-keyed answer pick
