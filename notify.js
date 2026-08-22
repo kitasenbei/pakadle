@@ -11,6 +11,42 @@
   // newest first. Each needs a STABLE unique id; `tag` is an optional pill.
   var ANNOUNCEMENTS = [
     {
+      id: "v0.6.1-pakadb-roster-refresh",
+      date: "v0.6.1, August 2026",
+      tag: "Roster",
+      title: "PakaDB roster refresh: Rulership and four new outfits",
+      body:
+        "PakaDB has been rebuilt against the latest game data. The roster is now 132 playable " +
+        "umas across 263 outfits, with stats, aptitudes, skills and portraits all refreshed." +
+        "<ul>" +
+          "<li><b>New uma:</b> Rulership (ルーラーシップ)" +
+            "<ul>" +
+              "<li>Unique skill: <b>Unmatched Tactics</b>, evolving into Cunning Gambit or Assault Trick.</li>" +
+              "<li>Turf A and Medium A, with Pace, Late and End all at A.</li>" +
+              "<li>58 breeding relations, so she slots straight into the planner.</li>" +
+            "</ul>" +
+          "</li>" +
+          "<li><b>New outfits:</b> four, each with a unique skill and two evolutions" +
+            "<ul>" +
+              "<li>Fusaichi Pandora, <b>Snatchin' Hearts ♡</b>: Beachside Venus Time♡.</li>" +
+              "<li>Fine Motion: Graceful Dash: The Way of Ramen.</li>" +
+              "<li>Mejiro Bright: Evening Calm Retreat Memory.</li>" +
+              "<li>Seiun Sky: Let the Sea Breeze Carry Me.</li>" +
+              "<li>Three of the four have no outfit title in the game data yet, so they show " +
+                "under the uma's name until one lands.</li>" +
+            "</ul>" +
+          "</li>" +
+          "<li><b>Skills:</b> 27 new entries, all searchable" +
+            "<ul>" +
+              "<li>15 tied to the new outfits: five uniques plus their evolutions.</li>" +
+              "<li>10 new inherited skills, among them Race Maker, Vanguard, Point Man and Game Sense.</li>" +
+              "<li>The breeding planner reads every one of them for inheritance like any other.</li>" +
+            "</ul>" +
+          "</li>" +
+        "</ul>" +
+        "New blood in the pedigree. 🐎",
+    },
+    {
       id: "v0.6.0-pakadb-launch",
       date: "v0.6.0, July 2026",
       tag: "New",
