@@ -1,7 +1,13 @@
 #!/usr/bin/env bash
-# Turn the Pakadle box into something that deploys itself. Run once, as root:
+# Turn the Pakadle box into something that deploys itself. Run once, from the
+# repo root, as root on the target:
 #
-#   ssh root@<host> 'bash -s' < deploy/provision-container.sh
+#   tar cz deploy | ssh root@<host> \
+#     'mkdir -p /tmp/pk && tar xz -C /tmp/pk && bash /tmp/pk/deploy/provision-container.sh'
+#
+# It needs the unit files and the hook that sit beside it, so it has to arrive as
+# a directory. Piping the script alone into `bash -s` leaves it with nothing to
+# install and it will say so rather than half-configure the machine.
 #
 # Afterwards the machine owns its whole pipeline: a git remote to push to, a
 # registry to hold its images, and a hook that swaps builds and rolls back on
@@ -16,7 +22,18 @@ DATA_DIR="$APP_HOME/data"
 DEPLOY_DIR="$APP_HOME/deploy"
 REPO_DIR="$APP_HOME/repo.git"
 WORK_DIR="$APP_HOME/app"
-SRC="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+SRC="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" 2>/dev/null && pwd || echo /nonexistent)"
+
+for needed in hooks/post-receive pakadle-container.service pakadle-registry.service; do
+    [ -f "$SRC/$needed" ] || {
+        echo "Cannot find $needed next to this script (looked in $SRC)."
+        echo "Send the whole deploy/ directory, not just this file:"
+        echo
+        echo "  tar cz deploy | ssh root@<host> \\"
+        echo "    'mkdir -p /tmp/pk && tar xz -C /tmp/pk && bash /tmp/pk/deploy/provision-container.sh'"
+        exit 1
+    }
+done
 
 say() { printf '\033[1;32m==>\033[0m %s\n' "$*"; }
 

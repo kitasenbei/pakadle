@@ -28,6 +28,11 @@ cd "$REPO"
 ENGINE="$(command -v podman || command -v docker)" || { echo "need podman or docker"; exit 1; }
 SSH="ssh -i $SSH_KEY -o BatchMode=yes -o ConnectTimeout=10"
 
+# The deploy key is not the default identity, and the git push at the end has to
+# use the same one as the tunnel. Setting it here keeps the script working
+# without depending on anything in ~/.ssh/config.
+export GIT_SSH_COMMAND="ssh -i $SSH_KEY -o BatchMode=yes -o ConnectTimeout=10"
+
 say() { printf '\033[1;32m==>\033[0m %s\n' "$*"; }
 die() { printf '\033[1;31m!!!\033[0m %s\n' "$*" >&2; exit 1; }
 

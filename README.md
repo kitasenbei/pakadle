@@ -91,8 +91,12 @@ automatic rollback to the last image that was healthy.
 Once per server, as root:
 
 ```bash
-ssh root@<host> 'bash -s' < deploy/provision-container.sh
+tar cz deploy | ssh root@<host> \
+  'mkdir -p /tmp/pk && tar xz -C /tmp/pk && bash /tmp/pk/deploy/provision-container.sh'
 ```
+
+The whole directory has to go, not just the script: it installs the unit files
+and the hook that sit beside it.
 
 It installs podman, creates the bare repo and its hook, starts the registry, and
 installs the systemd units. It leaves nginx and the database alone. The unit
