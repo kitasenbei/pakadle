@@ -45,6 +45,16 @@ install -m 0755 -o "$APP_USER" -g "$APP_USER" \
     "$SRC/hooks/post-receive" "$REPO_DIR/hooks/post-receive"
 
 say "Installing the registry and app units"
+# The container unit takes over the name "pakadle". Keep the bare-metal unit it
+# replaces under another name first: the very first deploy has no previous image
+# to roll back to, so this is the way back if that one deploy goes wrong.
+if [ -f /etc/systemd/system/pakadle.service ] && \
+   ! grep -q podman /etc/systemd/system/pakadle.service; then
+    cp /etc/systemd/system/pakadle.service /etc/systemd/system/pakadle-baremetal.service
+    sed -i 's/^Description=.*/Description=Pakadle on bare node (pre-container fallback)/' \
+        /etc/systemd/system/pakadle-baremetal.service
+    say "    saved the old unit as pakadle-baremetal.service"
+fi
 install -m 0644 "$SRC/pakadle-registry.service"  /etc/systemd/system/pakadle-registry.service
 install -m 0644 "$SRC/pakadle-container.service" /etc/systemd/system/pakadle.service
 
@@ -79,3 +89,5 @@ echo "    git remote add production ssh://$APP_USER@\$(hostname -I | awk '{print
 echo "    ./deploy/ship.sh"
 echo
 say "nginx and the database were left untouched."
+say "If the first deploy goes wrong, the way back is:"
+echo "    systemctl stop pakadle && systemctl start pakadle-baremetal"

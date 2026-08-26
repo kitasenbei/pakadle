@@ -105,6 +105,11 @@ Then, once, on your machine:
 git remote add production ssh://pakadle@<host>/srv/pakadle/repo.git
 ```
 
+The bare-metal unit this replaces is kept as `pakadle-baremetal.service`. The
+first deploy is the one with no previous image behind it, so if that one fails,
+`systemctl stop pakadle && systemctl start pakadle-baremetal` puts the old
+process back.
+
 ### Rolling back by hand
 
 The hook rolls back on its own when a deploy fails its health check. To go back
