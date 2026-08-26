@@ -59,7 +59,19 @@ main {
     padding: 10px 18px 48px;
 }
 
-.news h2 {
+.board + .board {
+    margin-top: 24px;
+}
+
+.lede {
+    color: var(--ink-soft);
+    font-weight: 600;
+    line-height: 1.5;
+    padding: 4px 0 16px;
+}
+
+.news h2,
+.board h2 {
     font-size: 1rem;
     font-weight: 800;
     color: var(--ink-soft);
@@ -111,4 +123,30 @@ main {
 }
 .notice-body p {
     padding-top: 10px;
+}
+
+/* Every notice carries a reference and a date. The farm files things. */
+.notice-ref {
+    font-size: 0.76rem;
+    font-weight: 700;
+    letter-spacing: 0.4px;
+    text-transform: uppercase;
+    color: var(--gold);
+    padding-top: 10px;
+}
+.notice-ref + p {
+    padding-top: 6px;
+}
+
+.footnote {
+    margin-top: 26px;
+    text-align: center;
+    font-size: 0.86rem;
+    font-weight: 600;
+    color: var(--ink-soft);
+    line-height: 1.5;
+}
+.footnote a {
+    color: var(--sakura);
+    font-weight: 700;
 }
