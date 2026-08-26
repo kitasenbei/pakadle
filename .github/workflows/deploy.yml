@@ -1,8 +1,13 @@
-name: deploy
+# Superseded by the self-hosted pipeline in deploy/ (see README, "Deploying").
+# The server now runs a container whose image comes from its own registry, so an
+# rsync of source into /srv/pakadle/app would write files nothing reads and then
+# restart the container onto the same image it was already running.
+#
+# Left here, dispatch-only, as an escape hatch. It cannot fire on a push, so the
+# two paths can never race to deploy the same box.
+name: deploy (superseded, manual only)
 
 on:
-  push:
-    branches: [main]
   workflow_dispatch:
 
 concurrency:

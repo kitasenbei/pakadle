@@ -39,3 +39,81 @@ by this server via `pakapix/routes.js`, with its own data, portrait assets, and
 tables (`pix_puzzles`, `pix_plays`), and it shares the visitor cookie with Pakadle.
 The portrait is scored and revealed server-side, so the clear image never reaches
 the browser until the player finishes. Header links cross-promote the two games.
+
+## Deploying
+
+Pakadle deploys itself. The pipeline is a git remote, a container registry and a
+hook, all living on the same box the game runs on, so a deploy depends on
+nothing but that server and the machine you are pushing from.
+
+```bash
+./deploy/ship.sh
+```
+
+That runs the tests here, builds the image here, sends it to the server and puts
+it live. What crosses the wire is only the layers that changed, usually about a
+megabyte, through an SSH tunnel to a registry bound to loopback on the server.
+
+```
+workstation                              server
+  npm test
+  podman build  ──┐
+                  └── ssh tunnel ──▶  registry (127.0.0.1:5000)
+  git push production main  ────────▶  post-receive hook
+                                         swap  → systemctl restart pakadle
+                                         probe → GET /healthz
+                                         ok?   → done
+                                         no?   → previous image, restart, exit 1
+```
+
+### Why it is shaped this way
+
+The server is one core and 961MB of RAM, which rules out running a CI service on
+it. Tests and builds happen on the workstation, which has cores to spare, and
+the server only ever pulls an image and restarts.
+
+The image is built from `git archive HEAD`, never from the working tree, so
+uncommitted edits cannot reach production. Deploying a change means committing
+it first.
+
+The build context is split into a media tree (about 2240 png, 185MB, changes
+rarely) and a source tree (about 1MB, changes every deploy), copied as separate
+layers in that order. Without the split, every one-line change would re-push the
+whole 185MB.
+
+`/healthz` reports both liveness and the build id it is serving. The hook waits
+for the id it just deployed, so a container still serving the previous image
+cannot be mistaken for a successful deploy, and anything else triggers an
+automatic rollback to the last image that was healthy.
+
+### First-time setup
+
+Once per server, as root:
+
+```bash
+ssh root@<host> 'bash -s' < deploy/provision-container.sh
+```
+
+It installs podman, creates the bare repo and its hook, starts the registry, and
+installs the systemd units. It leaves nginx and the database alone. The unit
+keeps the name `pakadle`, so the deploy user's existing one-line sudo rule
+(`systemctl restart pakadle`, and nothing else) still covers it.
+
+Then, once, on your machine:
+
+```bash
+git remote add production ssh://pakadle@<host>/srv/pakadle/repo.git
+```
+
+### Rolling back by hand
+
+The hook rolls back on its own when a deploy fails its health check. To go back
+after a deploy that passed but turned out to be wrong, on the server:
+
+```bash
+cp /srv/pakadle/deploy/previous.env /srv/pakadle/deploy/current.env
+sudo systemctl restart pakadle
+```
+
+Every image stays in the local registry, so any prior commit can be made live by
+putting its short sha in `current.env`.

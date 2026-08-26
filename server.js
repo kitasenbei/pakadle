@@ -630,6 +630,32 @@ function createApp(options = {}) {
     const server = http.createServer((req, res) => {
         const url = new URL(req.url, `http://${req.headers.host}`);
 
+        // ---- Health probe ----
+        // The deploy swaps the running container and polls this to decide
+        // whether to keep the new build or roll back, so it has to fail when
+        // the app is only half up. A plain 200 would pass while the database
+        // handle is broken, so it touches the db and reports the build it is
+        // serving.
+        if (url.pathname === "/healthz") {
+            let ok = false;
+            try {
+                db.prepare("SELECT 1").get();
+                ok = true;
+            } catch {
+                ok = false;
+            }
+            const body = JSON.stringify({
+                ok,
+                build: process.env.PAKADLE_BUILD || "dev",
+                uptime: Math.round(process.uptime()),
+            });
+            res.writeHead(ok ? 200 : 503, {
+                "Content-Type": "application/json; charset=utf-8",
+                "Cache-Control": "no-store",
+            });
+            return res.end(body);
+        }
+
         // ---- Pakapix (bundled game) ----
         if (
             url.pathname === "/pakapix" ||

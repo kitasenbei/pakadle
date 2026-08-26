@@ -1,0 +1,42 @@
+# Pakadle, running as a container instead of a bare node process.
+#
+# The unit deliberately keeps the name "pakadle" so the narrow sudo rule handed
+# to the deploy user ("systemctl restart pakadle", nothing else) keeps working
+# and the deploy needs no new privileges.
+#
+# Which image is live is not baked in here. It comes from current.env, which the
+# post-receive hook rewrites and which the rollback path rewrites back.
+[Unit]
+Description=Pakadle daily Umamusume word game (container)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+EnvironmentFile=/srv/pakadle/deploy/current.env
+Restart=always
+RestartSec=2
+TimeoutStartSec=120
+
+ExecStartPre=-/usr/bin/podman rm -f pakadle
+ExecStartPre=/usr/bin/podman pull --tls-verify=false ${PAKADLE_IMAGE}
+
+# Same fencing the bare-metal unit had (60% of one cpu, 256MB, 256 tasks), now
+# enforced by the container runtime. The box has 961MB total, so the ceiling is
+# what stops a bad deploy from taking the whole host down with it.
+ExecStart=/usr/bin/podman run --rm --name pakadle \
+    --publish 127.0.0.1:3000:3000 \
+    --volume /srv/pakadle/data:/srv/pakadle/data:Z \
+    --env PAKADLE_BUILD=${PAKADLE_BUILD} \
+    --memory 256m --memory-swap 256m --cpus 0.6 --pids-limit 256 \
+    --read-only --tmpfs /tmp:size=16m \
+    --cap-drop ALL --security-opt no-new-privileges \
+    --health-cmd "wget -qO- http://127.0.0.1:3000/healthz | grep -q '\"ok\":true'" \
+    --health-interval 30s --health-timeout 3s --health-retries 3 \
+    --health-start-period 5s \
+    ${PAKADLE_IMAGE}
+
+ExecStop=/usr/bin/podman stop -t 10 pakadle
+
+[Install]
+WantedBy=multi-user.target

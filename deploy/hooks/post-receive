@@ -1,0 +1,88 @@
+#!/usr/bin/env bash
+# Runs on the server when deploy/ship.sh pushes. This is the whole deployment:
+# point the service at the image built for the pushed commit, restart it, and
+# decide from the health probe whether the new build stays or the old one comes
+# back. Everything it prints is streamed to whoever ran the push.
+#
+# It never builds. The image is already in the local registry by the time the
+# push arrives, so a deploy costs this one-core box a pull and a restart.
+set -uo pipefail
+
+DEPLOY_DIR=/srv/pakadle/deploy
+CURRENT="$DEPLOY_DIR/current.env"
+PREVIOUS="$DEPLOY_DIR/previous.env"
+REGISTRY=127.0.0.1:5000
+IMAGE=pakadle
+HEALTH_URL=http://127.0.0.1:3000/healthz
+HEALTH_TIMEOUT=60
+
+say()  { printf '==> %-9s %s\n' "$1" "$2"; }
+fail() { printf '!!! %-9s %s\n' "$1" "$2" >&2; }
+
+# Wait for the app to report healthy AND to report the build we just asked for,
+# so a container that is still serving the old image cannot pass as success.
+wait_healthy() {
+    local want="$1" deadline=$((SECONDS + HEALTH_TIMEOUT)) body
+    while [ $SECONDS -lt $deadline ]; do
+        body="$(curl -sf --max-time 3 "$HEALTH_URL" 2>/dev/null)" || { sleep 1; continue; }
+        case "$body" in
+            *'"ok":true'*'"build":"'"$want"'"'*) return 0 ;;
+            *'"build":"'"$want"'"'*'"ok":true'*) return 0 ;;
+        esac
+        sleep 1
+    done
+    return 1
+}
+
+while read -r _oldrev newrev refname; do
+    [ "$refname" = "refs/heads/main" ] || { say "skip" "$refname is not main"; continue; }
+
+    SHA="$(git rev-parse --short "$newrev")"
+    REF="$REGISTRY/$IMAGE:$SHA"
+
+    say "commit" "$SHA"
+
+    if ! podman image exists "$REF" && \
+       ! curl -sf "http://$REGISTRY/v2/$IMAGE/manifests/$SHA" \
+             -H 'Accept: application/vnd.oci.image.manifest.v1+json' >/dev/null 2>&1; then
+        fail "image" "$REF is not in the registry. Did ship.sh finish pushing?"
+        exit 1
+    fi
+    say "image" "$REF found"
+
+    # Remember what is live now, so rollback has somewhere to go back to.
+    [ -f "$CURRENT" ] && cp "$CURRENT" "$PREVIOUS"
+
+    printf 'PAKADLE_IMAGE=%s\nPAKADLE_BUILD=%s\n' "$REF" "$SHA" > "$CURRENT"
+
+    say "swap" "restarting pakadle"
+    if ! sudo -n systemctl restart pakadle; then
+        fail "swap" "systemctl restart failed"
+        exit 1
+    fi
+
+    if wait_healthy "$SHA"; then
+        say "health" "200 ok, serving $SHA"
+        say "deployed" "$SHA is live"
+        continue
+    fi
+
+    # ---- rollback --------------------------------------------------------
+    fail "health" "no healthy response for $SHA within ${HEALTH_TIMEOUT}s"
+    if [ ! -f "$PREVIOUS" ]; then
+        fail "rollback" "no previous build recorded, leaving the service as it is"
+        exit 1
+    fi
+
+    PREV_SHA="$(grep '^PAKADLE_BUILD=' "$PREVIOUS" | cut -d= -f2)"
+    fail "rollback" "returning to $PREV_SHA"
+    cp "$PREVIOUS" "$CURRENT"
+    sudo -n systemctl restart pakadle
+
+    if wait_healthy "$PREV_SHA"; then
+        fail "rollback" "$PREV_SHA is live again. $SHA was not deployed."
+    else
+        fail "rollback" "$PREV_SHA did not come back healthy either. Service needs a look."
+    fi
+    exit 1
+done

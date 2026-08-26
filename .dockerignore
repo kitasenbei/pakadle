@@ -1,0 +1,9 @@
+# The context is built by deploy/ship.sh from `git archive`, so this is a
+# backstop for anyone running `podman build .` against the repo by hand.
+.git
+node_modules
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
+*.mp4
