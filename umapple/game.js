@@ -145,10 +145,14 @@
     }
 
     // Pick a portrait by darkness band, then by angle slot within the band.
-    function pickHorse(ratio, ang, hasDir, cx, cy) {
+    function bandOf(ratio) {
         let b = 0;
         while (b < cuts.length && ratio >= cuts[b]) b++;
-        const seg = bands[b];
+        return b;
+    }
+
+    function pickHorse(ratio, ang, hasDir, cx, cy) {
+        const seg = bands[bandOf(ratio)];
         let slot;
         if (hasDir) {
             let a = ang % (2 * Math.PI);
@@ -172,6 +176,9 @@
         prevDark = null; gvfU = null; gvfV = null;
     }
 
+    // The intermediates of the last frame, kept for the stage views.
+    const stage = { dark: null, dux: null, duy: null, mx: null, my: null, bx: null, by: null, band: null, pick: null };
+
     // Draw one portrait mosaic frame.
     function render() {
         if (video.readyState >= 2 && ready) {
@@ -180,6 +187,13 @@
             const { dux, duy } = directionField(dark, W, H);
             const cw = screen.width / W, ch = screen.height / H;
             const dw = Math.ceil(cw), dh = Math.ceil(ch);
+            if (!stage.mx || stage.mx.length !== W * H) {
+                stage.mx = new Float32Array(W * H); stage.my = new Float32Array(W * H);
+                stage.bx = new Float32Array(W * H); stage.by = new Float32Array(W * H);
+                stage.band = new Uint8Array(W * H);
+                stage.pick = new Uint16Array(W * H);
+            }
+            stage.dark = dark; stage.dux = dux; stage.duy = duy;
 
             for (let cy = 0; cy < H; cy++) {
                 for (let cx = 0; cx < W; cx++) {
@@ -204,13 +218,121 @@
 
                     const hasDir = ux !== 0 || uy !== 0 || mx !== 0 || my !== 0;
                     const h = pickHorse(ratio, Math.atan2(by, bx), hasDir, cx, cy);
+                    stage.mx[i] = mx; stage.my[i] = my; stage.bx[i] = bx; stage.by[i] = by;
+                    stage.band[i] = bandOf(ratio);
+                    stage.pick[i] = h;
                     const sx = (h % ACOLS) * TILE, sy = ((h / ACOLS) | 0) * TILE;
                     sctx.drawImage(atlas, sx, sy, TILE, TILE, cx * cw, cy * ch, dw, dh);
                 }
             }
             prevDark = dark;
+            if (!views.hidden) drawViews(W, H);
         }
         requestAnimationFrame(render);
+    }
+
+    // ---- stage views ----
+    // A column of small panels, one per step of the pipeline. Every panel but
+    // the source draws one pixel per chunk and lets CSS scale it up unsmoothed,
+    // so what is shown is exactly the grid the mosaic is picked from.
+    const views = document.getElementById("views");
+    const VIEW_W = 192;
+
+    // Map an angle to a hue and a weight to brightness.
+    function hueRGB(ang, w) {
+        let a = ang / (2 * Math.PI); a -= Math.floor(a);
+        const k = a * 6, f = k - Math.floor(k), q = 1 - f;
+        let r, g, b2;
+        switch (Math.floor(k) % 6) {
+            case 0: r = 1; g = f; b2 = 0; break;
+            case 1: r = q; g = 1; b2 = 0; break;
+            case 2: r = 0; g = 1; b2 = f; break;
+            case 3: r = 0; g = q; b2 = 1; break;
+            case 4: r = f; g = 0; b2 = 1; break;
+            default: r = 1; g = 0; b2 = q;
+        }
+        return [r * w * 255, g * w * 255, b2 * w * 255];
+    }
+
+    // Write a direction field as hue, with its magnitude as brightness.
+    function fieldPixels(d, vx, vy, scale) {
+        for (let i = 0; i < vx.length; i++) {
+            const m = Math.min(1, Math.hypot(vx[i], vy[i]) * scale);
+            const [r, g, b2] = hueRGB(Math.atan2(vy[i], vx[i]), m);
+            d[i * 4] = r; d[i * 4 + 1] = g; d[i * 4 + 2] = b2; d[i * 4 + 3] = 255;
+        }
+    }
+
+    const PANELS = [
+        { label: "source", source: true },
+        { label: "chunk darkness", draw(d, n) {
+            for (let i = 0; i < n; i++) {
+                const v = (1 - stage.dark[i]) * 255;
+                d[i * 4] = d[i * 4 + 1] = d[i * 4 + 2] = v; d[i * 4 + 3] = 255;
+            }
+        } },
+        { label: "edge strength", draw(d, n, W, H) {
+            const dark = stage.dark;
+            for (let y = 0; y < H; y++) {
+                for (let x = 0; x < W; x++) {
+                    const i = y * W + x;
+                    const l = Math.max(x - 1, 0), r = Math.min(x + 1, W - 1);
+                    const u = Math.max(y - 1, 0), dn = Math.min(y + 1, H - 1);
+                    const gx = dark[y * W + r] - dark[y * W + l];
+                    const gy = dark[dn * W + x] - dark[u * W + x];
+                    const v = Math.min(1, Math.hypot(gx, gy)) * 255;
+                    d[i * 4] = d[i * 4 + 1] = d[i * 4 + 2] = v; d[i * 4 + 3] = 255;
+                }
+            }
+        } },
+        { label: "gvf direction", draw(d) {
+            // The raw GVF vectors, before normalisation, so flat regions fade.
+            fieldPixels(d, gvfU, gvfV, 4);
+        } },
+        { label: "motion", draw(d) { fieldPixels(d, stage.mx, stage.my, 6); } },
+        { label: "blended direction", draw(d) { fieldPixels(d, stage.bx, stage.by, 1); } },
+        { label: "darkness band", draw(d, n) {
+            for (let i = 0; i < n; i++) {
+                const v = 255 - stage.band[i] * (255 / (B - 1));
+                d[i * 4] = v * 0.9; d[i * 4 + 1] = v * 0.75; d[i * 4 + 2] = v * 0.55; d[i * 4 + 3] = 255;
+            }
+        } },
+        // The tail each chunk picked, drawn from the atlas at view size.
+        { label: "tail mapping", tiles: true },
+    ];
+
+    PANELS.forEach((p) => {
+        const fig = document.createElement("figure");
+        p.canvas = document.createElement("canvas");
+        p.ctx = p.canvas.getContext("2d", { willReadFrequently: false });
+        fig.append(p.canvas);
+        views.append(fig);
+    });
+
+    function drawViews(W, H) {
+        const vh = Math.round(VIEW_W * H / W);
+        for (const p of PANELS) {
+            const c = p.canvas;
+            if (p.source) {
+                if (c.width !== VIEW_W || c.height !== vh) { c.width = VIEW_W; c.height = vh; }
+                drawCover(p.ctx, VIEW_W, vh);
+                continue;
+            }
+            if (p.tiles) {
+                if (c.width !== VIEW_W || c.height !== vh) { c.width = VIEW_W; c.height = vh; }
+                const cw = VIEW_W / W, ch = vh / H, dw = Math.ceil(cw), dh = Math.ceil(ch);
+                for (let i = 0; i < W * H; i++) {
+                    const h = stage.pick[i];
+                    const sx = (h % ACOLS) * TILE, sy = ((h / ACOLS) | 0) * TILE;
+                    p.ctx.drawImage(atlas, sx, sy, TILE, TILE, (i % W) * cw, ((i / W) | 0) * ch, dw, dh);
+                }
+                continue;
+            }
+            if (c.width !== W || c.height !== H) { c.width = W; c.height = H; }
+            const img = p.ctx.createImageData(W, H);
+            p.draw(img.data, W * H, W, H);
+            p.ctx.putImageData(img, 0, 0);
+        }
     }
 
     // ---- readiness checks ----
@@ -267,11 +389,13 @@
     }
     startBtn.addEventListener("click", start);
 
-    // Press P to pause. Press P again to play.
+    // Press P to pause. Press P again to play. Press D to toggle the stage views.
     document.addEventListener("keydown", (e) => {
         if (e.key === "p" || e.key === "P") {
             if (!started) return;
             if (video.paused) video.play(); else video.pause();
+        } else if (e.key === "d" || e.key === "D") {
+            views.hidden = !views.hidden;
         }
     });
 })();
