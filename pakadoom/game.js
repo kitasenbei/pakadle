@@ -69,7 +69,8 @@
             scaledctx.drawImage(atlas, (t % ACOLS) * TILE, ((t / ACOLS) | 0) * TILE, TILE, TILE,
                 (t % ACOLS) * dw, ((t / ACOLS) | 0) * dh, dw, dh);
         }
-        scaled32 = new Uint32Array(scaledctx.getImageData(0, 0, scaled.width, scaled.height).data.buffer);
+        const d = scaledctx.getImageData(0, 0, scaled.width, scaled.height).data;
+        scaled32 = new Uint32Array(d.buffer, d.byteOffset, d.length >> 2);
         scaledStride = scaled.width;
         scaledW = dw; scaledH = dh;
     }
@@ -81,10 +82,37 @@
         sctx.fillRect(0, 0, screen.width, screen.height);
     }
 
+    // The part of the Doom canvas that holds the frame. SDL sizes the canvas
+    // to the window times the device pixel ratio, but the software
+    // framebuffer in this engine build writes the window size, so on a scaled
+    // display the frame sits in the top-left corner with black to the right
+    // and below. The probe looks for that black margin and crops it off.
+    const WINDOW_W = 640, WINDOW_H = 400; // From default.cfg.
+    const margin = document.createElement("canvas");
+    margin.width = 1; margin.height = 16;
+    const mctx = margin.getContext("2d", { willReadFrequently: true });
+    let srcW = 0, srcH = 0, seenW = 0, seenH = 0, probeAt = -1e9;
+    function frameSize() {
+        if (source.width !== seenW || source.height !== seenH) {
+            seenW = srcW = source.width; seenH = srcH = source.height;
+            probeAt = -1e9;
+        }
+        if (source.width <= WINDOW_W || frame - probeAt < 60) return;
+        probeAt = frame;
+        // One column of the right margin, squeezed to 16 samples.
+        mctx.drawImage(source, WINDOW_W + 1, 0, 1, source.height, 0, 0, 1, 16);
+        const d = mctx.getImageData(0, 0, 1, 16).data;
+        let lit = 0;
+        for (let i = 0; i < 16; i++) if (d[i * 4] + d[i * 4 + 1] + d[i * 4 + 2] > 24) lit++;
+        const cropped = lit === 0;
+        srcW = cropped ? WINDOW_W : source.width;
+        srcH = cropped ? WINDOW_H : source.height;
+    }
+
     // The rectangle the whole frame fits in, centred in a W by H target. Doom
     // is 4:3 and screens are wider, so the frame is letterboxed, never cropped.
     function fitRect(W, H) {
-        const vw = source.width, vh = source.height;
+        const vw = srcW, vh = srcH;
         const scale = Math.min(W / vw, H / vh);
         const fw = vw * scale, fh = vh * scale;
         return { x: (W - fw) / 2, y: (H - fh) / 2, w: fw, h: fh };
@@ -154,7 +182,8 @@
     // The grid covers the frame, not the screen. Chunks stay square because the
     // frame rectangle keeps the source aspect.
     function gridSize() {
-        ROWS = Math.max(1, Math.round(COLS * source.height / source.width));
+        frameSize();
+        ROWS = Math.max(1, Math.round(COLS * srcH / srcW));
         if (low.width !== COLS || low.height !== ROWS) {
             low.width = COLS; low.height = ROWS;
             invalidate();
@@ -168,7 +197,7 @@
         if (started && ready && source.width > 0) {
             gridSize();
             const W = COLS, H = ROWS;
-            lowctx.drawImage(source, 0, 0, W, H);
+            lowctx.drawImage(source, 0, 0, srcW, srcH, 0, 0, W, H);
             const p = lowctx.getImageData(0, 0, W, H).data;
             const rank = lumRanks(p, W * H);
             const f = fitRect(screen.width, screen.height);
@@ -179,7 +208,7 @@
             if (!lastTile || frameImg.width !== fw || frameImg.height !== fh) {
                 lastTile = new Int16Array(W * H).fill(-1);
                 frameImg = sctx.createImageData(fw, fh);
-                frame32 = new Uint32Array(frameImg.data.buffer);
+                frame32 = new Uint32Array(frameImg.data.buffer, frameImg.data.byteOffset, frameImg.data.length >> 2);
             }
             let changed = false;
             for (let cy = 0; cy < H; cy++) {
@@ -294,7 +323,7 @@
     probe.width = 32; probe.height = 1;
     const pctx = probe.getContext("2d", { willReadFrequently: true });
     function statusBarVisible() {
-        const h = source.height, w = source.width;
+        const h = srcH, w = srcW;
         pctx.drawImage(source, 0, Math.round(h * 169 / 200), w, Math.max(1, Math.round(h / 200)), 0, 0, 32, 1);
         const d = pctx.getImageData(0, 0, 32, 1).data;
         let grey = 0;
