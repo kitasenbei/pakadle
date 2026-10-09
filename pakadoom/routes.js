@@ -14,6 +14,8 @@ module.exports = function pakadoom(_db) {
         ".html": "text/html; charset=utf-8",
         ".css": "text/css; charset=utf-8",
         ".js": "text/javascript; charset=utf-8",
+        ".png": "image/png",
+        ".json": "application/json",
         ".wasm": "application/wasm",
         ".wad": "application/octet-stream",
         ".cfg": "text/plain; charset=utf-8",

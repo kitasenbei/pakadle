@@ -26,6 +26,9 @@
     const source = document.getElementById("canvas");
     const screen = document.getElementById("screen");
     const sctx = screen.getContext("2d");
+    // No context menu over the game. Done here rather than as an attribute,
+    // which the site's Content Security Policy forbids.
+    document.addEventListener("contextmenu", (e) => e.preventDefault());
 
     // Doom uses SDL's software renderer (force_software_renderer in the
     // config), so its canvas is a plain 2D canvas and can be read any time.
