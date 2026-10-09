@@ -21,12 +21,16 @@ TimeoutStartSec=120
 ExecStartPre=-/usr/bin/podman rm -f pakadle
 ExecStartPre=/usr/bin/podman pull --tls-verify=false ${PAKADLE_IMAGE}
 
+# The umapple video is not in git (*.mp4 is ignored, so it never enters the
+# image). It was uploaded to the host by hand on 2026-07-20 and the bare-metal
+# unit found it on disk; the container only sees it through this mount.
 # Same fencing the bare-metal unit had (60% of one cpu, 256MB, 256 tasks), now
 # enforced by the container runtime. The box has 961MB total, so the ceiling is
 # what stops a bad deploy from taking the whole host down with it.
 ExecStart=/usr/bin/podman run --rm --name pakadle \
     --publish 127.0.0.1:3000:3000 \
     --volume /srv/pakadle/data:/srv/pakadle/data:Z \
+    --volume /srv/pakadle/app/umapple/badapple.mp4:/srv/pakadle/app/umapple/badapple.mp4:ro,Z \
     --env PAKADLE_BUILD=${PAKADLE_BUILD} \
     --memory 256m --memory-swap 256m --cpus 0.6 --pids-limit 256 \
     --read-only --tmpfs /tmp:size=16m \
