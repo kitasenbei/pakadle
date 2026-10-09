@@ -234,6 +234,7 @@ function createApp(options = {}) {
     const tailoftheday = require("./tailoftheday/routes.js")(db);
     const umaroulette = require("./umaroulette/routes.js")(db);
     const umapple = require("./umapple/routes.js")(db);
+    const pakadoom = require("./pakadoom/routes.js")(db);
     const flags = require("./flags/routes.js")(db);
     const farm = require("./farm/routes.js")(db);
     const jobs = require("./jobs/routes.js")(db);
@@ -680,6 +681,14 @@ function createApp(options = {}) {
             url.pathname.startsWith("/umapple/")
         ) {
             return umapple.handle(req, res, url);
+        }
+
+        // ---- Pakadoom (shareware Doom in wasm, drawn with the Umapple mosaic) ----
+        if (
+            url.pathname === "/pakadoom" ||
+            url.pathname.startsWith("/pakadoom/")
+        ) {
+            return pakadoom.handle(req, res, url);
         }
         if (url.pathname === "/flags" || url.pathname.startsWith("/flags/")) {
             return flags.handle(req, res, url);

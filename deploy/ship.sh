@@ -63,7 +63,8 @@ git archive --format=tar HEAD | tar -x -C "$CTX/app"
 
 ( cd "$CTX/app" && find . -type f \
     \( -iname '*.png' -o -iname '*.jpg' -o -iname '*.jpeg' -o -iname '*.webp' \
-       -o -iname '*.gif' -o -iname '*.ico' -o -iname '*.woff' -o -iname '*.woff2' \) \
+       -o -iname '*.gif' -o -iname '*.ico' -o -iname '*.woff' -o -iname '*.woff2' \
+       -o -iname '*.wasm' -o -iname '*.wad' \) \
     -print0 | tar --null -T - -c --remove-files -f - ) | tar -x -C "$CTX/media"
 
 MEDIA_MB=$(du -sm "$CTX/media" | cut -f1)
